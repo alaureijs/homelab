@@ -1,5 +1,12 @@
 ---
 # harbor_config role defaults
+#
+# Harbor project role IDs:
+#   1 = projectAdmin  - full project management (members, settings, scans, deletion)
+#   2 = developer      - read/write access (push images, create tags, scan)
+#   3 = guest          - read-only access (pull images, retag)
+#   4 = maintainer     - elevated permissions (scan, replication, delete artifacts)
+#   5 = limitedGuest   - pull only (no retag, no logs, no member visibility)
 
 harbor_config_users: []
 harbor_config_projects: []

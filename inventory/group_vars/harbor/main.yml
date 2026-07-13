@@ -36,7 +36,8 @@ firewall_ports:
 hosts_entries:
   - "192.168.100.10 harbor.local.lan"
 
-# Users and roles
+# Users and roles (role IDs: 1=projectAdmin, 2=developer, 3=guest, 4=maintainer, 5=limitedGuest)
+# Note: system admin (user_id=1) is created during Harbor install, not managed here
 harbor_config_users:
   - username: viewer
     password: "{{ vault_harbor_viewer_password }}"

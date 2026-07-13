@@ -1,0 +1,63 @@
+---
+- name: Provision ansible01 for Harbor
+  hosts: ansible01
+  become: true
+  gather_facts: true
+
+  vars:
+    harbor_version: "v2.11.0"
+    docker_compose_version: "v2.29.1"
+
+  tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: Europe/Amsterdam
+
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name:
+          - device-mapper-persistent-data
+          - lvm2
+          - curl
+          - wget
+          - git
+          - vim
+          - firewalld
+        state: present
+
+    - name: Ensure firewalld is running
+      ansible.builtin.systemd:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Open required ports in firewalld
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - 80/tcp
+        - 443/tcp
+        - 22/tcp
+
+    - name: Reload firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: reloaded
+
+    - name: Add /etc/hosts entry for harbor.local.lan
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "192.168.100.10 harbor.local.lan"
+        state: present
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: ansible01
+
+    - name: Ensure chronyd is running
+      ansible.builtin.systemd:
+        name: chronyd
+        state: started
+        enabled: true

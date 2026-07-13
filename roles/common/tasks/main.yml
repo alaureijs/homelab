@@ -1,0 +1,24 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - vim
+      - curl
+      - wget
+      - git
+      - htop
+      - unzip
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure NTP is running
+  ansible.builtin.systemd:
+    name: chrony
+    state: started
+    enabled: true

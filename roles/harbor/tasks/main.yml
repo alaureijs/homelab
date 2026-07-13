@@ -37,8 +37,9 @@
   when: not harbor_installed.stat.exists
 
 - name: Load Harbor images into Podman
-  containers.podman.podman_image:
-    load: "{{ harbor_install_dir }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+  ansible.builtin.command: "podman load -i {{ harbor_install_dir }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+  register: harbor_load
+  changed_when: "'Loaded image' in harbor_load.stdout"
   when: not harbor_installed.stat.exists
 
 - name: Create data directories
@@ -84,12 +85,9 @@
   register: harbor_install
   ignore_errors: true
 
-- name: Display install output
-  ansible.builtin.debug:
-    var: harbor_install.stdout_lines
-  when: harbor_install is changed
-
 - name: Ensure Harbor is started
-  community.general.podman_compose:
-    project_src: "{{ harbor_install_dir }}"
-    state: present
+  ansible.builtin.command: podman-compose up -d
+  args:
+    chdir: "{{ harbor_install_dir }}"
+  register: harbor_compose
+  changed_when: "'Started' in harbor_compose.stdout or 'Created' in harbor_compose.stdout"

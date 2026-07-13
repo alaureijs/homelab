@@ -21,9 +21,6 @@ harbor_tls_enabled: true
 harbor_tls_cert_path: "/etc/pki/tls/certs/harbor.crt"
 harbor_tls_key_path: "/etc/pki/tls/private/harbor.key"
 
-# Database
-harbor_database_password: "Harbor12345"
-
 # Redis
 harbor_redis_password: "Harbor12345"
 

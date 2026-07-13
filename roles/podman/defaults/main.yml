@@ -8,7 +8,7 @@ podman_packages:
   - skopeo
 
 podman_enable_socket: true
-podmanregistries:
+podman_registries:
   - docker.io
   - quay.io
   - ghcr.io

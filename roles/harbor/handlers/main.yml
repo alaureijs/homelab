@@ -1,5 +1,6 @@
 ---
 - name: Restart harbor
-  community.general.podman_compose:
-    project_src: "{{ harbor_install_dir }}"
-    state: restarted
+  ansible.builtin.shell: podman-compose down && podman-compose up -d
+  args:
+    chdir: "{{ harbor_install_dir }}"
+  changed_when: true

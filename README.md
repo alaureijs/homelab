@@ -34,13 +34,17 @@ ansible/
 ## Requirements
 
 - Ansible >= 2.14
-- `community.general` and `ansible.posix` collections
+- `community.general`, `ansible.posix`, `containers.podman` collections
+- `community.crypto` collection (for TLS certificate generation)
 - SSH access to target hosts
 - `ansible-vault` for encrypted variables
 
 ## Quick Start
 
 ```bash
+# Install required collections
+ansible-galaxy collection install community.general ansible.posix containers.podman community.crypto
+
 # Syntax check
 ansible-playbook playbooks/site.yml --syntax-check
 

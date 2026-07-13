@@ -1,0 +1,14 @@
+---
+# podman role defaults
+
+podman_packages:
+  - podman
+  - podman-compose
+  - buildah
+  - skopeo
+
+podman_enable_socket: true
+podmanregistries:
+  - docker.io
+  - quay.io
+  - ghcr.io

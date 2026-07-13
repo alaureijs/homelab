@@ -4,7 +4,7 @@
   become: true
   gather_facts: true
 
-  tasks:
+  pre_tasks:
     - name: Set timezone
       community.general.timezone:
         name: "{{ timezone }}"
@@ -13,24 +13,6 @@
       ansible.builtin.dnf:
         name: "{{ packages }}"
         state: present
-
-    - name: Ensure firewalld is running
-      ansible.builtin.systemd:
-        name: firewalld
-        state: started
-        enabled: true
-
-    - name: Open required ports in firewalld
-      ansible.posix.firewalld:
-        port: "{{ item }}"
-        permanent: true
-        state: enabled
-      loop: "{{ firewall_ports }}"
-
-    - name: Reload firewalld
-      ansible.builtin.systemd:
-        name: firewalld
-        state: reloaded
 
     - name: Add /etc/hosts entries
       ansible.builtin.lineinfile:
@@ -48,3 +30,9 @@
         name: chronyd
         state: started
         enabled: true
+
+  roles:
+    - role: firewall
+    - role: podman
+    - role: certificates
+    - role: harbor

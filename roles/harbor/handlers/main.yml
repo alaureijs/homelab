@@ -1,0 +1,5 @@
+---
+- name: Restart harbor
+  community.general.podman_compose:
+    project_src: "{{ harbor_install_dir }}"
+    state: restarted

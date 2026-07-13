@@ -1,0 +1,95 @@
+---
+- name: Check if Harbor is already installed
+  ansible.builtin.stat:
+    path: "{{ harbor_install_dir }}/harbor.yml"
+  register: harbor_installed
+
+- name: Download Harbor offline installer
+  ansible.builtin.get_url:
+    url: "https://github.com/goharbor/harbor/releases/download/{{ harbor_version }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+    dest: "/tmp/harbor-offline-installer-{{ harbor_version }}.tgz"
+    mode: "0644"
+  when: not harbor_installed.stat.exists
+
+- name: Create install directory
+  ansible.builtin.file:
+    path: "{{ harbor_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Extract Harbor installer
+  ansible.builtin.unarchive:
+    src: "/tmp/harbor-offline-installer-{{ harbor_version }}.tgz"
+    dest: "/tmp"
+    remote_src: true
+  when: not harbor_installed.stat.exists
+
+- name: Copy extracted files to install directory
+  ansible.builtin.copy:
+    src: "/tmp/harbor/"
+    dest: "{{ harbor_install_dir }}/"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "preserve"
+  when: not harbor_installed.stat.exists
+
+- name: Load Harbor images into Podman
+  containers.podman.podman_image:
+    load: "{{ harbor_install_dir }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+  when: not harbor_installed.stat.exists
+
+- name: Create data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ harbor_data_dir }}"
+    - "{{ harbor_data_dir }}/ca_download"
+    - "{{ harbor_data_dir }}/database"
+    - "{{ harbor_data_dir }}/redis"
+    - "{{ harbor_data_dir }}/registry"
+    - "{{ harbor_data_dir }}/job_logs"
+    - "{{ harbor_data_dir }}/storage"
+    - "{{ harbor_data_dir }}/config"
+
+- name: Template harbor.yml
+  ansible.builtin.template:
+    src: harbor.yml.j2
+    dest: "{{ harbor_install_dir }}/harbor.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart harbor
+
+- name: Template install script for Podman
+  ansible.builtin.template:
+    src: install.sh.j2
+    dest: "{{ harbor_install_dir }}/install-podman.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Run Harbor install
+  ansible.builtin.command: "{{ harbor_install_dir }}/install-podman.sh"
+  args:
+    chdir: "{{ harbor_install_dir }}"
+    creates: "{{ harbor_data_dir }}/config/core/app.conf"
+  when: not harbor_installed.stat.exists
+  register: harbor_install
+  ignore_errors: true
+
+- name: Display install output
+  ansible.builtin.debug:
+    var: harbor_install.stdout_lines
+  when: harbor_install is changed
+
+- name: Ensure Harbor is started
+  community.general.podman_compose:
+    project_src: "{{ harbor_install_dir }}"
+    state: present

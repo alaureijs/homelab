@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Four Harbor-related roles:
+  - `podman` — installs Podman, configures registries, enables socket.
+  - `certificates` — generates self-signed TLS certs or deploys provided ones.
+  - `firewall` — configures firewalld ports (80/tcp, 443/tcp, 22/tcp).
+  - `harbor` — offline Harbor install with Podman, configures and starts services.
+- Updated `playbooks/provision-ansible01.yml` to use new roles.
+
 ### Changed
 
 - Refactored `host_vars` to directory-based structure:

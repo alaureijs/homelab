@@ -1,0 +1,31 @@
+---
+# harbor role defaults
+
+harbor_version: "v2.11.0"
+harbor_install_dir: /opt/harbor
+harbor_data_dir: /data/harbor
+harbor_hostname: harbor.local.lan
+
+harbor_admin_password: "Harbor12345"
+harbor_database_password: "Harbor12345"
+
+harbor_http_port: 80
+harbor_https_port: 443
+harbor_internal_port: 4443
+
+harbor_enable_trivy: false
+harbor_enable_chartmuseum: false
+
+# TLS
+harbor_tls_enabled: true
+harbor_tls_cert_path: "/etc/pki/tls/certs/harbor.crt"
+harbor_tls_key_path: "/etc/pki/tls/private/harbor.key"
+
+# Database
+harbor_database_password: "Harbor12345"
+
+# Redis
+harbor_redis_password: "Harbor12345"
+
+# Storage
+harbor_storage_filesystem_rootdirectory: /data/harbor/storage

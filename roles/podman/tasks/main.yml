@@ -1,0 +1,25 @@
+---
+- name: Install Podman and dependencies
+  ansible.builtin.dnf:
+    name: "{{ podman_packages }}"
+    state: present
+
+- name: Configure registries
+  ansible.builtin.template:
+    src: registries.conf.j2
+    dest: /etc/containers/registries.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart podman socket
+
+- name: Enable and start podman.socket
+  ansible.builtin.systemd:
+    name: podman.socket
+    state: "{{ 'started' if podman_enable_socket else 'stopped' }}"
+    enabled: "{{ podman_enable_socket }}"
+
+- name: Allow containers to manage cgroups (SELinux)
+  ansible.builtin.command: setsebool -P container_manage_cgroup true
+  when: ansible_selinux.status == "enabled"
+  changed_when: false

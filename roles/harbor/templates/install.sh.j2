@@ -1,0 +1,76 @@
+#!/bin/bash
+# Harbor installer adapted for Podman
+# Managed by Ansible - do not edit manually
+set -e
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
+
+DOCKER_COMPOSE="podman-compose"
+HARBOR_BUNDLE_DIR="$PWD"
+
+export HARBOR_BUNDLE_DIR
+
+echo "[Step 0]: checking root privileges ..."
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: this script must be run as root." >&2
+    exit 1
+fi
+
+echo "[Step 1]: loading Harbor images ..."
+if ls harbor*.tar.gz 1>/dev/null 2>&1; then
+    podman load -i ./harbor*.tar.gz
+fi
+
+echo ""
+echo "[Step 2]: preparing environment ..."
+if [ -n "{{ harbor_hostname }}" ]; then
+    sed "s/^hostname: .*/hostname: {{ harbor_hostname }}/g" -i ./harbor.yml
+fi
+
+echo ""
+echo "[Step 3]: preparing harbor configs ..."
+
+prepare_para=""
+{% if harbor_enable_trivy %}
+prepare_para="${prepare_para} --with-trivy"
+{% endif %}
+
+./prepare ${prepare_para}
+
+echo ""
+
+# Stop existing instance if running
+if $DOCKER_COMPOSE ps -q 2>/dev/null | grep -q .; then
+    echo "Stopping existing Harbor instance ..."
+    $DOCKER_COMPOSE down -v
+fi
+
+# Patch docker-compose.yml for Podman compatibility
+# Remove logging blocks (podman doesn't support syslog driver)
+sed -i \
+  -e '/^[[:space:]]\{4\}logging:/i __LOG_BLOCK_START__' \
+  -e '/^  [[:alnum:]_-]\+:/i __LOG_BLOCK_END__' \
+  docker-compose.yml
+sed -i '/__LOG_BLOCK_START__/,/__LOG_BLOCK_END__/d' docker-compose.yml
+sed -i '/__LOG_BLOCK_/d' docker-compose.yml
+
+# Replace networks section with simple harbor network
+sed -i '/^networks:/,$d' docker-compose.yml
+cat << 'EOF' >> docker-compose.yml
+
+networks:
+  harbor:
+EOF
+
+# Fix log mount path for Podman compatibility
+sed -i \
+  's|/var/log/harbor/:/var/log/docker/:z|./log:/var/log/docker/:z|' \
+  docker-compose.yml
+
+echo "[Step 4]: starting Harbor ..."
+$DOCKER_COMPOSE up -d
+
+echo ""
+echo "----Harbor has been installed and started successfully----"
+echo "Access Harbor at: {% if harbor_tls_enabled %}https{% else %}http{% endif %}://{{ harbor_hostname }}"

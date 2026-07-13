@@ -37,7 +37,7 @@
   when: not harbor_installed.stat.exists
 
 - name: Load Harbor images into Podman
-  ansible.builtin.command: "podman load -i {{ harbor_install_dir }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+  ansible.builtin.command: "podman load -i {{ harbor_install_dir }}/harbor.{{ harbor_version }}.tar.gz"
   register: harbor_load
   changed_when: "'Loaded image' in harbor_load.stdout"
   when: not harbor_installed.stat.exists
@@ -59,31 +59,90 @@
     - "{{ harbor_data_dir }}/storage"
     - "{{ harbor_data_dir }}/config"
 
-- name: Template harbor.yml
-  ansible.builtin.template:
-    src: harbor.yml.j2
+- name: Copy harbor.yml.tmpl to harbor.yml
+  ansible.builtin.copy:
+    src: "{{ harbor_install_dir }}/harbor.yml.tmpl"
     dest: "{{ harbor_install_dir }}/harbor.yml"
+    remote_src: true
     owner: root
     group: root
     mode: "0644"
+    force: false
+  when: not harbor_installed.stat.exists
+
+- name: Configure hostname in harbor.yml
+  ansible.builtin.replace:
+    path: "{{ harbor_install_dir }}/harbor.yml"
+    regexp: '^hostname: .*$'
+    replace: "hostname: {{ harbor_hostname }}"
+  when: not harbor_installed.stat.exists
   notify: Restart harbor
 
-- name: Template install script for Podman
-  ansible.builtin.template:
-    src: install.sh.j2
-    dest: "{{ harbor_install_dir }}/install-podman.sh"
+- name: Configure admin password in harbor.yml
+  ansible.builtin.replace:
+    path: "{{ harbor_install_dir }}/harbor.yml"
+    regexp: '^harbor_admin_password: .*$'
+    replace: "harbor_admin_password: {{ harbor_admin_password }}"
+  when: not harbor_installed.stat.exists
+
+- name: Configure TLS in harbor.yml
+  when: harbor_tls_enabled | bool
+  block:
+    - name: Set certificate path in harbor.yml
+      ansible.builtin.replace:
+        path: "{{ harbor_install_dir }}/harbor.yml"
+        regexp: 'certificate: /your/certificate/path'
+        replace: "certificate: {{ harbor_tls_cert_path }}"
+      when: not harbor_installed.stat.exists
+
+    - name: Set private_key path in harbor.yml
+      ansible.builtin.replace:
+        path: "{{ harbor_install_dir }}/harbor.yml"
+        regexp: 'private_key: /your/private/key/path'
+        replace: "private_key: {{ harbor_tls_key_path }}"
+      when: not harbor_installed.stat.exists
+
+- name: Create docker symlink for podman
+  ansible.builtin.file:
+    src: /usr/bin/podman
+    dest: /usr/bin/docker
+    state: link
+    force: true
+
+- name: Run Harbor prepare
+  ansible.builtin.command: "{{ harbor_install_dir }}/prepare"
+  args:
+    chdir: "{{ harbor_install_dir }}"
+  register: harbor_prepare
+  changed_when: "'prepare base dir' in harbor_prepare.stdout"
+  when: not harbor_installed.stat.exists
+
+- name: Create Harbor log directory
+  ansible.builtin.file:
+    path: /var/log/harbor
+    state: directory
     owner: root
     group: root
     mode: "0755"
 
-- name: Run Harbor install
-  ansible.builtin.command: "{{ harbor_install_dir }}/install-podman.sh"
+- name: Patch docker-compose.yml for Podman compatibility
+  ansible.builtin.shell: |
+    cp docker-compose.yml docker-compose.yml.bak
+    python3 -c "
+    import yaml, sys
+    with open('docker-compose.yml') as f:
+        data = yaml.safe_load(f)
+    for svc in data.get('services', {}).values():
+        svc.pop('logging', None)
+    with open('docker-compose.yml', 'w') as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    "
   args:
     chdir: "{{ harbor_install_dir }}"
-    creates: "{{ harbor_data_dir }}/config/core/app.conf"
+    executable: /bin/bash
+  register: harbor_patch
+  changed_when: harbor_patch.rc == 0
   when: not harbor_installed.stat.exists
-  register: harbor_install
-  ignore_errors: true
 
 - name: Ensure Harbor is started
   ansible.builtin.command: podman-compose up -d

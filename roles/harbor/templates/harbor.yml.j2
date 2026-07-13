@@ -10,12 +10,12 @@ http:
 https:
   port: {{ harbor_https_port }}
   certificate: {{ harbor_tls_cert_path }}
-  key: {{ harbor_tls_key_path }}
+  private_key: {{ harbor_tls_key_path }}
 {% else %}
 # https:
 #   port: 443
 #   certificate: /your/certificate/path
-#   key: /your/key/path
+#   private_key: /your/private_key/path
 {% endif %}
 
 # Uncomment external_url if you enabled notary or trivy
@@ -30,7 +30,6 @@ database:
   conn_max_lifetime: 5m
   conn_max_idle_time: 0
   sslmode: disable
-  password: {{ harbor_database_password }}
 
 data_volume: {{ harbor_data_dir }}
 

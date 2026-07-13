@@ -1,4 +1,9 @@
 ---
+- name: Install cryptography dependency
+  ansible.builtin.dnf:
+    name: python3-cryptography
+    state: present
+
 - name: Ensure certificate directories exist
   ansible.builtin.file:
     path: "{{ item }}"

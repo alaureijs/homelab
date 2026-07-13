@@ -1,4 +1,4 @@
 # Managed by Ansible
 # /etc/containers/registries.conf
 
-unqualified-search-registries = [{{ podman_registries | map('regex_replace', '^(.*)$', '"\1"') | join(', ') }}]
+unqualified-search-registries = {{ podman_registries | to_json }}

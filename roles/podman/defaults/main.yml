@@ -3,9 +3,11 @@
 
 podman_packages:
   - podman
-  - podman-compose
   - buildah
   - skopeo
+
+podman_pip_packages:
+  - podman-compose
 
 podman_enable_socket: true
 podman_registries:

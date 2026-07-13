@@ -1,0 +1,46 @@
+---
+- name: Check if member exists in project
+  ansible.builtin.set_fact:
+    _harbor_config_existing: >-
+      {{ _harbor_config_members_map[item.1.project_name] |
+      selectattr('entity_name', 'equalto', item.0.username) | list }}
+    _harbor_config_member_id: >-
+      {{ (_harbor_config_members_map[item.1.project_name] |
+      selectattr('entity_name', 'equalto', item.0.username) |
+      map(attribute='id') | list)[0] | default(omit) }}
+    _harbor_config_current_role: >-
+      {{ (_harbor_config_members_map[item.1.project_name] |
+      selectattr('entity_name', 'equalto', item.0.username) |
+      map(attribute='role_id') | list)[0] | default(none) }}
+
+- name: Add member to project
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ item.1.project_name }}/members"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      role_id: "{{ item.1.role_id }}"
+      member_user:
+        username: "{{ item.0.username }}"
+    status_code: [201]
+    validate_certs: false
+  when: _harbor_config_existing | length == 0
+
+- name: Update member role in project
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ item.1.project_name }}/members/{{ _harbor_config_member_id }}"
+    method: PUT
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      role_id: "{{ item.1.role_id }}"
+    status_code: [200]
+    validate_certs: false
+  when:
+    - _harbor_config_existing | length > 0
+    - _harbor_config_current_role | int != item.1.role_id

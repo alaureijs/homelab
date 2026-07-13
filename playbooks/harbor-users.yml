@@ -1,0 +1,8 @@
+---
+- name: Configure Harbor users, projects, and roles
+  hosts: ansible01
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: harbor_config

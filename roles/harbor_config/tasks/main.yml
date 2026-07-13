@@ -1,0 +1,63 @@
+---
+- name: Create Harbor projects
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      project_name: "{{ item.name }}"
+      public: "{{ item.public }}"
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_config_projects }}"
+
+- name: Create Harbor users
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/users"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      username: "{{ item.username }}"
+      password: "{{ item.password }}"
+      realname: "{{ item.realname }}"
+      email: "{{ item.email }}"
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_config_users }}"
+
+- name: Collect unique project names from user roles
+  ansible.builtin.set_fact:
+    _harbor_config_project_names: "{{ harbor_config_users | map(attribute='roles') | flatten | map(attribute='project_name') | unique | list }}"
+
+- name: Get existing project members
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ item }}/members"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    return_content: true
+    validate_certs: false
+  loop: "{{ _harbor_config_project_names }}"
+  register: _harbor_config_members_raw
+
+- name: Build members lookup map
+  ansible.builtin.set_fact:
+    _harbor_config_members_map: >-
+      {{ _harbor_config_members_map | default({}) |
+      combine({item.item: item.json}) }}
+  loop: "{{ _harbor_config_members_raw.results }}"
+  loop_control:
+    label: "{{ item.item }}: {{ item.json | length }} members"
+
+- name: Assign project member roles
+  ansible.builtin.include_tasks: _assign-member.yml
+  loop: "{{ harbor_config_users | subelements('roles') }}"
+  loop_control:
+    label: "{{ item.1.project_name }} -> {{ item.0.username }} (role {{ item.1.role_id }})"

@@ -18,10 +18,10 @@ harbor_http_port: 80
 harbor_https_port: 443
 harbor_internal_port: 4443
 
-# Passwords
-harbor_admin_password: "Harbor12345"
-harbor_database_password: "Harbor12345"
-harbor_redis_password: "Harbor12345"
+# Passwords (from vault)
+harbor_admin_password: "{{ vault_harbor_admin_password }}"
+harbor_database_password: "{{ vault_harbor_database_password }}"
+harbor_redis_password: "{{ vault_harbor_redis_password }}"
 
 # Storage
 harbor_storage_filesystem_rootdirectory: /data/harbor/storage
@@ -35,3 +35,20 @@ firewall_ports:
 # Hosts entries
 hosts_entries:
   - "192.168.100.10 harbor.local.lan"
+
+# Users and roles
+harbor_config_users:
+  - username: viewer
+    password: "{{ vault_harbor_viewer_password }}"
+    realname: "Viewer Account"
+    email: viewer@local.lan
+    roles:
+      - project_name: proxy-cache
+        role_id: 3
+      - project_name: library
+        role_id: 3
+
+# Projects
+harbor_config_projects:
+  - name: proxy-cache
+    public: false

@@ -1,0 +1,5 @@
+---
+# harbor_config role defaults
+
+harbor_config_users: []
+harbor_config_projects: []

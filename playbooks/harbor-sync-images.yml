@@ -1,0 +1,98 @@
+---
+- name: Sync container images to Harbor for offline usage
+  hosts: ansible01
+  become: true
+  gather_facts: false
+
+  vars:
+    harbor_upstream_registries:
+      - name: docker.io
+        url: https://registry-1.docker.io
+      - name: quay.io
+        url: https://quay.io
+      - name: ghcr.io
+        url: https://ghcr.io
+
+    # Proxy cache project: images pulled through this project are cached by Harbor.
+    # Format: harbor_proxy_project/registry/image
+    # Example: proxy-cache/docker.io/library/nginx
+    harbor_proxy_project: proxy-cache
+
+    # Target project for locally cached images
+    harbor_local_project: library
+
+    # Images to sync (name:tag format, upstream registry prefix)
+    harbor_sync_images:
+      - "{{ harbor_proxy_project }}/docker.io/library/alpine:3.21"
+      - "{{ harbor_proxy_project }}/docker.io/library/nginx:1.27-alpine"
+      - "{{ harbor_proxy_project }}/docker.io/library/ubuntu:24.04"
+      - "{{ harbor_proxy_project }}/docker.io/library/redis:7.4-alpine"
+      - "{{ harbor_proxy_project }}/docker.io/library/postgres:17-alpine"
+      - "{{ harbor_proxy_project }}/docker.io/library/mariadb:11.8"
+      - "{{ harbor_proxy_project }}/docker.io/library/busybox:1.37"
+      - "{{ harbor_proxy_project }}/docker.io/library/python:3.13-slim"
+      - "{{ harbor_proxy_project }}/docker.io/library/node:22-alpine"
+      - "{{ harbor_proxy_project }}/docker.io/library/golang:1.24-alpine"
+      - "{{ harbor_proxy_project }}/docker.io/grafana/grafana:11.6.0"
+      - "{{ harbor_proxy_project }}/docker.io/prom/prometheus:v3.3.0"
+      - "{{ harbor_proxy_project }}/docker.io/prom/alertmanager:v0.28.1"
+
+  tasks:
+    - name: Ensure proxy cache project exists via Harbor API
+      ansible.builtin.uri:
+        url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+        method: POST
+        user: admin
+        password: "{{ harbor_admin_password }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          project_name: "{{ harbor_proxy_project }}"
+          public: false
+          metadata:
+            public: "false"
+        status_code: [201, 409]
+        validate_certs: false
+      register: proxy_project
+
+    - name: Configure proxy cache project registry
+      ansible.builtin.uri:
+        url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ harbor_proxy_project }}/registries"
+        method: PUT
+        user: admin
+        password: "{{ harbor_admin_password }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          registry:
+            name: docker.io
+        status_code: [200, 201]
+        validate_certs: false
+
+    - name: Log into Harbor
+      containers.podman.podman_login:
+        username: admin
+        password: "{{ harbor_admin_password }}"
+        registry: "{{ harbor_hostname }}"
+      register: podman_login
+
+    - name: Sync images to Harbor
+      ansible.builtin.shell: |
+        set -e
+        IMAGE="{{ item }}"
+        echo "Pulling $IMAGE ..."
+        podman pull "$IMAGE" || { echo "FAILED to pull $IMAGE"; exit 1; }
+        echo "Pushing $IMAGE ..."
+        podman push "$IMAGE" || { echo "FAILED to push $IMAGE"; exit 1; }
+      args:
+        executable: /bin/bash
+      loop: "{{ harbor_sync_images }}"
+      register: sync_result
+      until: sync_result.rc == 0
+      retries: 2
+      delay: 5
+      changed_when: "'Pulling' in sync_result.stdout"
+
+    - name: Log out of Harbor
+      containers.podman.podman_logout:
+        registry: "{{ harbor_hostname }}"

@@ -25,7 +25,8 @@ ansible/
 │           └── provision.yml            # General provisioning (timezone, packages)
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
-│   └── provision-ansible01.yml          # Provision ansible01 VM for Harbor
+│   ├── provision-ansible01.yml          # Provision ansible01 VM for Harbor
+│   └── harbor-sync-images.yml          # Sync container images to Harbor
 ├── roles/
 │   ├── common/                          # Base packages, NTP
 │   ├── nginx/                           # Web server with templated config

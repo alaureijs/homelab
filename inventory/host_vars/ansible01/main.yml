@@ -1,25 +1,14 @@
 ---
 # Connection
 ansible_host: 192.168.100.10
-ansible_user: root
 
-# VM specs
+# VM host-specific
 vm_name: ansible01
-vm_vcpus: 2
-vm_memory: 2048
-vm_disk: 60
-vm_os: "Rocky Linux 10.2"
-
-# Network
-vm_network: ansible-net
 vm_mac: "52:54:00:aa:00:10"
 vm_ip: 192.168.100.10
-vm_cidr: 24
-vm_gateway: 192.168.100.1
 
-# DNS
+# DNS host-specific
 vm_hostname: ansible01
-vm_domain: ansible-net
 vm_dns_entries:
   - name: harbor.local.lan
     ip: 192.168.100.10

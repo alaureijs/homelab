@@ -14,13 +14,14 @@ ansible/
 │   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
 │   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
 │   │   │   └── main.yml                 # Harbor version, ports, passwords, firewall
+│   │   ├── libvirt/                     # Libvirt group vars (VM defaults)
+│   │   │   └── main.yml                 # VM specs, network, DNS, connection
 │   │   ├── webservers.yml               # Webserver group vars
-│   │   ├── dbservers.yml                # Database group vars
-│   │   └── libvirt.yml                  # Libvirt group vars
+│   │   └── dbservers.yml                # Database group vars
 │   └── host_vars/
 │       ├── web01/main.yml               # Web01 host variables
 │       └── ansible01/
-│           ├── main.yml                 # Connection, VM specs, network
+│           ├── main.yml                 # Host-specific (IP, MAC, hostname)
 │           └── provision.yml            # General provisioning (timezone, packages)
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)

@@ -1,0 +1,18 @@
+---
+# Libvirt group defaults
+
+ansible_user: root
+
+# VM defaults
+vm_vcpus: 2
+vm_memory: 2048
+vm_disk: 60
+vm_os: "Rocky Linux 10.2"
+
+# Network defaults
+vm_network: ansible-net
+vm_cidr: 24
+vm_gateway: 192.168.100.1
+
+# DNS defaults
+vm_domain: ansible-net

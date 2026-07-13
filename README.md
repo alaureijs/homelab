@@ -12,6 +12,8 @@ ansible/
 │   ├── group_vars/
 │   │   ├── all.yml                      # Global variables
 │   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
+│   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
+│   │   │   └── main.yml                 # Harbor version, ports, passwords, firewall
 │   │   ├── webservers.yml               # Webserver group vars
 │   │   ├── dbservers.yml                # Database group vars
 │   │   └── libvirt.yml                  # Libvirt group vars
@@ -19,14 +21,18 @@ ansible/
 │       ├── web01/main.yml               # Web01 host variables
 │       └── ansible01/
 │           ├── main.yml                 # Connection, VM specs, network
-│           └── provision.yml            # Harbor, packages, firewall
+│           └── provision.yml            # General provisioning (timezone, packages)
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
 │   └── provision-ansible01.yml          # Provision ansible01 VM for Harbor
 ├── roles/
 │   ├── common/                          # Base packages, NTP
 │   ├── nginx/                           # Web server with templated config
-│   └── postgres/                        # PostgreSQL installation
+│   ├── postgres/                        # PostgreSQL installation
+│   ├── podman/                          # Podman installation and configuration
+│   ├── certificates/                    # TLS certificate generation
+│   ├── firewall/                        # Firewalld port configuration
+│   └── harbor/                          # Harbor offline install with Podman
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
 ```
@@ -66,6 +72,7 @@ ansible-playbook playbooks/site.yml
 | webservers   | web02     | 192.168.1.11    | Web server          |
 | dbservers    | db01      | 192.168.1.20    | Database server     |
 | monitoring   | mon01     | 192.168.1.30    | Monitoring server   |
+| harbor       | ansible01 | 192.168.100.10  | Harbor (Rocky 10 VM)|
 | libvirt      | ansible01 | 192.168.100.10  | Rocky Linux 10 VM   |
 
 ## Libvirt VM: ansible01

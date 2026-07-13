@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored `host_vars` to directory-based structure:
+  - `host_vars/web01.yml` → `host_vars/web01/main.yml`
+  - New `host_vars/ansible01/main.yml` — connection, VM specs, network, DNS.
+  - New `host_vars/ansible01/provision.yml` — Harbor, packages, firewall.
+- `playbooks/provision-ansible01.yml` now uses variables from `host_vars`
+  instead of hardcoded values.
+- Removed inline `ansible_host` from `hosts.yml` for `ansible01` (moved to
+  `host_vars/ansible01/main.yml`).
+
 ## [0.1.0] - 2026-07-13
 
 ### Added

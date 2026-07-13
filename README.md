@@ -16,7 +16,10 @@ ansible/
 │   │   ├── dbservers.yml                # Database group vars
 │   │   └── libvirt.yml                  # Libvirt group vars
 │   └── host_vars/
-│       └── web01.yml                    # Per-host overrides
+│       ├── web01/main.yml               # Web01 host variables
+│       └── ansible01/
+│           ├── main.yml                 # Connection, VM specs, network
+│           └── provision.yml            # Harbor, packages, firewall
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
 │   └── provision-ansible01.yml          # Provision ansible01 VM for Harbor
@@ -67,20 +70,26 @@ A Rocky Linux 10 VM managed by libvirt, provisioned for running Harbor.
 
 ### VM Specifications
 
-| Property       | Value                                  |
+All VM variables are defined in `inventory/host_vars/ansible01/`:
+
+**`main.yml`** — connection and hardware:
+
+| Variable       | Value                                  |
 |----------------|----------------------------------------|
-| Name           | ansible01                              |
-| OS             | Rocky Linux 10.2 (GenericCloud)        |
-| vCPUs          | 2                                      |
-| RAM            | 2 GB                                   |
-| Disk           | 60 GB (qcow2 on /dev/sdb)             |
-| Network        | ansible-net (NAT, 192.168.100.0/24)    |
-| IP             | 192.168.100.10                         |
-| MAC            | 52:54:00:aa:00:10                      |
-| DNS            | harbor.local.lan -> 192.168.100.10     |
-| Boot           | UEFI (OVMF)                            |
-| Cloud-init     | SSH key + static IP via DHCP reservation|
-| Auth           | SSH key (ed25519), root password vaulted|
+| ansible_host   | 192.168.100.10                         |
+| vm_vcpus       | 2                                      |
+| vm_memory      | 2048                                   |
+| vm_disk        | 60                                     |
+| vm_network     | ansible-net                            |
+| vm_mac         | 52:54:00:aa:00:10                      |
+
+**`provision.yml`** — software and services:
+
+| Variable            | Value                              |
+|---------------------|------------------------------------|
+| harbor_version      | v2.11.0                            |
+| timezone            | Europe/Amsterdam                   |
+| firewall_ports      | 80, 443, 22                        |
 
 ### Managing the VM
 

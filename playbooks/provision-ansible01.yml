@@ -4,25 +4,14 @@
   become: true
   gather_facts: true
 
-  vars:
-    harbor_version: "v2.11.0"
-    docker_compose_version: "v2.29.1"
-
   tasks:
     - name: Set timezone
       community.general.timezone:
-        name: Europe/Amsterdam
+        name: "{{ timezone }}"
 
     - name: Install required packages
       ansible.builtin.dnf:
-        name:
-          - device-mapper-persistent-data
-          - lvm2
-          - curl
-          - wget
-          - git
-          - vim
-          - firewalld
+        name: "{{ packages }}"
         state: present
 
     - name: Ensure firewalld is running
@@ -36,25 +25,23 @@
         port: "{{ item }}"
         permanent: true
         state: enabled
-      loop:
-        - 80/tcp
-        - 443/tcp
-        - 22/tcp
+      loop: "{{ firewall_ports }}"
 
     - name: Reload firewalld
       ansible.builtin.systemd:
         name: firewalld
         state: reloaded
 
-    - name: Add /etc/hosts entry for harbor.local.lan
+    - name: Add /etc/hosts entries
       ansible.builtin.lineinfile:
         path: /etc/hosts
-        line: "192.168.100.10 harbor.local.lan"
+        line: "{{ item }}"
         state: present
+      loop: "{{ hosts_entries }}"
 
     - name: Set hostname
       ansible.builtin.hostname:
-        name: ansible01
+        name: "{{ vm_hostname }}"
 
     - name: Ensure chronyd is running
       ansible.builtin.systemd:

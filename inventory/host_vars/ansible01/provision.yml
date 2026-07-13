@@ -1,0 +1,27 @@
+---
+# Harbor
+harbor_version: "v2.11.0"
+docker_compose_version: "v2.29.1"
+
+# Timezone
+timezone: Europe/Amsterdam
+
+# Packages
+packages:
+  - device-mapper-persistent-data
+  - lvm2
+  - curl
+  - wget
+  - git
+  - vim
+  - firewalld
+
+# Firewall ports
+firewall_ports:
+  - 80/tcp
+  - 443/tcp
+  - 22/tcp
+
+# Hosts entries
+hosts_entries:
+  - "192.168.100.10 harbor.local.lan"

@@ -1,4 +1,53 @@
 ---
+- name: Fetch existing Harbor registries
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/registries"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    return_content: true
+    validate_certs: false
+  register: _harbor_config_registries_response
+  when: harbor_config_registries | length > 0
+
+- name: Build registries lookup map
+  ansible.builtin.set_fact:
+    _harbor_config_registries_map: >-
+      {{ _harbor_config_registries_map | default({}) |
+      combine({item.name: item.id}) }}
+  loop: "{{ _harbor_config_registries_response.json | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}: id={{ item.id }}"
+  when:
+    - harbor_config_registries | length > 0
+    - _harbor_config_registries_response is not skipped
+
+- name: Create Harbor registries
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/registries"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      type: "{{ item.type }}"
+      url: "{{ item.url }}"
+      insecure: "{{ item.insecure | default(false) }}"
+      enabled: "{{ item.enabled | default(true) }}"
+      credential:
+        type: secret
+        access_key: ""
+        access_secret: ""
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_config_registries }}"
+  loop_control:
+    label: "{{ item.name }}: {{ item.url }}"
+  when: item.name not in (_harbor_config_registries_map | default({}))
+
 - name: Create Harbor projects
   ansible.builtin.uri:
     url: "https://{{ harbor_hostname }}/api/v2.0/projects"

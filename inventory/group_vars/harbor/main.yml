@@ -53,3 +53,15 @@ harbor_config_users:
 harbor_config_projects:
   - name: proxy-cache
     public: false
+
+# Upstream container registries (proxy cache sources)
+harbor_config_registries:
+  - name: docker-hub
+    url: https://hub.docker.com
+    type: docker-hub
+  - name: quay
+    url: https://quay.io
+    type: quay
+  - name: ghcr
+    url: https://ghcr.io
+    type: github-ghcr

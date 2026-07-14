@@ -10,3 +10,4 @@
 
 harbor_config_users: []
 harbor_config_projects: []
+harbor_config_registries: []

@@ -1,0 +1,9 @@
+---
+- name: Regenerate Harbor TLS certificates
+  hosts: ansible01
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: certificates
+    - role: harbor

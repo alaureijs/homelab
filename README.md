@@ -26,15 +26,18 @@ ansible/
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
 │   ├── provision-ansible01.yml          # Provision ansible01 VM for Harbor
-│   └── harbor-sync-images.yml          # Sync container images to Harbor
+│   ├── harbor-users.yml                 # Configure Harbor users, projects, roles
+│   ├── harbor-sync-images.yml          # Sync container images to Harbor
+│   └── harbor-certs.yml                # Regenerate TLS certificates
 ├── roles/
 │   ├── common/                          # Base packages, NTP
 │   ├── nginx/                           # Web server with templated config
 │   ├── postgres/                        # PostgreSQL installation
 │   ├── podman/                          # Podman installation and configuration
-│   ├── certificates/                    # TLS certificate generation
+│   ├── certificates/                    # TLS certificate generation with SANs
 │   ├── firewall/                        # Firewalld port configuration
-│   └── harbor/                          # Harbor offline install with Podman
+│   ├── harbor/                          # Harbor offline install with Podman
+│   └── harbor_config/                   # Harbor users, projects, and roles
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
 ```
@@ -139,6 +142,62 @@ ansible ansible01 -m ping
 ssh root@192.168.100.10
 ```
 
+### Harbor Management
+
+```bash
+# Configure Harbor users, projects, and roles
+ansible-playbook playbooks/harbor-users.yml
+
+# Sync container images to Harbor for offline usage
+ansible-playbook playbooks/harbor-sync-images.yml
+
+# Regenerate TLS certificates (restarts Harbor)
+ansible-playbook playbooks/harbor-certs.yml
+```
+
+### Harbor Configuration
+
+Users, projects, and roles are managed via the `harbor_config` role.
+
+**Role IDs:**
+
+| ID | Role           | Description                                    |
+|----|----------------|------------------------------------------------|
+| 1  | projectAdmin   | Full project management (members, settings, scans, deletion) |
+| 2  | developer      | Read/write access (push images, create tags, scan) |
+| 3  | guest          | Read-only access (pull images, retag)          |
+| 4  | maintainer     | Elevated permissions (scan, replication, delete artifacts) |
+| 5  | limitedGuest   | Pull only (no retag, no logs, no member visibility) |
+
+**Configuration in `inventory/group_vars/harbor/main.yml`:**
+
+```yaml
+harbor_config_users:
+  - username: viewer
+    password: "{{ vault_harbor_viewer_password }}"
+    realname: "Viewer Account"
+    email: viewer@local.lan
+    roles:
+      - project_name: proxy-cache
+        role_id: 3
+      - project_name: library
+        role_id: 3
+
+harbor_config_projects:
+  - name: proxy-cache
+    public: false
+```
+
+### Vault
+
+All passwords are stored encrypted in `inventory/group_vars/all/vault.yml`:
+
+- `vault_root_password` — VM root password
+- `vault_harbor_admin_password` — Harbor admin (system) password
+- `vault_harbor_database_password` — Harbor database password
+- `vault_harbor_redis_password` — Harbor Redis password
+- `vault_harbor_viewer_password` — Harbor viewer account password
+
 ### Cloud-init
 
 Cloud-init ISO is generated at `/var/lib/libvirt/sdb/ansible01-cloudinit.iso`.
@@ -164,9 +223,7 @@ This adds route rules for `virbr-ansible` to allow:
 - Guest cross-traffic (DHCP, DNS)
 - NAT forwarding to all external interfaces (wlan1, enp109s0f1, etc.)
 
-### Vault
-
-Root password is stored encrypted in `inventory/group_vars/all/vault.yml`.
+### Vault Management
 
 ```bash
 # View vault password file
@@ -177,6 +234,9 @@ ansible-vault edit inventory/group_vars/all/vault.yml
 
 # View encrypted vars
 ansible-vault view inventory/group_vars/all/vault.yml
+
+# Add a new encrypted variable
+ansible-vault encrypt_string 'my-secret' --name 'vault_new_password'
 ```
 
 ## Host Firewall (UFW)

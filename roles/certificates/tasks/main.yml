@@ -33,6 +33,7 @@
         state_or_province_name: "{{ certificates_self_signed_subject.ST }}"
         locality_name: "{{ certificates_self_signed_subject.L }}"
         country_name: "{{ certificates_self_signed_subject.C }}"
+        subject_alt_name: "{{ certificates_self_signed_subject_alt_name }}"
 
     - name: Generate self-signed certificate
       community.crypto.x509_certificate:

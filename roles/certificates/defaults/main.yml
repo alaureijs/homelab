@@ -17,6 +17,12 @@ certificates_self_signed_subject:
   O: "Lab"
   CN: "{{ vm_hostname }}"
 
+# Subject Alternative Names (SANs) - required by modern browsers
+certificates_self_signed_subject_alt_name:
+  - "DNS:{{ harbor_hostname }}"
+  - "DNS:{{ vm_hostname }}"
+  - "IP:{{ vm_ip }}"
+
 # Provide existing cert/key content (used when certificates_self_signed: false)
 # certificates_cert_content: ""
 # certificates_key_content: ""

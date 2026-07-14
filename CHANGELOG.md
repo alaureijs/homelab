@@ -10,10 +10,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Four Harbor-related roles:
   - `podman` — installs Podman, configures registries, enables socket.
-  - `certificates` — generates self-signed TLS certs or deploys provided ones.
+  - `certificates` — generates self-signed TLS certs with SANs or deploys provided ones.
   - `firewall` — configures firewalld ports (80/tcp, 443/tcp, 22/tcp).
   - `harbor` — offline Harbor install with Podman, configures and starts services.
-- Updated `playbooks/provision-ansible01.yml` to use new roles.
+  - `harbor_config` — manages Harbor users, projects, and roles via API.
+- Playbooks:
+  - `playbooks/provision-ansible01.yml` — provision ansible01 VM for Harbor.
+  - `playbooks/harbor-users.yml` — configure Harbor users, projects, and roles.
+  - `playbooks/harbor-sync-images.yml` — sync container images to Harbor.
+  - `playbooks/harbor-certs.yml` — regenerate TLS certificates.
+- Harbor configuration in `inventory/group_vars/harbor/main.yml`:
+  - Harbor settings, ports, passwords, firewall rules.
+  - User accounts with project roles.
+  - Project definitions (proxy-cache).
+- TLS certificates with SANs (Subject Alternative Names):
+  - DNS: `harbor.local.lan`, `ansible01`
+  - IP: `192.168.100.10`
+- Harbor users managed via API:
+  - `viewer` account with guest role (read-only access).
+- All Harbor passwords stored in vault:
+  - `vault_harbor_admin_password`
+  - `vault_harbor_database_password`
+  - `vault_harbor_redis_password`
+  - `vault_harbor_viewer_password`
 
 ### Changed
 
@@ -25,6 +44,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   instead of hardcoded values.
 - Removed inline `ansible_host` from `hosts.yml` for `ansible01` (moved to
   `host_vars/ansible01/main.yml`).
+- Harbor `prepare` and compose patching now run on every playbook apply
+  (not just initial install) to support certificate regeneration.
+- Harbor passwords moved from plaintext in `group_vars/harbor/main.yml`
+  to encrypted vault variables.
 
 ## [0.1.0] - 2026-07-13
 

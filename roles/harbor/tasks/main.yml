@@ -115,7 +115,6 @@
     chdir: "{{ harbor_install_dir }}"
   register: harbor_prepare
   changed_when: "'prepare base dir' in harbor_prepare.stdout"
-  when: not harbor_installed.stat.exists
 
 - name: Create Harbor log directory
   ansible.builtin.file:
@@ -142,7 +141,6 @@
     executable: /bin/bash
   register: harbor_patch
   changed_when: harbor_patch.rc == 0
-  when: not harbor_installed.stat.exists
 
 - name: Ensure Harbor is started
   ansible.builtin.command: podman-compose up -d

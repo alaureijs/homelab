@@ -58,16 +58,12 @@
     return_content: true
     validate_certs: false
   register: _harbor_config_projects_response
-  when: harbor_config_registries | length > 0
 
 - name: Build projects lookup
   ansible.builtin.set_fact:
     _harbor_config_existing_projects: >-
       {{ _harbor_config_projects_response.json | default([])
       | map(attribute='name') | list }}
-  when:
-    - harbor_config_registries | length > 0
-    - _harbor_config_projects_response is not skipped
 
 - name: Build registry URL to ID lookup
   ansible.builtin.set_fact:
@@ -106,6 +102,23 @@
     - harbor_config_registries | length > 0
     - item.value not in (_harbor_config_existing_projects | default([]))
 
+- name: Build sync projects list from harbor_sync_images
+  ansible.builtin.set_fact:
+    _harbor_config_sync_projects: >-
+      {{ harbor_sync_images | default([])
+      | map(attribute='project') | unique | list
+      | map('regex_replace', '^(.*)$', '{"name": "\\1", "public": false}')
+      | map('from_json') | list }}
+  when:
+    - harbor_config_sync_projects | default(false) | bool
+    - harbor_sync_images | default([]) | length > 0
+
+- name: Build combined projects list
+  ansible.builtin.set_fact:
+    _harbor_config_all_projects: >-
+      {{ harbor_config_projects | default([]) +
+         (_harbor_config_sync_projects | default([])) }}
+
 - name: Create Harbor projects
   ansible.builtin.uri:
     url: "https://{{ harbor_hostname }}/api/v2.0/projects"
@@ -119,7 +132,10 @@
       public: "{{ item.public }}"
     status_code: [201, 409]
     validate_certs: false
-  loop: "{{ harbor_config_projects }}"
+  loop: "{{ _harbor_config_all_projects }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name not in _harbor_config_existing_projects
 
 - name: Create Harbor users
   ansible.builtin.uri:

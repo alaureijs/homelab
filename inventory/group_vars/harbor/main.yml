@@ -49,6 +49,7 @@ harbor_config_users:
 
 # Projects
 harbor_config_projects: []
+harbor_config_sync_projects: true
 
 # Upstream container registries (proxy cache sources)
 harbor_config_registries:

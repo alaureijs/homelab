@@ -5,21 +5,6 @@
     state: directory
     mode: "0755"
 
-- name: Ensure target projects exist
-  ansible.builtin.uri:
-    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
-    method: POST
-    user: admin
-    password: "{{ harbor_admin_password }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      project_name: "{{ item }}"
-      public: false
-    status_code: [201, 409]
-    validate_certs: false
-  loop: "{{ harbor_sync_images | map(attribute='project') | unique | list }}"
-
 - name: Log into Harbor
   containers.podman.podman_login:
     username: admin

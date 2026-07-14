@@ -60,14 +60,14 @@ harbor_sync_images:
     project: library
 
   # Monitoring stack
-  - name: prom/prometheus
+  - name: prometheus/prometheus
     tag: "v3.3.0"
-    registry: docker.io
+    registry: quay.io
     project: library
 
-  - name: prom/alertmanager
+  - name: prometheus/alertmanager
     tag: "v0.28.1"
-    registry: docker.io
+    registry: quay.io
     project: library
 
   - name: grafana/grafana
@@ -75,12 +75,12 @@ harbor_sync_images:
     registry: docker.io
     project: library
 
-  - name: prom/node-exporter
+  - name: prometheus/node-exporter
     tag: "v1.12.1"
-    registry: docker.io
+    registry: quay.io
     project: library
 
-  - name: prom/pushgateway
+  - name: prometheus/pushgateway
     tag: "v1.11.0"
-    registry: docker.io
+    registry: quay.io
     project: library

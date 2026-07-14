@@ -1,0 +1,86 @@
+---
+# Container images to sync to Harbor
+# Structure:
+#   name: image name (without registry prefix)
+#   tag: version tag to pull
+#   registry: upstream registry (docker.io, quay.io, ghcr.io)
+#   project: Harbor project to store in (default: library)
+
+harbor_sync_images:
+  # Base images
+  - name: library/alpine
+    tag: "3.21"
+    registry: docker.io
+    project: library
+
+  - name: library/ubuntu
+    tag: "24.04"
+    registry: docker.io
+    project: library
+
+  - name: library/busybox
+    tag: "1.37"
+    registry: docker.io
+    project: library
+
+  # Application images
+  - name: library/nginx
+    tag: "1.27-alpine"
+    registry: docker.io
+    project: library
+
+  - name: library/redis
+    tag: "7.4-alpine"
+    registry: docker.io
+    project: library
+
+  - name: library/postgres
+    tag: "17-alpine"
+    registry: docker.io
+    project: library
+
+  - name: library/mariadb
+    tag: "11.8"
+    registry: docker.io
+    project: library
+
+  - name: library/python
+    tag: "3.13-slim"
+    registry: docker.io
+    project: library
+
+  - name: library/node
+    tag: "22-alpine"
+    registry: docker.io
+    project: library
+
+  - name: library/golang
+    tag: "1.24-alpine"
+    registry: docker.io
+    project: library
+
+  # Monitoring stack
+  - name: prom/prometheus
+    tag: "v3.3.0"
+    registry: docker.io
+    project: library
+
+  - name: prom/alertmanager
+    tag: "v0.28.1"
+    registry: docker.io
+    project: library
+
+  - name: grafana/grafana
+    tag: "11.6.0"
+    registry: docker.io
+    project: library
+
+  - name: prom/node-exporter
+    tag: "v1.12.1"
+    registry: docker.io
+    project: library
+
+  - name: prom/pushgateway
+    tag: "v1.11.0"
+    registry: docker.io
+    project: library

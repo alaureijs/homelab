@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: common
+  author: alaureijs
+  description: Install base packages and configure NTP
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+    - name: EL
+      versions:
+        - "10"
+  galaxy_tags:
+    - base
+    - packages
+    - ntp
+    - chrony
+
+dependencies: []

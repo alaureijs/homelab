@@ -36,34 +36,10 @@
         registry: "{{ harbor_hostname }}"
 
     - name: Sync images to Harbor
-      ansible.builtin.shell: |
-        set -euo pipefail
-
-        PROXY="{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.registry] }}/{{ item.name }}:{{ item.tag }}"
-        TARGET="{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
-
-        echo "=== Syncing: {{ item.registry }}/{{ item.name }}:{{ item.tag }} -> $TARGET ==="
-
-        echo "Pulling through Harbor proxy cache..."
-        podman pull "$PROXY" || { echo "FAILED to pull $PROXY"; exit 1; }
-
-        echo "Tagging for Harbor..."
-        podman tag "$PROXY" "$TARGET" || { echo "FAILED to tag $TARGET"; exit 1; }
-
-        echo "Pushing to Harbor..."
-        podman push "$TARGET" || { echo "FAILED to push $TARGET"; exit 1; }
-
-        echo "=== Done: $TARGET ==="
-      args:
-        executable: /bin/bash
+      ansible.builtin.include_tasks: _sync-image.yml
       loop: "{{ harbor_sync_images }}"
       loop_control:
         label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }} -> {{ item.project }}/{{ item.name }}:{{ item.tag }}"
-      register: sync_result
-      until: sync_result.rc == 0
-      retries: 2
-      delay: 10
-      changed_when: "'Done:' in sync_result.stdout"
 
     - name: Check upstream for latest versions
       ansible.builtin.shell: |

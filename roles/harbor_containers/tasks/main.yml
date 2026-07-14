@@ -1,0 +1,119 @@
+---
+- name: Ensure report directory exists
+  ansible.builtin.file:
+    path: "{{ harbor_containers_report_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure target projects exist
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      project_name: "{{ item }}"
+      public: false
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_sync_images | map(attribute='project') | unique | list }}"
+
+- name: Log into Harbor
+  containers.podman.podman_login:
+    username: admin
+    password: "{{ harbor_admin_password }}"
+    registry: "{{ harbor_hostname }}"
+
+- name: Sync images to Harbor
+  ansible.builtin.include_tasks: _sync-image.yml
+  loop: "{{ harbor_sync_images }}"
+  loop_control:
+    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }} -> {{ item.project }}/{{ item.name }}:{{ item.tag }}"
+
+- name: Check upstream for latest versions
+  ansible.builtin.shell: |
+    set -euo pipefail
+
+    IMAGE="{{ item.name }}"
+    REGISTRY="{{ item.registry }}"
+    CURRENT="{{ item.tag }}"
+
+    TAGS=$(skopeo list-tags "docker://$REGISTRY/$IMAGE" 2>/dev/null \
+      | python3 -c "
+    import sys, json, re
+    tags = json.load(sys.stdin).get('Tags', [])
+    def ver_key(v):
+        p = re.split(r'[^0-9]+', v.lstrip('v'))
+        return tuple(int(x) for x in p if x)
+    EXCLUDE = re.compile(
+        r'rc|nightly|beta|[0-9]b[0-9]|alpha|[0-9]a[0-9]'
+        r'|windowsserver|nanoserver|desktop|oci|preview'
+        r'|ubi|lts|noble|jammy|focal|bookworm|bullseye',
+        re.IGNORECASE)
+    version_tags = [
+        t for t in tags
+        if re.match(r'^v?[0-9]+\.[0-9]', t)
+        and not EXCLUDE.search(t)
+        and not re.search(r'[0-9]{6,}', t)]
+    version_tags.sort(key=ver_key)
+    if version_tags:
+        print(version_tags[-1])
+    else:
+        print('NONE')
+    " 2>/dev/null || echo "NONE")
+
+    echo "$TAGS"
+  args:
+    executable: /bin/bash
+  loop: "{{ harbor_sync_images }}"
+  loop_control:
+    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }}"
+  register: harbor_containers_upstream_versions
+  ignore_errors: true
+  changed_when: false
+
+- name: Build version report
+  ansible.builtin.set_fact:
+    harbor_containers_sync_report: >-
+      {{ harbor_containers_sync_report | default({}) | combine({
+          item.item.name | regex_replace('.*/', ''): {
+            'full_name': item.item.name,
+            'current_tag': item.item.tag,
+            'registry': item.item.registry,
+            'project': item.item.project,
+            'synced': true,
+            'latest_version': item.stdout | default('NONE'),
+            'update_available': (
+              item.stdout | default('NONE') != 'NONE' and
+              item.stdout | default('NONE') != item.item.tag
+            )
+          }
+        })
+      }}
+  loop: "{{ harbor_containers_upstream_versions.results }}"
+  loop_control:
+    label: "{{ item.item.name }}:{{ item.item.tag }} -> {{ item.stdout | default('?') }}"
+
+- name: Generate sync report file
+  ansible.builtin.copy:
+    content: "{{ harbor_containers_sync_report | to_nice_yaml }}"
+    dest: "{{ harbor_containers_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
+    mode: "0644"
+
+- name: Display sync summary
+  ansible.builtin.debug:
+    msg: |
+      Harbor Sync Report
+      ==================
+      {% for name, info in harbor_containers_sync_report.items() %}
+      {{ name }}:{{ info.current_tag }}
+        Status: {{ 'SYNCED' if info.synced else 'FAILED' }}
+        Latest: {{ info.latest_version }}
+        Update: {{ 'YES (' + info.latest_version + ')' if info.update_available else 'no' }}
+      {% endfor %}
+
+- name: Log out of Harbor
+  containers.podman.podman_logout:
+    registry: "{{ harbor_hostname }}"

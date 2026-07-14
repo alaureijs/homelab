@@ -1,0 +1,4 @@
+---
+# harbor_containers role defaults
+
+harbor_containers_report_dir: /tmp/harbor-sync

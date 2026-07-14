@@ -29,9 +29,20 @@
       | python3 -c "
     import sys, json, re
     tags = json.load(sys.stdin).get('Tags', [])
+    current = '$CURRENT'
+
     def ver_key(v):
         p = re.split(r'[^0-9]+', v.lstrip('v'))
         return tuple(int(x) for x in p if x)
+
+    def tag_pattern(t):
+        m = re.match(r'^(v?)([0-9]+(?:\.[0-9]+)*)(.*)', t)
+        if not m:
+            return None
+        return (m.group(1), len(m.group(2).split('.')), m.group(3))
+
+    current_pattern = tag_pattern(current)
+
     EXCLUDE = re.compile(
         r'rc|nightly|beta|[0-9]b[0-9]|alpha|[0-9]a[0-9]'
         r'|windowsserver|nanoserver|desktop|oci|preview'
@@ -41,7 +52,8 @@
         t for t in tags
         if re.match(r'^v?[0-9]+\.[0-9]', t)
         and not EXCLUDE.search(t)
-        and not re.search(r'[0-9]{6,}', t)]
+        and not re.search(r'[0-9]{6,}', t)
+        and tag_pattern(t) == current_pattern]
     version_tags.sort(key=ver_key)
     if version_tags:
         print(version_tags[-1])

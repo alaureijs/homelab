@@ -14,9 +14,7 @@
       - "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
 
 - name: Push image to Harbor project
-  containers.podman.podman_image:
-    name: "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}"
-    tag: "{{ item.tag }}"
-    push: true
-    force: true
-    validate_certs: false
+  ansible.builtin.shell: |
+    podman push "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
+  args:
+    executable: /bin/bash

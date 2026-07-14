@@ -8,31 +8,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Four Harbor-related roles:
-  - `podman` — installs Podman, configures registries, enables socket.
-  - `certificates` — generates self-signed TLS certs with SANs or deploys provided ones.
-  - `firewall` — configures firewalld ports (80/tcp, 443/tcp, 22/tcp).
-  - `harbor` — offline Harbor install with Podman, configures and starts services.
-  - `harbor_config` — manages Harbor users, projects, and roles via API.
-- Playbooks:
-  - `playbooks/provision-ansible01.yml` — provision ansible01 VM for Harbor.
-  - `playbooks/harbor-users.yml` — configure Harbor users, projects, and roles.
-  - `playbooks/harbor-sync-images.yml` — sync container images to Harbor.
-  - `playbooks/harbor-certs.yml` — regenerate TLS certificates.
-- Harbor configuration in `inventory/group_vars/harbor/main.yml`:
-  - Harbor settings, ports, passwords, firewall rules.
-  - User accounts with project roles.
-  - Project definitions (proxy-cache).
-- TLS certificates with SANs (Subject Alternative Names):
-  - DNS: `harbor.local.lan`, `ansible01`
-  - IP: `192.168.100.10`
-- Harbor users managed via API:
-  - `viewer` account with guest role (read-only access).
-- All Harbor passwords stored in vault:
-  - `vault_harbor_admin_password`
-  - `vault_harbor_database_password`
-  - `vault_harbor_redis_password`
-  - `vault_harbor_viewer_password`
+- `harbor_containers` role — syncs container images to Harbor through proxy
+  cache projects, checks upstream for version updates matching same naming
+  convention, generates YAML sync report.
+- Upstream registries configured in Harbor:
+  - Docker Hub (`docker.io`) → `docker-hub-cache` project
+  - Quay.io (`quay.io`) → `quay-cache` project
+  - GHCR (`ghcr.io`) → `ghcr-cache` project
+- Container images synced to Harbor (15 images across library, prometheus):
+  - Base: alpine, ubuntu, busybox
+  - Application: nginx, redis, postgres, mariadb, python, node, golang
+  - Monitoring: prometheus, alertmanager, grafana, node-exporter, pushgateway
+- `meta/main.yml` for all roles with galaxy_info and dependencies.
+- `.ansible-lint` configuration excluding role helper task files.
+- `inventory/group_vars/harbor/images.yml` — container image definitions
+  with registry, project, and proxy cache project mappings.
+- `harbor_config_sync_projects` flag — auto-discovers projects from
+  `harbor_sync_images` instead of requiring manual project definitions.
+
+### Changed
+
+- Renamed `playbooks/harbor-sync-images.yml` to `sync-update-containers.yml`.
+- Extracted sync logic from playbook into `harbor_containers` role.
+- `harbor_config` now creates projects from `harbor_sync_images` when
+  `harbor_config_sync_projects: true` (single source of truth for projects).
+- Version update check only matches tags with same naming convention
+  (v-prefix, part count, suffix). E.g., `v3.3.0` → `v3.13.1`, not
+  `v3.13.1-distroless`.
+- Podman push uses shell command instead of `podman_image` module
+  (bypasses remote verification that fails for new repositories).
 
 ### Changed
 

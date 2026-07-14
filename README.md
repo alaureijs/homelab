@@ -7,13 +7,15 @@ Ansible project for managing infrastructure, including libvirt virtual machines.
 ```
 ansible/
 ├── ansible.cfg                          # Ansible configuration
+├── .ansible-lint                        # Linter configuration
 ├── inventory/
 │   ├── hosts.yml                        # Inventory (all host groups)
 │   ├── group_vars/
 │   │   ├── all.yml                      # Global variables
 │   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
 │   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
-│   │   │   └── main.yml                 # Harbor version, ports, passwords, firewall
+│   │   │   ├── main.yml                 # Harbor version, ports, passwords, firewall
+│   │   │   └── images.yml               # Container images for sync, proxy projects
 │   │   ├── libvirt/                     # Libvirt group vars (VM defaults)
 │   │   │   └── main.yml                 # VM specs, network, DNS, connection
 │   │   ├── webservers.yml               # Webserver group vars
@@ -27,8 +29,8 @@ ansible/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
 │   ├── provision-ansible01.yml          # Provision ansible01 VM for Harbor
 │   ├── harbor-users.yml                 # Configure Harbor users, projects, roles
-│   ├── harbor-sync-images.yml          # Sync container images to Harbor
-│   └── harbor-certs.yml                # Regenerate TLS certificates
+│   ├── harbor-certs.yml                 # Regenerate TLS certificates
+│   └── sync-update-containers.yml       # Sync images and check upstream versions
 ├── roles/
 │   ├── common/                          # Base packages, NTP
 │   ├── nginx/                           # Web server with templated config
@@ -37,16 +39,16 @@ ansible/
 │   ├── certificates/                    # TLS certificate generation with SANs
 │   ├── firewall/                        # Firewalld port configuration
 │   ├── harbor/                          # Harbor offline install with Podman
-│   └── harbor_config/                   # Harbor users, projects, and roles
+│   ├── harbor_config/                   # Harbor users, projects, registries via API
+│   └── harbor_containers/               # Sync container images to Harbor
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
 ```
 
 ## Requirements
 
-- Ansible >= 2.14
-- `community.general`, `ansible.posix`, `containers.podman` collections
-- `community.crypto` collection (for TLS certificate generation)
+- Ansible >= 2.17
+- `ansible.posix`, `community.crypto`, `containers.podman` collections
 - SSH access to target hosts
 - `ansible-vault` for encrypted variables
 
@@ -54,7 +56,7 @@ ansible/
 
 ```bash
 # Install required collections
-ansible-galaxy collection install community.general ansible.posix containers.podman community.crypto
+ansible-galaxy collection install ansible.posix community.crypto containers.podman
 
 # Syntax check
 ansible-playbook playbooks/site.yml --syntax-check
@@ -149,7 +151,7 @@ ssh root@192.168.100.10
 ansible-playbook playbooks/harbor-users.yml
 
 # Sync container images to Harbor for offline usage
-ansible-playbook playbooks/harbor-sync-images.yml
+ansible-playbook playbooks/sync-update-containers.yml
 
 # Regenerate TLS certificates (restarts Harbor)
 ansible-playbook playbooks/harbor-certs.yml
@@ -157,7 +159,7 @@ ansible-playbook playbooks/harbor-certs.yml
 
 ### Harbor Configuration
 
-Users, projects, and roles are managed via the `harbor_config` role.
+Users, projects, registries, and proxy cache projects are managed via the `harbor_config` role.
 
 **Role IDs:**
 
@@ -178,15 +180,45 @@ harbor_config_users:
     realname: "Viewer Account"
     email: viewer@local.lan
     roles:
-      - project_name: proxy-cache
-        role_id: 3
       - project_name: library
         role_id: 3
 
-harbor_config_projects:
-  - name: proxy-cache
-    public: false
+harbor_config_projects: []
+harbor_config_sync_projects: true  # auto-discover projects from harbor_sync_images
+
+harbor_config_registries:
+  - name: docker-hub
+    url: https://hub.docker.com
+    type: docker-hub
+  - name: quay
+    url: https://quay.io
+    type: quay
+  - name: ghcr
+    url: https://ghcr.io
+    type: github-ghcr
 ```
+
+**Container images in `inventory/group_vars/harbor/images.yml`:**
+
+```yaml
+harbor_sync_images:
+  - name: library/alpine
+    tag: "3.21"
+    registry: docker.io
+    project: library
+
+  - name: prometheus/prometheus
+    tag: "v3.3.0"
+    registry: quay.io
+    project: prometheus
+
+harbor_config_proxy_projects:
+  docker.io: docker-hub-cache
+  quay.io: quay-cache
+  ghcr.io: ghcr-cache
+```
+
+The `harbor_containers` role syncs images through proxy cache projects (auto-caches upstream) and checks for upstream updates matching the same naming convention.
 
 ### Vault
 

@@ -6,6 +6,11 @@
 #   registry: upstream registry (docker.io, quay.io, ghcr.io)
 #   project: Harbor project to store in (default: library)
 
+# Registry to proxy-cache project mapping:
+#   docker.io  -> docker-hub-cache
+#   quay.io    -> quay-cache
+#   ghcr.io    -> ghcr-cache
+
 harbor_sync_images:
   # Base images
   - name: library/alpine
@@ -84,3 +89,16 @@ harbor_sync_images:
     tag: "v1.11.0"
     registry: quay.io
     project: library
+
+# Registry URL to proxy-cache project mapping
+# Used by sync playbook to resolve proxy project per image registry
+harbor_config_proxy_projects:
+  docker.io: docker-hub-cache
+  quay.io: quay-cache
+  ghcr.io: ghcr-cache
+
+# Registry name to URL mapping (used by harbor_config role)
+harbor_config_registry_map:
+  docker-hub: docker.io
+  quay: quay.io
+  ghcr: ghcr.io

@@ -44,15 +44,11 @@ harbor_config_users:
     realname: "Viewer Account"
     email: viewer@local.lan
     roles:
-      - project_name: proxy-cache
-        role_id: 3
       - project_name: library
         role_id: 3
 
 # Projects
-harbor_config_projects:
-  - name: proxy-cache
-    public: false
+harbor_config_projects: []
 
 # Upstream container registries (proxy cache sources)
 harbor_config_registries:

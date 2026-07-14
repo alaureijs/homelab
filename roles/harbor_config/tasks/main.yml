@@ -48,6 +48,64 @@
     label: "{{ item.name }}: {{ item.url }}"
   when: item.name not in (_harbor_config_registries_map | default({}))
 
+- name: Fetch existing Harbor projects
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    return_content: true
+    validate_certs: false
+  register: _harbor_config_projects_response
+  when: harbor_config_registries | length > 0
+
+- name: Build projects lookup
+  ansible.builtin.set_fact:
+    _harbor_config_existing_projects: >-
+      {{ _harbor_config_projects_response.json | default([])
+      | map(attribute='name') | list }}
+  when:
+    - harbor_config_registries | length > 0
+    - _harbor_config_projects_response is not skipped
+
+- name: Build registry URL to ID lookup
+  ansible.builtin.set_fact:
+    _harbor_config_registry_url_to_id: >-
+      {{ _harbor_config_registry_url_to_id | default({}) |
+      combine({reg_url: _harbor_config_registries_map[reg_name]}) }}
+  loop: "{{ harbor_config_registry_map | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}: {{ item.value }}"
+  vars:
+    reg_name: "{{ item.key }}"
+    reg_url: "{{ item.value }}"
+  when:
+    - harbor_config_registries | length > 0
+    - reg_name in _harbor_config_registries_map
+
+- name: Create proxy cache projects
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      project_name: "{{ item.value }}"
+      registry_id: "{{ _harbor_config_registry_url_to_id[item.key] }}"
+      metadata:
+        public: "false"
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_config_proxy_projects | dict2items }}"
+  loop_control:
+    label: "{{ item.value }} -> {{ item.key }}"
+  when:
+    - harbor_config_registries | length > 0
+    - item.value not in (_harbor_config_existing_projects | default([]))
+
 - name: Create Harbor projects
   ansible.builtin.uri:
     url: "https://{{ harbor_hostname }}/api/v2.0/projects"

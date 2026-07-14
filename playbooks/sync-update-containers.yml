@@ -5,7 +5,6 @@
   gather_facts: true
 
   vars:
-    harbor_proxy_project: proxy-cache
     harbor_sync_report_dir: /tmp/harbor-sync
 
   tasks:
@@ -14,20 +13,6 @@
         path: "{{ harbor_sync_report_dir }}"
         state: directory
         mode: "0755"
-
-    - name: Ensure proxy cache project exists
-      ansible.builtin.uri:
-        url: "https://{{ harbor_hostname }}/api/v2.0/projects"
-        method: POST
-        user: admin
-        password: "{{ harbor_admin_password }}"
-        force_basic_auth: true
-        body_format: json
-        body:
-          project_name: "{{ harbor_proxy_project }}"
-          public: false
-        status_code: [201, 409]
-        validate_certs: false
 
     - name: Ensure target projects exist
       ansible.builtin.uri:
@@ -54,16 +39,16 @@
       ansible.builtin.shell: |
         set -euo pipefail
 
-        UPSTREAM="{{ item.registry }}/{{ item.name }}:{{ item.tag }}"
+        PROXY="{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.registry] }}/{{ item.name }}:{{ item.tag }}"
         TARGET="{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
 
-        echo "=== Syncing: $UPSTREAM -> $TARGET ==="
+        echo "=== Syncing: {{ item.registry }}/{{ item.name }}:{{ item.tag }} -> $TARGET ==="
 
-        echo "Pulling from upstream via proxy cache..."
-        podman pull "$UPSTREAM" || { echo "FAILED to pull $UPSTREAM"; exit 1; }
+        echo "Pulling through Harbor proxy cache..."
+        podman pull "$PROXY" || { echo "FAILED to pull $PROXY"; exit 1; }
 
         echo "Tagging for Harbor..."
-        podman tag "$UPSTREAM" "$TARGET" || { echo "FAILED to tag $TARGET"; exit 1; }
+        podman tag "$PROXY" "$TARGET" || { echo "FAILED to tag $TARGET"; exit 1; }
 
         echo "Pushing to Harbor..."
         podman push "$TARGET" || { echo "FAILED to push $TARGET"; exit 1; }

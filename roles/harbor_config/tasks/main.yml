@@ -102,22 +102,26 @@
     - harbor_config_registries | length > 0
     - item.value not in (_harbor_config_existing_projects | default([]))
 
-- name: Build sync projects list from harbor_sync_images
-  ansible.builtin.set_fact:
-    _harbor_config_sync_projects: >-
-      {{ harbor_sync_images | default([])
-      | map(attribute='project') | unique | list
-      | map('regex_replace', '^(.*)$', '{"name": "\\1", "public": false}')
-      | map('from_json') | list }}
+- name: Create sync projects from harbor_sync_images
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects"
+    method: POST
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      project_name: "{{ item }}"
+      public: false
+    status_code: [201, 409]
+    validate_certs: false
+  loop: "{{ harbor_sync_images | default([]) | map(attribute='project') | unique | list }}"
+  loop_control:
+    label: "{{ item }}"
   when:
     - harbor_config_sync_projects | default(false) | bool
     - harbor_sync_images | default([]) | length > 0
-
-- name: Build combined projects list
-  ansible.builtin.set_fact:
-    _harbor_config_all_projects: >-
-      {{ harbor_config_projects | default([]) +
-         (_harbor_config_sync_projects | default([])) }}
+    - item not in _harbor_config_existing_projects
 
 - name: Create Harbor projects
   ansible.builtin.uri:
@@ -132,7 +136,7 @@
       public: "{{ item.public }}"
     status_code: [201, 409]
     validate_certs: false
-  loop: "{{ _harbor_config_all_projects }}"
+  loop: "{{ harbor_config_projects }}"
   loop_control:
     label: "{{ item.name }}"
   when: item.name not in _harbor_config_existing_projects

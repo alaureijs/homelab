@@ -14,4 +14,6 @@ vm_disk: 80
 
 # DNS host-specific
 vm_hostname: ansible02
-vm_dns_entries: []
+vm_dns_entries:
+  - name: monitoring.local.lan
+    ip: 192.168.100.11

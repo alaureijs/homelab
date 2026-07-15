@@ -1,6 +1,6 @@
 ---
-- name: Provision ansible02
-  hosts: ansible02
+- name: Provision monitoring hosts
+  hosts: monitoring
   become: true
   gather_facts: true
 

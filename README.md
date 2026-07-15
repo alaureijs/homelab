@@ -78,7 +78,7 @@ ansible-playbook playbooks/site.yml
 | webservers   | web01     | 192.168.1.10    | Web server          |
 | webservers   | web02     | 192.168.1.11    | Web server          |
 | dbservers    | db01      | 192.168.1.20    | Database server     |
-| monitoring   | mon01     | 192.168.1.30    | Monitoring server   |
+| monitoring   | ansible02 | 192.168.100.11  | Monitoring (Rocky 10 VM) |
 | harbor       | ansible01 | 192.168.100.10  | Harbor (Rocky 10 VM)|
 | libvirt      | ansible01 | 192.168.100.10  | Rocky Linux 10 VM   |
 | libvirt      | ansible02 | 192.168.100.11  | Rocky Linux 10 VM   |
@@ -113,6 +113,7 @@ All VM variables are defined in `inventory/host_vars/ansible01/`:
 ## Libvirt VM: ansible02
 
 A Rocky Linux 10 VM managed by libvirt, general-purpose host.
+DNS name: `monitoring.local.lan` (in `monitoring` inventory group).
 
 ### VM Specifications
 

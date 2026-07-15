@@ -10,8 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `ansible02` host — Rocky Linux 10 VM (2 vCPU, 4 GB RAM, 80 GB disk)
   at `192.168.100.11` on `ansible-net` network.
-- `playbooks/provision-ansible02.yml` — provisioning playbook for ansible02
-  (timezone, packages, firewall, certificates).
+- `monitoring` inventory group with `group_vars/monitoring/main.yml`.
+- `playbooks/provision-ansible02.yml` — provisioning playbook for
+  monitoring hosts (timezone, packages, firewall, certificates).
 - `inventory/host_vars/ansible02/` — VM specs and provisioning variables.
 - `harbor_containers` role — syncs container images to Harbor through proxy
   cache projects, checks upstream for version updates matching same naming
@@ -74,8 +75,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (not just initial install) to support certificate regeneration.
 - Harbor passwords moved from plaintext in `group_vars/harbor/main.yml`
   to encrypted vault variables.
-- `certificates` role now works without `harbor_hostname` defined — SANs
-  use `vm_hostname` and `vm_ip` by default, with `harbor_hostname` optional.
+- `certificates` role now uses `certificates_extra_sans` list instead of
+  hardcoded `harbor_hostname`. Each group/host defines its own SANs
+  (e.g., `harbor.local.lan` for harbor, `monitoring.local.lan` for monitoring).
 
 ## [0.1.0] - 2026-07-13
 

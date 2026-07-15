@@ -32,6 +32,10 @@ firewall_ports:
   - 443/tcp
   - 22/tcp
 
+# Certificate SANs
+certificates_extra_sans:
+  - "DNS:{{ harbor_hostname }}"
+
 # Hosts entries
 hosts_entries:
   - "192.168.100.10 harbor.local.lan"

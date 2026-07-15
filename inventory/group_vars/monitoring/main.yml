@@ -1,0 +1,16 @@
+---
+# Timezone
+timezone: Europe/Amsterdam
+
+# Packages
+packages:
+  - device-mapper-persistent-data
+  - lvm2
+  - curl
+  - wget
+  - git
+  - vim
+
+# Certificate SANs
+certificates_extra_sans:
+  - "DNS:monitoring.local.lan"

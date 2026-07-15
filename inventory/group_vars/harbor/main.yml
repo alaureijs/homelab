@@ -4,7 +4,7 @@
 harbor_version: "v2.11.0"
 harbor_hostname: harbor.local.lan
 harbor_tls_enabled: true
-harbor_enable_trivy: false
+harbor_enable_trivy: true
 harbor_enable_chartmuseum: false
 
 # Paths
@@ -46,6 +46,38 @@ harbor_config_users:
     roles:
       - project_name: library
         role_id: 3
+
+  - username: ansible-config
+    password: "{{ vault_harbor_config_password }}"
+    realname: "Ansible Config"
+    email: ansible-config@local.lan
+    roles:
+      - project_name: library
+        role_id: 1
+      - project_name: prometheus
+        role_id: 1
+      - project_name: docker-hub-cache
+        role_id: 1
+      - project_name: quay-cache
+        role_id: 1
+      - project_name: ghcr-cache
+        role_id: 1
+
+  - username: ansible-sync
+    password: "{{ vault_harbor_sync_password }}"
+    realname: "Ansible Sync"
+    email: ansible-sync@local.lan
+    roles:
+      - project_name: library
+        role_id: 2
+      - project_name: prometheus
+        role_id: 2
+      - project_name: docker-hub-cache
+        role_id: 2
+      - project_name: quay-cache
+        role_id: 2
+      - project_name: ghcr-cache
+        role_id: 2
 
 # Projects
 harbor_config_projects: []

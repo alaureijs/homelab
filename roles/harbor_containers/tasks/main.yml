@@ -5,11 +5,18 @@
     state: directory
     mode: "0755"
 
-- name: Log into Harbor
-  containers.podman.podman_login:
-    username: admin
-    password: "{{ harbor_admin_password }}"
-    registry: "{{ harbor_hostname }}"
+- name: Ensure auth directory exists
+  ansible.builtin.file:
+    path: "{{ harbor_containers_auth_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Write Harbor auth file
+  ansible.builtin.copy:
+    content: >-
+      {{ {'auths': {harbor_hostname: {'auth': (harbor_containers_sync_user + ':' + vault_harbor_sync_password) | b64encode}}} | to_json }}
+    dest: "{{ harbor_containers_auth_dir }}/auth.json"
+    mode: "0600"
 
 - name: Sync images to Harbor
   ansible.builtin.include_tasks: _sync-image.yml
@@ -111,6 +118,7 @@
         Update: {{ 'YES (' + info.latest_version + ')' if info.update_available else 'no' }}
       {% endfor %}
 
-- name: Log out of Harbor
-  containers.podman.podman_logout:
-    registry: "{{ harbor_hostname }}"
+- name: Remove Harbor auth file
+  ansible.builtin.file:
+    path: "{{ harbor_containers_auth_dir }}/auth.json"
+    state: absent

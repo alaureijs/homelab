@@ -13,7 +13,7 @@ harbor_http_port: 80
 harbor_https_port: 443
 harbor_internal_port: 4443
 
-harbor_enable_trivy: false
+harbor_enable_trivy: true
 harbor_enable_chartmuseum: false
 
 # TLS

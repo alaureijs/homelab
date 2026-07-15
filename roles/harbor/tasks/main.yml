@@ -102,6 +102,16 @@
         replace: "private_key: {{ harbor_tls_key_path }}"
       when: not harbor_installed.stat.exists
 
+- name: Configure Trivy in harbor.yml
+  when: harbor_enable_trivy | bool
+  block:
+    - name: Enable Trivy skip_update for offline environments
+      ansible.builtin.replace:
+        path: "{{ harbor_install_dir }}/harbor.yml"
+        regexp: '^\s*skip_update: false'
+        replace: "  skip_update: true"
+      when: not harbor_installed.stat.exists
+
 - name: Create docker symlink for podman
   ansible.builtin.file:
     src: /usr/bin/podman
@@ -110,7 +120,7 @@
     force: true
 
 - name: Run Harbor prepare
-  ansible.builtin.command: "{{ harbor_install_dir }}/prepare"
+  ansible.builtin.command: "{{ harbor_install_dir }}/prepare --with-trivy"
   args:
     chdir: "{{ harbor_install_dir }}"
   register: harbor_prepare

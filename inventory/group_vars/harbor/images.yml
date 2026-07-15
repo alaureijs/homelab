@@ -68,12 +68,12 @@ harbor_sync_images:
   - name: prometheus/prometheus
     tag: "v3.3.0"
     registry: quay.io
-    project: library
+    project: prometheus
 
   - name: prometheus/alertmanager
     tag: "v0.28.1"
     registry: quay.io
-    project: library
+    project: prometheus
 
   - name: grafana/grafana
     tag: "11.6.0"
@@ -83,12 +83,12 @@ harbor_sync_images:
   - name: prometheus/node-exporter
     tag: "v1.12.1"
     registry: quay.io
-    project: library
+    project: prometheus
 
   - name: prometheus/pushgateway
     tag: "v1.11.0"
     registry: quay.io
-    project: library
+    project: prometheus
 
 # Registry URL to proxy-cache project mapping
 # Used by sync playbook to resolve proxy project per image registry

@@ -6,6 +6,7 @@
     pull: true
     force: true
     validate_certs: false
+    auth_file: "{{ harbor_containers_auth_dir }}/auth.json"
 
 - name: Tag image for Harbor project
   containers.podman.podman_tag:
@@ -15,6 +16,6 @@
 
 - name: Push image to Harbor project
   ansible.builtin.shell: |
-    podman push "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
+    podman push --tls-verify=false --authfile "{{ harbor_containers_auth_dir }}/auth.json" "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
   args:
     executable: /bin/bash

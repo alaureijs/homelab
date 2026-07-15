@@ -13,3 +13,4 @@ harbor_config_projects: []
 harbor_config_registries: []
 harbor_config_proxy_projects: {}
 harbor_config_sync_projects: false
+harbor_config_auto_scan: true

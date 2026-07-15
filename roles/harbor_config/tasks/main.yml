@@ -188,3 +188,21 @@
   loop: "{{ harbor_config_users | subelements('roles') }}"
   loop_control:
     label: "{{ item.1.project_name }} -> {{ item.0.username }} (role {{ item.1.role_id }})"
+
+- name: Enable auto-scan on projects
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ item }}"
+    method: PUT
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      metadata:
+        auto_scan: "true"
+    status_code: [200]
+    validate_certs: false
+  loop: "{{ _harbor_config_existing_projects | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: harbor_config_auto_scan | default(true) | bool

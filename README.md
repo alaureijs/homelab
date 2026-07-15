@@ -81,6 +81,7 @@ ansible-playbook playbooks/site.yml
 | monitoring   | mon01     | 192.168.1.30    | Monitoring server   |
 | harbor       | ansible01 | 192.168.100.10  | Harbor (Rocky 10 VM)|
 | libvirt      | ansible01 | 192.168.100.10  | Rocky Linux 10 VM   |
+| libvirt      | ansible02 | 192.168.100.11  | Rocky Linux 10 VM   |
 
 ## Libvirt VM: ansible01
 
@@ -108,6 +109,23 @@ All VM variables are defined in `inventory/host_vars/ansible01/`:
 | harbor_version      | v2.11.0                            |
 | timezone            | Europe/Amsterdam                   |
 | firewall_ports      | 80, 443, 22                        |
+
+## Libvirt VM: ansible02
+
+A Rocky Linux 10 VM managed by libvirt, general-purpose host.
+
+### VM Specifications
+
+All VM variables are defined in `inventory/host_vars/ansible02/`:
+
+| Variable       | Value                                  |
+|----------------|----------------------------------------|
+| ansible_host   | 192.168.100.11                         |
+| vm_vcpus       | 2                                      |
+| vm_memory      | 4096                                   |
+| vm_disk        | 80                                     |
+| vm_network     | ansible-net                            |
+| vm_mac         | 52:54:00:aa:00:11                      |
 
 ### Managing the VM
 
@@ -142,6 +160,19 @@ ansible ansible01 -m ping
 
 # SSH in
 ssh root@192.168.100.10
+```
+
+### Provisioning ansible02
+
+```bash
+# Run the provisioning playbook
+ansible-playbook playbooks/provision-ansible02.yml
+
+# Check connectivity
+ansible ansible02 -m ping
+
+# SSH in
+ssh root@192.168.100.11
 ```
 
 ### Harbor Management

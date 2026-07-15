@@ -1,0 +1,29 @@
+---
+- name: Provision ansible02
+  hosts: ansible02
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vm_hostname }}"
+
+    - name: Ensure chronyd is running
+      ansible.builtin.systemd:
+        name: chronyd
+        state: started
+        enabled: true
+
+  roles:
+    - role: firewall
+    - role: certificates

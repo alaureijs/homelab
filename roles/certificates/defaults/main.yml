@@ -18,10 +18,9 @@ certificates_self_signed_subject:
   CN: "{{ vm_hostname }}"
 
 # Subject Alternative Names (SANs) - required by modern browsers
-certificates_self_signed_subject_alt_name:
-  - "DNS:{{ harbor_hostname }}"
-  - "DNS:{{ vm_hostname }}"
-  - "IP:{{ vm_ip }}"
+certificates_self_signed_subject_alt_name: >-
+  {{ ["DNS:" + vm_hostname, "IP:" + vm_ip | string]
+     + (["DNS:" + harbor_hostname] if harbor_hostname is defined else []) }}
 
 # Provide existing cert/key content (used when certificates_self_signed: false)
 # certificates_cert_content: ""

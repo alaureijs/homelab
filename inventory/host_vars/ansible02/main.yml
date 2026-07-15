@@ -1,0 +1,17 @@
+---
+# Connection
+ansible_host: 192.168.100.11
+
+# VM host-specific
+vm_name: ansible02
+vm_mac: "52:54:00:aa:00:11"
+vm_ip: 192.168.100.11
+
+# VM specs (overrides group defaults)
+vm_vcpus: 2
+vm_memory: 4096
+vm_disk: 80
+
+# DNS host-specific
+vm_hostname: ansible02
+vm_dns_entries: []

@@ -1,0 +1,12 @@
+---
+# Timezone
+timezone: Europe/Amsterdam
+
+# Packages
+packages:
+  - device-mapper-persistent-data
+  - lvm2
+  - curl
+  - wget
+  - git
+  - vim

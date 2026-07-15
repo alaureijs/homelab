@@ -25,6 +25,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with registry, project, and proxy cache project mappings.
 - `harbor_config_sync_projects` flag — auto-discovers projects from
   `harbor_sync_images` instead of requiring manual project definitions.
+- Normal Harbor service accounts (`ansible-config`, `ansible-sync`) with
+  vault-encrypted passwords for config management and image push/pull.
+- Trivy vulnerability scanner enabled in Harbor with auto-scan on all
+  projects.
 
 ### Changed
 
@@ -37,6 +41,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `v3.13.1-distroless`.
 - Podman push uses shell command instead of `podman_image` module
   (bypasses remote verification that fails for new repositories).
+- Harbor service accounts use normal users instead of robot accounts
+  (Harbor v2.11 robot accounts are incompatible with Podman login).
+- `harbor_containers` role writes `auth.json` file directly instead of
+  using `podman login` (workaround for broken login in Podman 5.8.2).
+- Push command uses `--tls-verify=false` flag.
+- `harbor_config` role creates project-level roles for service accounts
+  (projectAdmin for config, developer for sync) instead of robot accounts.
+
+### Removed
+
+- Robot account tasks from `harbor_config` role (fetch, create, display).
+  Robot accounts do not work with Harbor v2.11's Podman integration.
+- Robot secrets from vault (replaced by normal user passwords).
 
 ### Changed
 

@@ -157,6 +157,11 @@ ansible-playbook playbooks/sync-update-containers.yml
 ansible-playbook playbooks/harbor-certs.yml
 ```
 
+The sync playbook pulls images through proxy cache projects (auto-caches
+from upstream registries), then pushes them to non-proxy Harbor projects.
+Service account credentials are written to a temporary `auth.json` file
+(workaround for broken `podman login` in Podman 5.8.2).
+
 ### Harbor Configuration
 
 Users, projects, registries, and proxy cache projects are managed via the `harbor_config` role.
@@ -182,6 +187,20 @@ harbor_config_users:
     roles:
       - project_name: library
         role_id: 3
+  - username: ansible-config
+    password: "{{ vault_harbor_config_password }}"
+    realname: "Ansible Config User"
+    email: ansible-config@local.lan
+    roles:
+      - project_name: library
+        role_id: 1
+  - username: ansible-sync
+    password: "{{ vault_harbor_sync_password }}"
+    realname: "Ansible Sync User"
+    email: ansible-sync@local.lan
+    roles:
+      - project_name: library
+        role_id: 2
 
 harbor_config_projects: []
 harbor_config_sync_projects: true  # auto-discover projects from harbor_sync_images
@@ -197,6 +216,11 @@ harbor_config_registries:
     url: https://ghcr.io
     type: github-ghcr
 ```
+
+The `harbor_config` role manages Harbor users, projects, and registries via
+the Harbor API. Service accounts (`ansible-config`, `ansible-sync`) are
+normal Harbor users, not robot accounts — Harbor v2.11 robot accounts are
+incompatible with Podman login.
 
 **Container images in `inventory/group_vars/harbor/images.yml`:**
 
@@ -229,6 +253,8 @@ All passwords are stored encrypted in `inventory/group_vars/all/vault.yml`:
 - `vault_harbor_database_password` — Harbor database password
 - `vault_harbor_redis_password` — Harbor Redis password
 - `vault_harbor_viewer_password` — Harbor viewer account password
+- `vault_harbor_config_password` — Harbor config user password (projectAdmin)
+- `vault_harbor_sync_password` — Harbor sync user password (developer, push/pull)
 
 ### Cloud-init
 

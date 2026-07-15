@@ -27,3 +27,5 @@
   roles:
     - role: firewall
     - role: certificates
+    - role: podman
+    - role: monitoring

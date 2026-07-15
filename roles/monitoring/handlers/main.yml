@@ -1,0 +1,14 @@
+---
+- name: Restart monitoring pod
+  ansible.builtin.shell: |
+    podman kube play --down {{ monitoring_config_dir }}/monitoring-pod.yml 2>/dev/null || true
+    podman kube play {{ monitoring_config_dir }}/monitoring-pod.yml
+  args:
+    executable: /bin/bash
+  changed_when: true
+  listen: Restart monitoring pod
+
+- name: Restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted

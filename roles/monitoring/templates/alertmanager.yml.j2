@@ -1,0 +1,24 @@
+global:
+{% if monitoring_alertmanager_smtp_smarthost %}
+  smtp_smarthost: "{{ monitoring_alertmanager_smtp_smarthost }}"
+  smtp_from: "{{ monitoring_alertmanager_smtp_from }}"
+  smtp_auth_username: "{{ monitoring_alertmanager_smtp_auth_username }}"
+  smtp_auth_password: "{{ monitoring_alertmanager_smtp_auth_password }}"
+{% endif %}
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: default
+
+receivers:
+  - name: default
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname', 'dev', 'instance']

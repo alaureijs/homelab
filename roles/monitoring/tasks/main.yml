@@ -1,0 +1,178 @@
+---
+- name: Stop cockpit if running (port 9090 conflicts with Prometheus)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - cockpit.socket
+    - cockpit.service
+  failed_when: false
+  register: monitoring_cockpit_result
+  changed_when: monitoring_cockpit_result is not skipped and monitoring_cockpit_result is succeeded
+
+- name: Create monitoring directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ monitoring_config_dir }}"
+    - "{{ monitoring_config_dir }}/prometheus"
+    - "{{ monitoring_config_dir }}/alertmanager"
+    - "{{ monitoring_config_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_data_dir }}"
+    - "{{ monitoring_data_dir }}/prometheus"
+    - "{{ monitoring_data_dir }}/alertmanager"
+    - "{{ monitoring_data_dir }}/grafana"
+
+- name: Set grafana data directory ownership
+  ansible.builtin.file:
+    path: "{{ monitoring_data_dir }}/grafana"
+    state: directory
+    owner: "472"
+    group: "472"
+    mode: "0755"
+
+- name: Set prometheus data directory ownership
+  ansible.builtin.file:
+    path: "{{ monitoring_data_dir }}/prometheus"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
+
+- name: Set alertmanager data directory ownership
+  ansible.builtin.file:
+    path: "{{ monitoring_data_dir }}/alertmanager"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
+
+- name: Ensure Podman auth directory exists
+  ansible.builtin.file:
+    path: /root/.config/containers
+    state: directory
+    mode: "0700"
+
+- name: Write Podman auth for Harbor (used by podman kube play)
+  ansible.builtin.copy:
+    content: |
+      {
+        "auths": {
+          "{{ harbor_hostname }}": {
+            "auth": "{{ ('ansible-sync:' + vault_harbor_sync_password) | b64encode }}"
+          }
+        }
+      }
+    dest: /root/.config/containers/auth.json
+    mode: "0600"
+  no_log: true
+
+- name: Fetch Harbor certificate from ansible01
+  ansible.builtin.slurp:
+    src: /etc/pki/tls/certs/harbor.crt
+  delegate_to: ansible01
+  register: monitoring_harbor_cert
+
+- name: Write Harbor certificate for system trust
+  ansible.builtin.copy:
+    content: "{{ monitoring_harbor_cert.content | b64decode }}"
+    dest: /etc/pki/ca-trust/source/anchors/harbor.crt
+    mode: "0644"
+  register: monitoring_harbor_cert_trust
+
+- name: Update CA trust
+  ansible.builtin.command: update-ca-trust
+  changed_when: monitoring_harbor_cert_trust.changed
+
+- name: Create containers certs directory for Harbor
+  ansible.builtin.file:
+    path: "/etc/containers/certs.d/{{ harbor_hostname }}"
+    state: directory
+    mode: "0755"
+
+- name: Write Harbor certificate for containers
+  ansible.builtin.copy:
+    content: "{{ monitoring_harbor_cert.content | b64decode }}"
+    dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
+    mode: "0644"
+
+- name: Template Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_config_dir }}/prometheus/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart monitoring pod
+
+- name: Template Alertmanager configuration
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: "{{ monitoring_config_dir }}/alertmanager/alertmanager.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart monitoring pod
+
+- name: Template Grafana datasources
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_config_dir }}/grafana/provisioning/datasources/datasources.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart monitoring pod
+
+- name: Template monitoring pod manifest
+  ansible.builtin.template:
+    src: monitoring-pod.yml.j2
+    dest: "{{ monitoring_config_dir }}/monitoring-pod.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart monitoring pod
+
+- name: Deploy monitoring pod
+  ansible.builtin.shell: |
+    podman kube play --down {{ monitoring_config_dir }}/monitoring-pod.yml 2>/dev/null || true
+    podman kube play {{ monitoring_config_dir }}/monitoring-pod.yml
+  args:
+    executable: /bin/bash
+  register: monitoring_deploy
+  changed_when: "'Pod' in monitoring_deploy.stdout or 'Container' in monitoring_deploy.stdout"
+
+- name: Allow nginx to connect to monitoring services (SELinux)
+  ansible.builtin.command: setsebool -P httpd_can_network_connect 1
+  changed_when: false
+  when: ansible_selinux.status == "enabled"
+
+- name: Install nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Template nginx reverse proxy configuration
+  ansible.builtin.template:
+    src: nginx-reverse-proxy.conf.j2
+    dest: /etc/nginx/conf.d/monitoring.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Remove default nginx server block
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+  notify: Restart nginx
+
+- name: Ensure nginx is started and enabled
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true

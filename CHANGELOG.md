@@ -14,6 +14,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `playbooks/provision-ansible02.yml` — provisioning playbook for
   monitoring hosts (timezone, packages, firewall, certificates).
 - `inventory/host_vars/ansible02/` — VM specs and provisioning variables.
+- `monitoring` role — deploys monitoring stack on ansible02:
+  - Grafana 11.6.0, Prometheus 3.3.0, Alertmanager 0.28.1, Node Exporter 1.12.1
+  - All images pulled from Harbor proxy cache projects
+  - `podman kube play` with K8s YAML manifest
+  - Hostname-based routing via nginx reverse proxy (HTTPS on 443)
+  - SELinux configured for nginx network connectivity
+  - Cockpit auto-disabled (port 9090 conflict with Prometheus)
+  - Podman auth.json written for `podman kube play` (no `--authfile` support)
+  - Data directory ownership: grafana=472, prometheus/alertmanager=65534
 - `harbor_containers` role — syncs container images to Harbor through proxy
   cache projects, checks upstream for version updates matching same naming
   convention, generates YAML sync report.
@@ -35,6 +44,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   vault-encrypted passwords for config management and image push/pull.
 - Trivy vulnerability scanner enabled in Harbor with auto-scan on all
   projects.
+- `monitoring.local.lan` DNS entry in `ansible-net` network → 192.168.100.11.
 
 ### Changed
 

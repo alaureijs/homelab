@@ -1,36 +1,23 @@
 ---
-# Timezone
-timezone: Europe/Amsterdam
+# monitoring role defaults
 
-# Packages
-packages:
-  - device-mapper-persistent-data
-  - lvm2
-  - curl
-  - wget
-  - git
-  - vim
-
-# Certificate SANs
-certificates_extra_sans:
-  - "DNS:monitoring.local.lan"
-
-# Harbor (for pulling images)
-harbor_hostname: harbor.local.lan
-
-# Monitoring stack
 monitoring_hostname: monitoring.local.lan
-monitoring_data_dir: /var/lib/monitoring
-monitoring_config_dir: /etc/monitoring
 
-# Container images (from Harbor)
+# Paths
+monitoring_config_dir: /etc/monitoring
+monitoring_data_dir: /var/lib/monitoring
+
+# Pod
+monitoring_pod_name: monitoring
+
+# Images (pulled from Harbor)
 monitoring_grafana_image: "{{ harbor_hostname }}/library/grafana/grafana:11.6.0"
 monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:v3.3.0"
 monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:v0.28.1"
 monitoring_node_exporter_image: "{{ harbor_hostname }}/prometheus/prometheus/node-exporter:v1.12.1"
 
 # Grafana
-monitoring_grafana_admin_password: "{{ vault_monitoring_grafana_password }}"
+monitoring_grafana_admin_password: admin
 
 # Prometheus
 monitoring_prometheus_retention: "30d"
@@ -38,6 +25,12 @@ monitoring_prometheus_retention_size: "2GB"
 monitoring_prometheus_scrape_interval: "15s"
 monitoring_prometheus_evaluation_interval: "15s"
 
-# Reverse proxy
+# Alertmanager
+monitoring_alertmanager_smtp_smarthost: ""
+monitoring_alertmanager_smtp_from: ""
+monitoring_alertmanager_smtp_auth_username: ""
+monitoring_alertmanager_smtp_auth_password: ""
+
+# Reverse proxy (nginx)
 monitoring_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
 monitoring_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"

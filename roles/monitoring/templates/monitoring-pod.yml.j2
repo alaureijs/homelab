@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ monitoring_pod_name }}
+  labels:
+    app: monitoring
+spec:
+  containers:
+    - name: grafana
+      image: {{ monitoring_grafana_image }}
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+          hostIP: "127.0.0.1"
+      env:
+        - name: GF_SERVER_ROOT_URL
+          value: "https://{{ monitoring_hostname }}/grafana/"
+        - name: GF_SERVER_SERVE_FROM_SUB_PATH
+          value: "true"
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "{{ monitoring_grafana_admin_password }}"
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+      volumeMounts:
+        - name: grafana-data
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+      resources:
+        limits:
+          memory: 512M
+        requests:
+          memory: 256M
+
+    - name: prometheus
+      image: {{ monitoring_prometheus_image }}
+      args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--storage.tsdb.retention.time={{ monitoring_prometheus_retention }}"
+        - "--storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}"
+        - "--web.enable-lifecycle"
+        - "--web.external-url=https://{{ monitoring_hostname }}/prometheus/"
+        - "--web.route-prefix=/prometheus/"
+      ports:
+        - containerPort: 9090
+          hostPort: 9090
+          hostIP: "127.0.0.1"
+      volumeMounts:
+        - name: prometheus-data
+          mountPath: /prometheus
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+      resources:
+        limits:
+          memory: 1G
+        requests:
+          memory: 512M
+
+    - name: alertmanager
+      image: {{ monitoring_alertmanager_image }}
+      args:
+        - "--config.file=/etc/alertmanager/alertmanager.yml"
+        - "--storage.path=/alertmanager"
+      ports:
+        - containerPort: 9093
+          hostPort: 9093
+          hostIP: "127.0.0.1"
+      volumeMounts:
+        - name: alertmanager-data
+          mountPath: /alertmanager
+        - name: alertmanager-config
+          mountPath: /etc/alertmanager
+      resources:
+        limits:
+          memory: 256M
+        requests:
+          memory: 128M
+
+    - name: node-exporter
+      image: {{ monitoring_node_exporter_image }}
+      args:
+        - "--path.procfs=/host/proc"
+        - "--path.sysfs=/host/sys"
+        - "--path.rootfs=/host/root"
+        - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      ports:
+        - containerPort: 9100
+          hostPort: 9100
+          hostIP: "127.0.0.1"
+      volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: root
+          mountPath: /host/root
+          readOnly: true
+      resources:
+        limits:
+          memory: 128M
+        requests:
+          memory: 64M
+
+  volumes:
+    - name: grafana-data
+      hostPath:
+        path: {{ monitoring_data_dir }}/grafana
+        type: DirectoryOrCreate
+    - name: grafana-datasources
+      hostPath:
+        path: {{ monitoring_config_dir }}/grafana/provisioning/datasources
+        type: Directory
+    - name: prometheus-data
+      hostPath:
+        path: {{ monitoring_data_dir }}/prometheus
+        type: DirectoryOrCreate
+    - name: prometheus-config
+      hostPath:
+        path: {{ monitoring_config_dir }}/prometheus
+        type: Directory
+    - name: alertmanager-data
+      hostPath:
+        path: {{ monitoring_data_dir }}/alertmanager
+        type: DirectoryOrCreate
+    - name: alertmanager-config
+      hostPath:
+        path: {{ monitoring_config_dir }}/alertmanager
+        type: Directory
+    - name: proc
+      hostPath:
+        path: /proc
+        type: Directory
+    - name: sys
+      hostPath:
+        path: /sys
+        type: Directory
+    - name: root
+      hostPath:
+        path: /
+        type: Directory

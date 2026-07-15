@@ -40,7 +40,8 @@ ansible/
 │   ├── firewall/                        # Firewalld port configuration
 │   ├── harbor/                          # Harbor offline install with Podman
 │   ├── harbor_config/                   # Harbor users, projects, registries via API
-│   └── harbor_containers/               # Sync container images to Harbor
+│   ├── harbor_containers/               # Sync container images to Harbor
+│   └── monitoring/                      # Monitoring stack (Grafana, Prometheus, etc.)
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
 ```
@@ -112,7 +113,7 @@ All VM variables are defined in `inventory/host_vars/ansible01/`:
 
 ## Libvirt VM: ansible02
 
-A Rocky Linux 10 VM managed by libvirt, general-purpose host.
+A Rocky Linux 10 VM managed by libvirt, running the monitoring stack.
 DNS name: `monitoring.local.lan` (in `monitoring` inventory group).
 
 ### VM Specifications
@@ -127,6 +128,23 @@ All VM variables are defined in `inventory/host_vars/ansible02/`:
 | vm_disk        | 80                                     |
 | vm_network     | ansible-net                            |
 | vm_mac         | 52:54:00:aa:00:11                      |
+
+### Monitoring Stack
+
+Deployed via `podman kube play` with a K8s YAML manifest:
+
+| Service       | Image (from Harbor)                    | Port  |
+|---------------|----------------------------------------|-------|
+| Grafana       | library/grafana/grafana:11.6.0         | 3000  |
+| Prometheus    | prometheus/prometheus/prometheus:v3.3.0| 9090  |
+| Alertmanager  | prometheus/prometheus/alertmanager:v0.28.1 | 9093 |
+| Node Exporter | prometheus/prometheus/node-exporter:v1.12.1 | 9100 |
+
+- All ports bound to `127.0.0.1` (not exposed externally)
+- nginx reverse proxy on port 443 with TLS
+- Access via `https://monitoring.local.lan/grafana/` and `https://monitoring.local.lan/prometheus/`
+- Cockpit auto-disabled (port 9090 conflict with Prometheus)
+- SELinux configured for nginx network connectivity
 
 ### Managing the VM
 
@@ -287,6 +305,7 @@ All passwords are stored encrypted in `inventory/group_vars/all/vault.yml`:
 - `vault_harbor_viewer_password` — Harbor viewer account password
 - `vault_harbor_config_password` — Harbor config user password (projectAdmin)
 - `vault_harbor_sync_password` — Harbor sync user password (developer, push/pull)
+- `vault_monitoring_grafana_password` — Grafana admin password
 
 ### Cloud-init
 

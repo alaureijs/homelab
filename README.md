@@ -77,6 +77,7 @@ Packages installed by roles on target hosts (Rocky Linux 10):
 | `firewall` | `firewalld` | Host firewall |
 | `monitoring` | `nginx` | Reverse proxy for Grafana/Prometheus |
 | `hardening` | `audit`, `audit-libs`, `libpwquality`, `chrony` | Audit logging, password quality, NTP |
+| `harbor` | `rsyslog`, `logrotate` | Container log routing and rotation |
 
 Tools expected to exist (not installed by roles):
 
@@ -257,6 +258,27 @@ The sync playbook pulls images through proxy cache projects (auto-caches
 from upstream registries), then pushes them to non-proxy Harbor projects.
 Service account credentials are written to a temporary `auth.json` file
 (workaround for broken `podman login` in Podman 5.8.2).
+
+### Harbor Logging
+
+Harbor container logs are routed to `/var/log/harbor/` on ansible01 via
+the host's rsyslog (journald → per-container files). This works around
+Podman not supporting the syslog log driver that Harbor expects.
+
+| File | Container |
+|------|-----------|
+| `/var/log/harbor/harbor-core.log` | Harbor Core |
+| `/var/log/harbor/harbor-db.log` | PostgreSQL |
+| `/var/log/harbor/harbor-jobservice.log` | Job Service |
+| `/var/log/harbor/harbor-portal.log` | Web Portal |
+| `/var/log/harbor/harbor-log.log` | Log collector |
+| `/var/log/harbor/registry.log` | Docker Registry |
+| `/var/log/harbor/registryctl.log` | Registry Controller |
+| `/var/log/harbor/trivy-adapter.log` | Trivy Scanner |
+| `/var/log/harbor/redis.log` | Redis |
+| `/var/log/harbor/nginx.log` | Nginx Proxy |
+
+Logrotate runs daily with 14-day retention (config in `/etc/logrotate.d/harbor`).
 
 ### Certificate Renewal
 

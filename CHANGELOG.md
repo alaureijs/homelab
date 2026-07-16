@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Harbor container logging to `/var/log/harbor/` via host rsyslog (journald
+  → per-container files). Logrotate with 14-day retention, daily rotation.
 - `hardening` playbook — standalone playbook for running hardening on any host.
 - `hardening` role added to `provision-ansible01.yml` and `provision-ansible02.yml`.
 - `hardening` role — STIG and CIS Benchmark system hardening for Rocky Linux 10:
@@ -17,7 +19,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     MACs, KexAlgorithms), X11 forwarding disabled, idle timeout, max auth tries
   - File permissions: sticky bit on world-writable dirs, core dump restrictions,
     cron ownership, umask 027
-  - Service hardening: disable unnecessary services (avahi, cups, rpcbind, etc.),
+  - Service hardening: disable unnecessary services (avahi, cups, rpcbind,
+    bluetooth, udisks2, gssproxy, kdump, mdmonitor, sssd, rngd, etc.),
     mask rsh services, disable unused kernel modules (cramfs, freevxfs, hfs, udf,
     dccp, sctp, rds, tipc, USB storage)
   - Password/auth: pwquality (minlen 14, complexity), faillock (5 attempts,
@@ -79,6 +82,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Harbor `harbor-log` container no longer receives logs (Podman doesn't
+  support syslog log driver). Host rsyslog now reads container logs from
+  journald and routes them to `/var/log/harbor/<container>.log` files.
 - Centralized all component versions into `inventory/group_vars/all/main.yml`.
   Roles and group_vars now reference version variables instead of hardcoding
   tags. To bump a version, edit one file.

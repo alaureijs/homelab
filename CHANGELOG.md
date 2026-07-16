@@ -15,7 +15,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   monitoring hosts (timezone, packages, firewall, certificates).
 - `inventory/host_vars/ansible02/` — VM specs and provisioning variables.
 - `monitoring` role — deploys monitoring stack on ansible02:
-  - Grafana, Prometheus, Alertmanager, Node Exporter (versions in `versions.yml`)
+  - Grafana, Prometheus, Alertmanager, Node Exporter (versions in `all/main.yml`)
   - All images pulled from Harbor proxy cache projects
   - `podman kube play` with K8s YAML manifest
   - Podman CNI network (`monitoring`) for container networking
@@ -27,7 +27,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - mTLS for node-exporter scraping (monitoring CA, server/client certs)
   - Prometheus scrapes node-exporter via FQDN from inventory (not localhost)
   - node-exporter binds to host IP (not 127.0.0.1)
-- `inventory/group_vars/all/versions.yml` — centralized version management
+- `inventory/group_vars/all/main.yml` — centralized version management
   for all container images and platform components (single source of truth).
 - `harbor_containers` role — syncs container images to Harbor through proxy
   cache projects, checks upstream for version updates matching same naming
@@ -54,7 +54,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Centralized all component versions into `inventory/group_vars/all/versions.yml`.
+- Centralized all component versions into `inventory/group_vars/all/main.yml`.
   Roles and group_vars now reference version variables instead of hardcoding
   tags. To bump a version, edit one file.
 - Monitoring containers run on a Podman CNI network (`monitoring`) instead

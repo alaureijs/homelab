@@ -40,3 +40,9 @@ monitoring_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
 monitoring_mtls_ca_cert: "{{ monitoring_mtls_dir }}/ca.crt"
 monitoring_mtls_client_cert: "{{ monitoring_mtls_dir }}/client.crt"
 monitoring_mtls_client_key: "{{ monitoring_mtls_dir }}/client.key"
+
+# Renew mTLS certificates when they expire within this many days
+monitoring_cert_renew_threshold_days: 30
+
+# Force mTLS certificate renewal regardless of expiry
+monitoring_cert_force_renewal: false

@@ -114,12 +114,40 @@
     path: "{{ monitoring_mtls_ca_cert }}"
   register: monitoring_ca_cert
 
+- name: Get monitoring CA expiry info
+  community.crypto.x509_certificate_info:
+    path: "{{ monitoring_mtls_ca_cert }}"
+  register: monitoring_ca_cert_info
+  when: monitoring_ca_cert.stat.exists
+
+- name: Determine if monitoring CA needs renewal
+  ansible.builtin.set_fact:
+    monitoring_ca_needs_renewal: >-
+      {{ monitoring_cert_force_renewal | bool
+         or not monitoring_ca_cert.stat.exists
+         or (monitoring_ca_cert.stat.exists
+             and monitoring_ca_cert_info.not_after is defined
+             and ((monitoring_ca_cert_info.not_after | int - ansible_date_time.epoch | int)
+                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+
+- name: Display monitoring CA status
+  ansible.builtin.debug:
+    msg: >-
+      Monitoring CA: exists={{ monitoring_ca_cert.stat.exists }},
+      {% if monitoring_ca_cert.stat.exists %}
+      expires={{ monitoring_ca_cert_info.not_after | default('unknown') }},
+      days_left={{ ((monitoring_ca_cert_info.not_after | default(0) | int - ansible_date_time.epoch | int) / 86400) | int }},
+      {% endif %}
+      threshold={{ monitoring_cert_renew_threshold_days }}d,
+      force={{ monitoring_cert_force_renewal }},
+      needs_renewal={{ monitoring_ca_needs_renewal }}
+
 - name: Generate monitoring CA private key
   community.crypto.openssl_privatekey:
     path: "{{ monitoring_mtls_dir }}/ca.key"
     size: 4096
     mode: "0600"
-  when: not monitoring_ca_cert.stat.exists
+  when: monitoring_ca_needs_renewal | bool
 
 - name: Generate monitoring CA certificate
   ansible.builtin.command: >
@@ -130,9 +158,8 @@
     -subj "/CN=Monitoring CA/O=Lab"
     -addext "basicConstraints=critical,CA:TRUE,pathlen:0"
     -addext "keyUsage=critical,keyCertSign,cRLSign"
-  args:
-    creates: "{{ monitoring_mtls_ca_cert }}"
-  when: not monitoring_ca_cert.stat.exists
+  changed_when: monitoring_ca_needs_renewal | bool
+  when: monitoring_ca_needs_renewal | bool
 
 - name: Build DNS SANs from inventory
   ansible.builtin.set_fact:
@@ -156,12 +183,29 @@
     path: "{{ node_exporter_server_cert }}"
   register: monitoring_ne_server_cert
 
+- name: Get node-exporter server cert expiry info
+  community.crypto.x509_certificate_info:
+    path: "{{ node_exporter_server_cert }}"
+  register: monitoring_ne_server_cert_info
+  when: monitoring_ne_server_cert.stat.exists
+
+- name: Determine if node-exporter server cert needs renewal
+  ansible.builtin.set_fact:
+    monitoring_ne_server_needs_renewal: >-
+      {{ monitoring_ca_needs_renewal | bool
+         or monitoring_cert_force_renewal | bool
+         or not monitoring_ne_server_cert.stat.exists
+         or (monitoring_ne_server_cert.stat.exists
+             and monitoring_ne_server_cert_info.not_after is defined
+             and ((monitoring_ne_server_cert_info.not_after | int - ansible_date_time.epoch | int)
+                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+
 - name: Generate node-exporter server key
   community.crypto.openssl_privatekey:
     path: "{{ node_exporter_server_key }}"
     size: 4096
     mode: "0600"
-  when: not monitoring_ne_server_cert.stat.exists
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Generate node-exporter server CSR
   community.crypto.openssl_csr:
@@ -169,7 +213,7 @@
     privatekey_path: "{{ node_exporter_server_key }}"
     common_name: "{{ vm_hostname }}.{{ lab_domain }}"
     subject_alt_name: "{{ monitoring_ne_server_sans }}"
-  when: not monitoring_ne_server_cert.stat.exists
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Sign node-exporter server cert with monitoring CA
   community.crypto.x509_certificate:
@@ -181,32 +225,49 @@
     ownca_privatekey_path: "{{ monitoring_mtls_dir }}/ca.key"
     ownca_not_after: "+3650d"
     mode: "0644"
-  when: not monitoring_ne_server_cert.stat.exists
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Remove node-exporter server CSR
   ansible.builtin.file:
     path: /tmp/node-exporter.csr
     state: absent
-  when: not monitoring_ne_server_cert.stat.exists
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Check if Prometheus client cert exists
   ansible.builtin.stat:
     path: "{{ monitoring_mtls_client_cert }}"
   register: monitoring_client_cert
 
+- name: Get Prometheus client cert expiry info
+  community.crypto.x509_certificate_info:
+    path: "{{ monitoring_mtls_client_cert }}"
+  register: monitoring_client_cert_info
+  when: monitoring_client_cert.stat.exists
+
+- name: Determine if Prometheus client cert needs renewal
+  ansible.builtin.set_fact:
+    monitoring_client_needs_renewal: >-
+      {{ monitoring_ca_needs_renewal | bool
+         or monitoring_cert_force_renewal | bool
+         or not monitoring_client_cert.stat.exists
+         or (monitoring_client_cert.stat.exists
+             and monitoring_client_cert_info.not_after is defined
+             and ((monitoring_client_cert_info.not_after | int - ansible_date_time.epoch | int)
+                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+
 - name: Generate Prometheus client key
   community.crypto.openssl_privatekey:
     path: "{{ monitoring_mtls_client_key }}"
     size: 4096
     mode: "0600"
-  when: not monitoring_client_cert.stat.exists
+  when: monitoring_client_needs_renewal | bool
 
 - name: Generate Prometheus client CSR
   community.crypto.openssl_csr:
     path: /tmp/prometheus-client.csr
     privatekey_path: "{{ monitoring_mtls_client_key }}"
     common_name: "prometheus"
-  when: not monitoring_client_cert.stat.exists
+  when: monitoring_client_needs_renewal | bool
 
 - name: Sign Prometheus client cert with monitoring CA
   community.crypto.x509_certificate:
@@ -218,13 +279,13 @@
     ownca_privatekey_path: "{{ monitoring_mtls_dir }}/ca.key"
     ownca_not_after: "+3650d"
     mode: "0644"
-  when: not monitoring_client_cert.stat.exists
+  when: monitoring_client_needs_renewal | bool
 
 - name: Remove Prometheus client CSR
   ansible.builtin.file:
     path: /tmp/prometheus-client.csr
     state: absent
-  when: not monitoring_client_cert.stat.exists
+  when: monitoring_client_needs_renewal | bool
 
 - name: Set mTLS client cert/key permissions for container access
   ansible.builtin.file:
@@ -307,6 +368,7 @@
   ansible.builtin.systemd:
     name: node-exporter
     state: restarted
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Restart node-exporter on all hosts to pick up cert changes
   ansible.builtin.systemd:
@@ -314,6 +376,7 @@
     state: restarted
   delegate_to: "{{ item }}"
   loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+  when: monitoring_ne_server_needs_renewal | bool
 
 - name: Ensure monitoring podman network exists
   containers.podman.podman_network:

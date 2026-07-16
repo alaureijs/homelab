@@ -15,8 +15,42 @@
     - "{{ certificates_dir }}"
     - "{{ certificates_key_dir }}"
 
-- name: Generate self-signed certificate
+- name: Check if certificate exists
+  ansible.builtin.stat:
+    path: "{{ certificates_dir }}/{{ certificates_name }}.crt"
+  register: certificates_existing_cert
+
+- name: Get certificate expiry info
+  community.crypto.x509_certificate_info:
+    path: "{{ certificates_dir }}/{{ certificates_name }}.crt"
+  register: certificates_cert_info
+  when: certificates_existing_cert.stat.exists
+
+- name: Determine if certificate needs renewal
+  ansible.builtin.set_fact:
+    certificates_needs_renewal: >-
+      {{ certificates_force_renewal | bool
+         or not certificates_existing_cert.stat.exists
+         or (certificates_existing_cert.stat.exists
+             and certificates_cert_info.not_after is defined
+             and ((certificates_cert_info.not_after | int - ansible_date_time.epoch | int) < (certificates_renew_threshold_days * 86400))) }}
+
+- name: Display certificate status
+  ansible.builtin.debug:
+    msg: >-
+      Certificate {{ certificates_name }}:
+      exists={{ certificates_existing_cert.stat.exists }},
+      {% if certificates_existing_cert.stat.exists %}
+      expires={{ certificates_cert_info.not_after | default('unknown') | int | ansible.builtin.epoch_time('%Y-%m-%d %H:%M:%S') }},
+      days_left={{ ((certificates_cert_info.not_after | default(0) | int - ansible_date_time.epoch | int) / 86400) | int }},
+      {% endif %}
+      threshold={{ certificates_renew_threshold_days }}d,
+      force={{ certificates_force_renewal }},
+      needs_renewal={{ certificates_needs_renewal }}
   when: certificates_self_signed | bool
+
+- name: Generate self-signed certificate
+  when: certificates_self_signed | bool and certificates_needs_renewal | bool
   block:
     - name: Generate private key
       community.crypto.openssl_privatekey:

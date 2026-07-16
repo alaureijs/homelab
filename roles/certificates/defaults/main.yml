@@ -8,6 +8,12 @@ certificates_name: "{{ vm_hostname }}"
 # Set to true to generate self-signed certs, false to use provided ones
 certificates_self_signed: true
 
+# Renew certificates when they expire within this many days
+certificates_renew_threshold_days: 30
+
+# Force certificate renewal regardless of expiry (e.g. after SAN changes)
+certificates_force_renewal: false
+
 # Self-signed certificate parameters
 certificates_self_signed_days: 3650
 certificates_self_signed_subject:

@@ -7,7 +7,7 @@ Version management and update procedures for all infrastructure components.
 All component versions are defined in a single file:
 
 ```
-inventory/group_vars/all/versions.yml
+inventory/group_vars/all/main.yml
 ```
 
 This file is the **only** place to edit when bumping versions. Every role and
@@ -29,7 +29,7 @@ Base images (alpine, ubuntu, nginx, etc.) are also tracked in the same file.
 ### How Versions Flow
 
 ```
-versions.yml                     (single source of truth)
+group_vars/all/main.yml          (single source of truth)
     |
     +---> group_vars/harbor/images.yml       (tag: "{{ grafana_version }}")
     |         |
@@ -56,7 +56,7 @@ Update one or more container image versions (Grafana, Prometheus, etc.).
 
 ```bash
 # Check current versions
-cat inventory/group_vars/all/versions.yml
+cat inventory/group_vars/all/main.yml
 
 # Verify images exist in upstream registry
 podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
@@ -65,7 +65,7 @@ podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
 
 #### Procedure
 
-1. **Edit versions.yml** — bump the tag:
+1. **Edit `group_vars/all/main.yml`** — bump the tag:
 
    ```yaml
    grafana_version: "12.0.0"   # was 11.6.0
@@ -110,8 +110,8 @@ podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
 If the new version has issues:
 
 ```bash
-# Revert versions.yml
-git checkout HEAD~1 -- inventory/group_vars/all/versions.yml
+# Revert main.yml
+git checkout HEAD~1 -- inventory/group_vars/all/main.yml
 
 # Redeploy
 ansible-playbook playbooks/provision-ansible02.yml --limit monitoring
@@ -133,7 +133,7 @@ Update Harbor itself (v2.11.0 → v2.12.0, etc.).
 
 #### Procedure
 
-1. **Edit versions.yml**:
+1. **Edit `group_vars/all/main.yml`**:
 
    ```yaml
    harbor_version: "v2.12.0"   # was v2.11.0
@@ -168,8 +168,8 @@ Update Harbor itself (v2.11.0 → v2.12.0, etc.).
 # Stop Harbor
 ssh root@192.168.100.10 'cd /opt/harbor && podman-compose down'
 
-# Revert versions.yml
-git checkout HEAD~1 -- inventory/group_vars/all/versions.yml
+# Revert main.yml
+git checkout HEAD~1 -- inventory/group_vars/all/main.yml
 
 # Reinstall previous version
 ansible-playbook playbooks/provision-ansible01.yml --limit ansible01
@@ -183,7 +183,7 @@ Update the node_exporter binary installed on all hosts.
 
 #### Procedure
 
-1. **Edit versions.yml**:
+1. **Edit `group_vars/all/main.yml`**:
 
    ```yaml
    node_exporter_version: "1.13.0"   # was 1.12.1
@@ -218,7 +218,7 @@ Update base images synced to Harbor (alpine, nginx, postgres, etc.).
 
 #### Procedure
 
-1. **Edit versions.yml** — bump the tag:
+1. **Edit `group_vars/all/main.yml`** — bump the tag:
 
    ```yaml
    alpine_version: "3.22"
@@ -309,7 +309,7 @@ To sync a new image to Harbor:
        project: library
    ```
 
-2. Add the version variable to `inventory/group_vars/all/versions.yml`:
+2. Add the version variable to `inventory/group_vars/all/main.yml`:
 
    ```yaml
    new_image_version: "1.0"

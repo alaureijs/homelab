@@ -13,7 +13,6 @@ ansible/
 │   ├── group_vars/
 │   │   ├── all.yml                      # Global variables
 │   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
-│   │   ├── all/versions.yml             # Centralized version management
 │   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
 │   │   │   ├── main.yml                 # Harbor version, ports, passwords, firewall
 │   │   │   └── images.yml               # Container images for sync, proxy projects
@@ -141,7 +140,7 @@ network (`monitoring`). Prometheus scrapes node-exporter via FQDN with mTLS.
 | Alertmanager  | prometheus/prometheus/alertmanager      | 9093  |
 | Node Exporter | prometheus/prometheus/node-exporter     | 9100 |
 
-- Container versions defined in `inventory/group_vars/all/versions.yml`
+- Container versions defined in `inventory/group_vars/all/main.yml`
 - Services exposed to host via `hostPort` (127.0.0.1) for nginx reverse proxy
 - nginx reverse proxy on port 443 with TLS
 - Access via `https://monitoring.local.lan/grafana/` and `https://monitoring.local.lan/prometheus/`
@@ -276,7 +275,7 @@ incompatible with Podman login.
 
 **Container images in `inventory/group_vars/harbor/images.yml`:**
 
-Versions are referenced from `inventory/group_vars/all/versions.yml`:
+Versions are referenced from `inventory/group_vars/all/main.yml`:
 
 ```yaml
 harbor_sync_images:

@@ -134,6 +134,51 @@
     group: root
     mode: "0755"
 
+- name: Deploy rsyslog config for Harbor container logs
+  ansible.builtin.copy:
+    content: |
+      # Harbor container logs — route stdout/stderr from conmon to per-container files
+      template(name="HarborLogFile" type="string" string="/var/log/harbor/%programname%.log")
+
+      if $programname == "harbor-core" or
+         $programname == "harbor-db" or
+         $programname == "harbor-jobservice" or
+         $programname == "harbor-portal" or
+         $programname == "harbor-log" or
+         $programname == "registry" or
+         $programname == "registryctl" or
+         $programname == "trivy-adapter" or
+         $programname == "redis" or
+         $programname == "nginx" then {
+          action(type="omfile" dynaFile="HarborLogFile"
+                 fileCreateMode="0644" dirCreateMode="0755")
+          stop
+      }
+    dest: /etc/rsyslog.d/30-harbor.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart rsyslog
+
+- name: Deploy logrotate config for Harbor logs
+  ansible.builtin.copy:
+    content: |
+      /var/log/harbor/*.log {
+          daily
+          rotate 14
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+          dateext
+          dateformat -%Y%m%d
+      }
+    dest: /etc/logrotate.d/harbor
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Patch docker-compose.yml for Podman compatibility
   ansible.builtin.shell: |
     cp docker-compose.yml docker-compose.yml.bak

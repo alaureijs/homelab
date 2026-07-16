@@ -249,23 +249,90 @@ This reports available updates without actually pulling/pushing. The check
 matches tags with the same naming convention (v-prefix, part count, suffix)
 to avoid false positives from distroless/variant tags.
 
-## Certificate Regeneration
+## Certificate Renewal
 
-TLS certificates are self-signed and regenerated on every playbook run
-(CSR is always recreated). To force new certificates:
+Certificates are automatically renewed when they expire within a configurable
+threshold. The default threshold is 30 days.
+
+### How It Works
+
+Both the `certificates` role (host TLS) and `monitoring` role (mTLS) check
+certificate expiry on every playbook run:
+
+1. Read the existing certificate's `notAfter` date
+2. Calculate days until expiry
+3. If expiry is within the threshold, regenerate the certificate
+4. If the certificate doesn't exist, generate a new one
+
+For the monitoring mTLS stack, the CA renewal cascades — if the monitoring CA
+is renewed, the node-exporter server cert and Prometheus client cert are also
+regenerated (they're signed by the CA).
+
+### Variables
+
+| Variable                            | Default | Description                                   |
+|-------------------------------------|---------|-----------------------------------------------|
+| `certificates_renew_threshold_days` | 30      | Host cert renewal threshold (days before expiry) |
+| `certificates_force_renewal`        | false   | Force host cert renewal regardless of expiry   |
+| `monitoring_cert_renew_threshold_days` | 30   | mTLS cert renewal threshold (days before expiry) |
+| `monitoring_cert_force_renewal`     | false   | Force mTLS cert renewal regardless of expiry   |
+
+### Automatic Renewal
+
+No action needed — certificates are renewed on the next playbook run when
+they're within 30 days of expiry. The default threshold can be adjusted in
+`roles/certificates/defaults/main.yml` and `roles/monitoring/defaults/main.yml`.
+
+### Force Renewal
+
+Force immediate certificate renewal regardless of expiry. Useful after:
+- Changing SANs (e.g., adding a new DNS name)
+- Suspected key compromise
+- Changing certificate subject fields
 
 ```bash
-# Delete existing certs on the target host
-ssh root@192.168.100.11 'rm /etc/pki/tls/certs/ansible02.crt /etc/pki/tls/private/ansible02.key'
+# Force renew host certificates on all hosts
+ansible-playbook playbooks/provision-ansible02.yml -e certificates_force_renewal=true
 
-# Re-run provisioning
-ansible-playbook playbooks/provision-ansible02.yml
+# Force renew monitoring mTLS certificates
+ansible-playbook playbooks/provision-ansible02.yml -e monitoring_cert_force_renewal=true
+
+# Force renew everything
+ansible-playbook playbooks/provision-ansible02.yml \
+  -e certificates_force_renewal=true \
+  -e monitoring_cert_force_renewal=true
 ```
 
-Harbor certificates are regenerated with:
+### Verify Certificate Expiry
+
+Check when a certificate expires:
+
+```bash
+# Host certificate
+openssl x509 -in /etc/pki/tls/certs/ansible02.crt -noout -enddate
+
+# Monitoring CA
+openssl x509 -in /etc/prometheus/mtls/ca.crt -noout -enddate
+
+# Node-exporter server cert
+openssl x509 -in /etc/pki/tls/certs/node-exporter.crt -noout -enddate
+
+# Prometheus client cert
+openssl x509 -in /etc/prometheus/mtls/client.crt -noout -enddate
+```
+
+### Harbor Certificates
+
+Harbor certificates are regenerated separately:
 
 ```bash
 ansible-playbook playbooks/harbor-certs.yml
+```
+
+To force renewal with a custom threshold:
+
+```bash
+ansible-playbook playbooks/harbor-certs.yml -e certificates_force_renewal=true
 ```
 
 ## Harbor User Management

@@ -1,6 +1,7 @@
 ---
-- name: Provision monitoring hosts
-  hosts: monitoring
+# Play 1: Install node-exporter on all hosts
+- name: Provision all hosts
+  hosts: all
   become: true
   gather_facts: true
 
@@ -28,4 +29,13 @@
     - role: firewall
     - role: certificates
     - role: podman
+    - role: node_exporter
+
+# Play 2: Deploy monitoring stack on monitoring host
+- name: Deploy monitoring stack
+  hosts: monitoring
+  become: true
+  gather_facts: true
+
+  roles:
     - role: monitoring

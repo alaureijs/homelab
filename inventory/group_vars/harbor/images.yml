@@ -1,97 +1,87 @@
 ---
 # Container images to sync to Harbor
-# Structure:
-#   name: image name (without registry prefix)
-#   tag: version tag to pull
-#   registry: upstream registry (docker.io, quay.io, ghcr.io)
-#   project: Harbor project to store in (default: library)
-
-# Registry to proxy-cache project mapping:
-#   docker.io  -> docker-hub-cache
-#   quay.io    -> quay-cache
-#   ghcr.io    -> ghcr-cache
+# Versions are defined in group_vars/all/versions.yml
 
 harbor_sync_images:
   # Base images
   - name: library/alpine
-    tag: "3.21"
+    tag: "{{ alpine_version }}"
     registry: docker.io
     project: library
 
   - name: library/ubuntu
-    tag: "24.04"
+    tag: "{{ ubuntu_version }}"
     registry: docker.io
     project: library
 
   - name: library/busybox
-    tag: "1.37"
+    tag: "{{ busybox_version }}"
     registry: docker.io
     project: library
 
   # Application images
   - name: library/nginx
-    tag: "1.27-alpine"
+    tag: "{{ nginx_version }}"
     registry: docker.io
     project: library
 
   - name: library/redis
-    tag: "7.4-alpine"
+    tag: "{{ redis_version }}"
     registry: docker.io
     project: library
 
   - name: library/postgres
-    tag: "17-alpine"
+    tag: "{{ postgres_version }}"
     registry: docker.io
     project: library
 
   - name: library/mariadb
-    tag: "11.8"
+    tag: "{{ mariadb_version }}"
     registry: docker.io
     project: library
 
   - name: library/python
-    tag: "3.13-slim"
+    tag: "{{ python_version }}"
     registry: docker.io
     project: library
 
   - name: library/node
-    tag: "22-alpine"
+    tag: "{{ node_version }}"
     registry: docker.io
     project: library
 
   - name: library/golang
-    tag: "1.24-alpine"
+    tag: "{{ golang_version }}"
     registry: docker.io
     project: library
 
   # Monitoring stack
   - name: prometheus/prometheus
-    tag: "v3.3.0"
+    tag: "{{ prometheus_version }}"
     registry: quay.io
     project: prometheus
 
   - name: prometheus/alertmanager
-    tag: "v0.28.1"
+    tag: "{{ alertmanager_version }}"
     registry: quay.io
     project: prometheus
 
   - name: grafana/grafana
-    tag: "11.6.0"
+    tag: "{{ grafana_version }}"
     registry: docker.io
     project: library
 
   - name: prometheus/node-exporter
-    tag: "v1.12.1"
+    tag: "{{ node_exporter_version }}"
     registry: quay.io
     project: prometheus
 
   - name: prometheus/pushgateway
-    tag: "v1.11.0"
+    tag: "{{ pushgateway_version }}"
     registry: quay.io
     project: prometheus
 
 # Registry URL to proxy-cache project mapping
-# Used by sync playbook to resolve proxy project per image registry
 harbor_config_proxy_projects:
   docker.io: docker-hub-cache
   quay.io: quay-cache

@@ -1,0 +1,132 @@
+---
+- name: Install node_exporter
+  when: node_exporter_enabled | bool
+  block:
+    - name: Create node_exporter group
+      ansible.builtin.group:
+        name: "{{ node_exporter_group }}"
+        system: true
+        state: present
+
+    - name: Create node_exporter user
+      ansible.builtin.user:
+        name: "{{ node_exporter_user }}"
+        group: "{{ node_exporter_group }}"
+        shell: /usr/sbin/nologin
+        system: true
+        create_home: false
+        state: present
+
+    - name: Check if node_exporter is already installed
+      ansible.builtin.stat:
+        path: "{{ node_exporter_bin }}"
+      register: node_exporter_installed
+
+    - name: Get installed node_exporter version
+      ansible.builtin.command: "{{ node_exporter_bin }} --version"
+      register: node_exporter_current_version
+      changed_when: false
+      failed_when: false
+      when: node_exporter_installed.stat.exists
+
+    - name: Set node_exporter download URL
+      ansible.builtin.set_fact:
+        node_exporter_download_url: "{{ node_exporter_github_url }}/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+      vars:
+        node_exporter_github_url: https://github.com/prometheus/node_exporter/releases/download
+      when: >-
+        not node_exporter_installed.stat.exists or
+        (node_exporter_current_version.stdout is defined and
+         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+
+    - name: Download node_exporter
+      ansible.builtin.get_url:
+        url: "{{ node_exporter_download_url }}"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        mode: "0644"
+      when: >-
+        not node_exporter_installed.stat.exists or
+        (node_exporter_current_version.stdout is defined and
+         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+
+    - name: Extract node_exporter binary
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        dest: /tmp/
+        remote_src: true
+      when: >-
+        not node_exporter_installed.stat.exists or
+        (node_exporter_current_version.stdout is defined and
+         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+
+    - name: Copy node_exporter binary
+      ansible.builtin.copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: "{{ node_exporter_bin }}"
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+      when: >-
+        not node_exporter_installed.stat.exists or
+        (node_exporter_current_version.stdout is defined and
+         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+      notify: Restart node-exporter
+
+    - name: Cleanup tarball
+      ansible.builtin.file:
+        path: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        state: absent
+
+    - name: Cleanup extracted directory
+      ansible.builtin.file:
+        path: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64"
+        state: absent
+
+    - name: Open node_exporter port in firewalld
+      ansible.posix.firewalld:
+        port: "{{ node_exporter_port }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: Ensure node_exporter TLS directory exists
+      ansible.builtin.file:
+        path: /etc/node-exporter
+        state: directory
+        owner: root
+        group: "{{ node_exporter_group }}"
+        mode: "0750"
+
+    - name: Template node-exporter web config (TLS)
+      ansible.builtin.template:
+        src: node-exporter-web-config.yml.j2
+        dest: "{{ node_exporter_web_config }}"
+        owner: root
+        group: "{{ node_exporter_group }}"
+        mode: "0640"
+      when: node_exporter_tls_enabled | bool
+      notify: Restart node-exporter
+
+    - name: Template node-exporter service
+      ansible.builtin.template:
+        src: node-exporter.service.j2
+        dest: /etc/systemd/system/node-exporter.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart node-exporter
+
+    - name: Enable and start node-exporter
+      ansible.builtin.systemd:
+        name: node-exporter
+        state: started
+        enabled: true
+        daemon_reload: true
+
+- name: Disable node-exporter
+  ansible.builtin.systemd:
+    name: node-exporter
+    state: stopped
+    enabled: false
+  when: not (node_exporter_enabled | bool)

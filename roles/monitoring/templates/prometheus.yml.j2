@@ -17,16 +17,12 @@ alerting:
 
 scrape_configs:
   - job_name: prometheus
+    metrics_path: /prometheus/metrics
     static_configs:
       - targets:
           - localhost:9090
 
-  - job_name: node-exporter
-    static_configs:
-      - targets:
-          - localhost:9100
-        labels:
-          instance: "{{ vm_hostname }}"
+{% include 'prometheus-node-exporter.yml.j2' %}
 
   - job_name: alertmanager
     static_configs:

@@ -1,3 +1,25 @@
 ---
 ansible_user: root
 ansible_python_interpreter: /usr/bin/python3
+
+# Domain
+lab_domain: local.lan
+
+# Timezone
+timezone: Europe/Amsterdam
+
+# Common packages
+packages:
+  - device-mapper-persistent-data
+  - lvm2
+  - curl
+  - wget
+  - git
+  - vim
+
+# mTLS certificate paths (shared between node_exporter and monitoring roles)
+node_exporter_cert_dir: /etc/pki/tls/certs
+node_exporter_key_dir: /etc/pki/tls/private
+node_exporter_ca_cert: "{{ node_exporter_cert_dir }}/monitoring-ca.crt"
+node_exporter_server_cert: "{{ node_exporter_cert_dir }}/node-exporter.crt"
+node_exporter_server_key: "{{ node_exporter_key_dir }}/node-exporter.key"

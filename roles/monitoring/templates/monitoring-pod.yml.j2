@@ -51,6 +51,8 @@ spec:
           mountPath: /prometheus
         - name: prometheus-config
           mountPath: /etc/prometheus
+        - name: prometheus-mtls
+          mountPath: /etc/prometheus/mtls
       resources:
         limits:
           memory: 1G
@@ -77,33 +79,6 @@ spec:
         requests:
           memory: 128M
 
-    - name: node-exporter
-      image: {{ monitoring_node_exporter_image }}
-      args:
-        - "--path.procfs=/host/proc"
-        - "--path.sysfs=/host/sys"
-        - "--path.rootfs=/host/root"
-        - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-      ports:
-        - containerPort: 9100
-          hostPort: 9100
-          hostIP: "127.0.0.1"
-      volumeMounts:
-        - name: proc
-          mountPath: /host/proc
-          readOnly: true
-        - name: sys
-          mountPath: /host/sys
-          readOnly: true
-        - name: root
-          mountPath: /host/root
-          readOnly: true
-      resources:
-        limits:
-          memory: 128M
-        requests:
-          memory: 64M
-
   volumes:
     - name: grafana-data
       hostPath:
@@ -121,6 +96,10 @@ spec:
       hostPath:
         path: {{ monitoring_config_dir }}/prometheus
         type: Directory
+    - name: prometheus-mtls
+      hostPath:
+        path: {{ monitoring_mtls_dir }}
+        type: Directory
     - name: alertmanager-data
       hostPath:
         path: {{ monitoring_data_dir }}/alertmanager
@@ -128,16 +107,4 @@ spec:
     - name: alertmanager-config
       hostPath:
         path: {{ monitoring_config_dir }}/alertmanager
-        type: Directory
-    - name: proc
-      hostPath:
-        path: /proc
-        type: Directory
-    - name: sys
-      hostPath:
-        path: /sys
-        type: Directory
-    - name: root
-      hostPath:
-        path: /
         type: Directory

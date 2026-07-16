@@ -1,0 +1,15 @@
+  - job_name: node-exporter
+    scheme: https
+    tls_config:
+      ca_file: {{ monitoring_mtls_ca_cert }}
+      cert_file: {{ monitoring_mtls_client_cert }}
+      key_file: {{ monitoring_mtls_client_key }}
+    static_configs:
+      - targets:
+{% for host in groups['all'] | sort %}
+{% if hostvars[host].get('node_exporter_enabled', true) %}
+          - "{{ hostvars[host]['vm_hostname'] }}.{{ lab_domain }}:{{ hostvars[host].get('node_exporter_port', 9100) }}"
+{% endif %}
+{% endfor %}
+        labels:
+          cluster: local

@@ -1,16 +1,4 @@
 ---
-# Timezone
-timezone: Europe/Amsterdam
-
-# Packages
-packages:
-  - device-mapper-persistent-data
-  - lvm2
-  - curl
-  - wget
-  - git
-  - vim
-
 # Certificate SANs
 certificates_extra_sans:
   - "DNS:monitoring.local.lan"
@@ -23,11 +11,10 @@ monitoring_hostname: monitoring.local.lan
 monitoring_data_dir: /var/lib/monitoring
 monitoring_config_dir: /etc/monitoring
 
-# Container images (from Harbor)
-monitoring_grafana_image: "{{ harbor_hostname }}/library/grafana/grafana:11.6.0"
-monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:v3.3.0"
-monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:v0.28.1"
-monitoring_node_exporter_image: "{{ harbor_hostname }}/prometheus/prometheus/node-exporter:v1.12.1"
+# Container images (from Harbor, versions from group_vars/all/versions.yml)
+monitoring_grafana_image: "{{ harbor_hostname }}/library/grafana/grafana:{{ grafana_version }}"
+monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:{{ prometheus_version }}"
+monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:{{ alertmanager_version }}"
 
 # Grafana
 monitoring_grafana_admin_password: "{{ vault_monitoring_grafana_password }}"

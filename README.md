@@ -13,6 +13,7 @@ ansible/
 │   ├── group_vars/
 │   │   ├── all.yml                      # Global variables
 │   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
+│   │   ├── all/versions.yml             # Centralized version management
 │   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
 │   │   │   ├── main.yml                 # Harbor version, ports, passwords, firewall
 │   │   │   └── images.yml               # Container images for sync, proxy projects
@@ -107,7 +108,6 @@ All VM variables are defined in `inventory/host_vars/ansible01/`:
 
 | Variable            | Value                              |
 |---------------------|------------------------------------|
-| harbor_version      | v2.11.0                            |
 | timezone            | Europe/Amsterdam                   |
 | firewall_ports      | 80, 443, 22                        |
 
@@ -131,16 +131,18 @@ All VM variables are defined in `inventory/host_vars/ansible02/`:
 
 ### Monitoring Stack
 
-Deployed via `podman kube play` with a K8s YAML manifest:
+Deployed via `podman kube play` with a K8s YAML manifest on a Podman CNI
+network (`monitoring`). Prometheus scrapes node-exporter via FQDN with mTLS.
 
 | Service       | Image (from Harbor)                    | Port  |
 |---------------|----------------------------------------|-------|
-| Grafana       | library/grafana/grafana:11.6.0         | 3000  |
-| Prometheus    | prometheus/prometheus/prometheus:v3.3.0| 9090  |
-| Alertmanager  | prometheus/prometheus/alertmanager:v0.28.1 | 9093 |
-| Node Exporter | prometheus/prometheus/node-exporter:v1.12.1 | 9100 |
+| Grafana       | library/grafana/grafana                | 3000  |
+| Prometheus    | prometheus/prometheus/prometheus        | 9090  |
+| Alertmanager  | prometheus/prometheus/alertmanager      | 9093  |
+| Node Exporter | prometheus/prometheus/node-exporter     | 9100 |
 
-- All ports bound to `127.0.0.1` (not exposed externally)
+- Container versions defined in `inventory/group_vars/all/versions.yml`
+- Services exposed to host via `hostPort` (127.0.0.1) for nginx reverse proxy
 - nginx reverse proxy on port 443 with TLS
 - Access via `https://monitoring.local.lan/grafana/` and `https://monitoring.local.lan/prometheus/`
 - Cockpit auto-disabled (port 9090 conflict with Prometheus)
@@ -274,15 +276,17 @@ incompatible with Podman login.
 
 **Container images in `inventory/group_vars/harbor/images.yml`:**
 
+Versions are referenced from `inventory/group_vars/all/versions.yml`:
+
 ```yaml
 harbor_sync_images:
   - name: library/alpine
-    tag: "3.21"
+    tag: "{{ alpine_version }}"
     registry: docker.io
     project: library
 
   - name: prometheus/prometheus
-    tag: "v3.3.0"
+    tag: "{{ prometheus_version }}"
     registry: quay.io
     project: prometheus
 

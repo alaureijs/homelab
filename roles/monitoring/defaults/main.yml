@@ -6,15 +6,16 @@ monitoring_hostname: monitoring.local.lan
 # Paths
 monitoring_config_dir: /etc/monitoring
 monitoring_data_dir: /var/lib/monitoring
+monitoring_mtls_dir: /etc/prometheus/mtls
 
 # Pod
 monitoring_pod_name: monitoring
+monitoring_network_name: monitoring
 
-# Images (pulled from Harbor)
-monitoring_grafana_image: "{{ harbor_hostname }}/library/grafana/grafana:11.6.0"
-monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:v3.3.0"
-monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:v0.28.1"
-monitoring_node_exporter_image: "{{ harbor_hostname }}/prometheus/prometheus/node-exporter:v1.12.1"
+# Images (pulled from Harbor, versions from group_vars/all/versions.yml)
+monitoring_grafana_image: "{{ harbor_hostname }}/library/grafana/grafana:{{ grafana_version }}"
+monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:{{ prometheus_version }}"
+monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:{{ alertmanager_version }}"
 
 # Grafana
 monitoring_grafana_admin_password: admin
@@ -34,3 +35,8 @@ monitoring_alertmanager_smtp_auth_password: ""
 # Reverse proxy (nginx)
 monitoring_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
 monitoring_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
+
+# mTLS for node-exporter scraping
+monitoring_mtls_ca_cert: "{{ monitoring_mtls_dir }}/ca.crt"
+monitoring_mtls_client_cert: "{{ monitoring_mtls_dir }}/client.crt"
+monitoring_mtls_client_key: "{{ monitoring_mtls_dir }}/client.key"

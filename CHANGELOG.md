@@ -15,14 +15,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   monitoring hosts (timezone, packages, firewall, certificates).
 - `inventory/host_vars/ansible02/` — VM specs and provisioning variables.
 - `monitoring` role — deploys monitoring stack on ansible02:
-  - Grafana 11.6.0, Prometheus 3.3.0, Alertmanager 0.28.1, Node Exporter 1.12.1
+  - Grafana, Prometheus, Alertmanager, Node Exporter (versions in `versions.yml`)
   - All images pulled from Harbor proxy cache projects
   - `podman kube play` with K8s YAML manifest
+  - Podman CNI network (`monitoring`) for container networking
   - Hostname-based routing via nginx reverse proxy (HTTPS on 443)
   - SELinux configured for nginx network connectivity
   - Cockpit auto-disabled (port 9090 conflict with Prometheus)
   - Podman auth.json written for `podman kube play` (no `--authfile` support)
   - Data directory ownership: grafana=472, prometheus/alertmanager=65534
+  - mTLS for node-exporter scraping (monitoring CA, server/client certs)
+  - Prometheus scrapes node-exporter via FQDN from inventory (not localhost)
+  - node-exporter binds to host IP (not 127.0.0.1)
+- `inventory/group_vars/all/versions.yml` — centralized version management
+  for all container images and platform components (single source of truth).
 - `harbor_containers` role — syncs container images to Harbor through proxy
   cache projects, checks upstream for version updates matching same naming
   convention, generates YAML sync report.
@@ -48,6 +54,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Centralized all component versions into `inventory/group_vars/all/versions.yml`.
+  Roles and group_vars now reference version variables instead of hardcoding
+  tags. To bump a version, edit one file.
+- Monitoring containers run on a Podman CNI network (`monitoring`) instead
+  of `hostNetwork: true`. Services exposed to host via `hostPort` mappings.
+- node-exporter listens on host IP (`{{ ansible_host }}:9100`) instead of
+  `127.0.0.1:9100`, allowing Prometheus in the pod network to reach it via FQDN.
+- Prometheus scrapes node-exporter targets using FQDN from inventory
+  (`ansible01.local.lan:9100`, `ansible02.local.lan:9100`) with mTLS.
+- Prometheus self-scrape uses `metrics_path: /prometheus/metrics` (required
+  with `--web.route-prefix=/prometheus/`).
+- mTLS client cert/key permissions set to `0644` for container access
+  (Prometheus runs as uid 65534).
 - Renamed `playbooks/harbor-sync-images.yml` to `sync-update-containers.yml`.
 - Extracted sync logic from playbook into `harbor_containers` role.
 - `harbor_config` now creates projects from `harbor_sync_images` when
@@ -64,15 +83,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Push command uses `--tls-verify=false` flag.
 - `harbor_config` role creates project-level roles for service accounts
   (projectAdmin for config, developer for sync) instead of robot accounts.
-
-### Removed
-
-- Robot account tasks from `harbor_config` role (fetch, create, display).
-  Robot accounts do not work with Harbor v2.11's Podman integration.
-- Robot secrets from vault (replaced by normal user passwords).
-
-### Changed
-
 - Refactored `host_vars` to directory-based structure:
   - `host_vars/web01.yml` → `host_vars/web01/main.yml`
   - New `host_vars/ansible01/main.yml` — connection, VM specs, network, DNS.
@@ -88,6 +98,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `certificates` role now uses `certificates_extra_sans` list instead of
   hardcoded `harbor_hostname`. Each group/host defines its own SANs
   (e.g., `harbor.local.lan` for harbor, `monitoring.local.lan` for monitoring).
+
+### Removed
+
+- Robot account tasks from `harbor_config` role (fetch, create, display).
+  Robot accounts do not work with Harbor v2.11's Podman integration.
+- Robot secrets from vault (replaced by normal user passwords).
 
 ## [0.1.0] - 2026-07-13
 

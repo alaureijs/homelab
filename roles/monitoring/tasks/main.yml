@@ -101,6 +101,225 @@
     dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
     mode: "0644"
 
+- name: Ensure mTLS directory exists
+  ansible.builtin.file:
+    path: "{{ monitoring_mtls_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check if monitoring CA exists
+  ansible.builtin.stat:
+    path: "{{ monitoring_mtls_ca_cert }}"
+  register: monitoring_ca_cert
+
+- name: Generate monitoring CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ monitoring_mtls_dir }}/ca.key"
+    size: 4096
+    mode: "0600"
+  when: not monitoring_ca_cert.stat.exists
+
+- name: Generate monitoring CA certificate
+  ansible.builtin.command: >
+    openssl req -x509 -new -nodes
+    -key {{ monitoring_mtls_dir }}/ca.key
+    -sha256 -days 3650
+    -out {{ monitoring_mtls_ca_cert }}
+    -subj "/CN=Monitoring CA/O=Lab"
+    -addext "basicConstraints=critical,CA:TRUE,pathlen:0"
+    -addext "keyUsage=critical,keyCertSign,cRLSign"
+  args:
+    creates: "{{ monitoring_mtls_ca_cert }}"
+  when: not monitoring_ca_cert.stat.exists
+
+- name: Build DNS SANs from inventory
+  ansible.builtin.set_fact:
+    monitoring_ne_dns_sans: "{{ monitoring_ne_dns_sans | default([]) + ['DNS:' + hostvars[item]['vm_hostname'] + '.' + lab_domain] }}"
+  loop: "{{ groups['all'] }}"
+
+- name: Build IP SANs from inventory
+  ansible.builtin.set_fact:
+    monitoring_ne_ip_sans: "{{ monitoring_ne_ip_sans | default([]) + ['IP:' + hostvars[item]['ansible_host']] }}"
+  loop: "{{ groups['all'] }}"
+
+- name: Build node-exporter server cert SANs
+  ansible.builtin.set_fact:
+    monitoring_ne_server_sans: >-
+      {{ ['DNS:' + vm_hostname + '.' + lab_domain]
+         + monitoring_ne_dns_sans
+         + monitoring_ne_ip_sans }}
+
+- name: Check if node-exporter server cert exists
+  ansible.builtin.stat:
+    path: "{{ node_exporter_server_cert }}"
+  register: monitoring_ne_server_cert
+
+- name: Generate node-exporter server key
+  community.crypto.openssl_privatekey:
+    path: "{{ node_exporter_server_key }}"
+    size: 4096
+    mode: "0600"
+  when: not monitoring_ne_server_cert.stat.exists
+
+- name: Generate node-exporter server CSR
+  community.crypto.openssl_csr:
+    path: /tmp/node-exporter.csr
+    privatekey_path: "{{ node_exporter_server_key }}"
+    common_name: "{{ vm_hostname }}.{{ lab_domain }}"
+    subject_alt_name: "{{ monitoring_ne_server_sans }}"
+  when: not monitoring_ne_server_cert.stat.exists
+
+- name: Sign node-exporter server cert with monitoring CA
+  community.crypto.x509_certificate:
+    path: "{{ node_exporter_server_cert }}"
+    privatekey_path: "{{ node_exporter_server_key }}"
+    csr_path: /tmp/node-exporter.csr
+    provider: ownca
+    ownca_path: "{{ monitoring_mtls_ca_cert }}"
+    ownca_privatekey_path: "{{ monitoring_mtls_dir }}/ca.key"
+    ownca_not_after: "+3650d"
+    mode: "0644"
+  when: not monitoring_ne_server_cert.stat.exists
+
+- name: Remove node-exporter server CSR
+  ansible.builtin.file:
+    path: /tmp/node-exporter.csr
+    state: absent
+  when: not monitoring_ne_server_cert.stat.exists
+
+- name: Check if Prometheus client cert exists
+  ansible.builtin.stat:
+    path: "{{ monitoring_mtls_client_cert }}"
+  register: monitoring_client_cert
+
+- name: Generate Prometheus client key
+  community.crypto.openssl_privatekey:
+    path: "{{ monitoring_mtls_client_key }}"
+    size: 4096
+    mode: "0600"
+  when: not monitoring_client_cert.stat.exists
+
+- name: Generate Prometheus client CSR
+  community.crypto.openssl_csr:
+    path: /tmp/prometheus-client.csr
+    privatekey_path: "{{ monitoring_mtls_client_key }}"
+    common_name: "prometheus"
+  when: not monitoring_client_cert.stat.exists
+
+- name: Sign Prometheus client cert with monitoring CA
+  community.crypto.x509_certificate:
+    path: "{{ monitoring_mtls_client_cert }}"
+    privatekey_path: "{{ monitoring_mtls_client_key }}"
+    csr_path: /tmp/prometheus-client.csr
+    provider: ownca
+    ownca_path: "{{ monitoring_mtls_ca_cert }}"
+    ownca_privatekey_path: "{{ monitoring_mtls_dir }}/ca.key"
+    ownca_not_after: "+3650d"
+    mode: "0644"
+  when: not monitoring_client_cert.stat.exists
+
+- name: Remove Prometheus client CSR
+  ansible.builtin.file:
+    path: /tmp/prometheus-client.csr
+    state: absent
+  when: not monitoring_client_cert.stat.exists
+
+- name: Set mTLS client cert/key permissions for container access
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ monitoring_mtls_client_cert }}", mode: "0644" }
+    - { path: "{{ monitoring_mtls_client_key }}", mode: "0644" }
+    - { path: "{{ monitoring_mtls_ca_cert }}", mode: "0644" }
+  notify: Restart monitoring pod
+
+- name: Copy monitoring CA to node-exporter cert path on localhost
+  ansible.builtin.copy:
+    src: "{{ monitoring_mtls_ca_cert }}"
+    dest: "{{ node_exporter_ca_cert }}"
+    remote_src: true
+    mode: "0640"
+    owner: root
+    group: node_exporter
+
+- name: Read mTLS CA cert for distribution
+  ansible.builtin.slurp:
+    src: "{{ monitoring_mtls_ca_cert }}"
+  register: monitoring_ca_cert_content
+
+- name: Read node-exporter server cert for distribution
+  ansible.builtin.slurp:
+    src: "{{ node_exporter_server_cert }}"
+  register: monitoring_ne_server_cert_content
+
+- name: Read node-exporter server key for distribution
+  ansible.builtin.slurp:
+    src: "{{ node_exporter_server_key }}"
+  register: monitoring_ne_server_key_content
+
+- name: Distribute mTLS CA cert to all hosts
+  ansible.builtin.copy:
+    content: "{{ monitoring_ca_cert_content.content | b64decode }}"
+    dest: "{{ node_exporter_ca_cert }}"
+    owner: root
+    group: node_exporter
+    mode: "0640"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+
+- name: Distribute node-exporter server cert to all hosts
+  ansible.builtin.copy:
+    content: "{{ monitoring_ne_server_cert_content.content | b64decode }}"
+    dest: "{{ node_exporter_server_cert }}"
+    owner: root
+    group: node_exporter
+    mode: "0640"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+
+- name: Distribute node-exporter server key to all hosts
+  ansible.builtin.copy:
+    content: "{{ monitoring_ne_server_key_content.content | b64decode }}"
+    dest: "{{ node_exporter_server_key }}"
+    owner: root
+    group: node_exporter
+    mode: "0640"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+
+- name: Set node-exporter cert permissions on localhost
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: node_exporter
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ node_exporter_ca_cert }}", mode: "0640" }
+    - { path: "{{ node_exporter_server_cert }}", mode: "0640" }
+    - { path: "{{ node_exporter_server_key }}", mode: "0640" }
+
+- name: Restart node-exporter on localhost to pick up cert changes
+  ansible.builtin.systemd:
+    name: node-exporter
+    state: restarted
+
+- name: Restart node-exporter on all hosts to pick up cert changes
+  ansible.builtin.systemd:
+    name: node-exporter
+    state: restarted
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+
+- name: Ensure monitoring podman network exists
+  containers.podman.podman_network:
+    name: "{{ monitoring_network_name }}"
+    state: present
+
 - name: Template Prometheus configuration
   ansible.builtin.template:
     src: prometheus.yml.j2
@@ -140,7 +359,7 @@
 - name: Deploy monitoring pod
   ansible.builtin.shell: |
     podman kube play --down {{ monitoring_config_dir }}/monitoring-pod.yml 2>/dev/null || true
-    podman kube play {{ monitoring_config_dir }}/monitoring-pod.yml
+    podman kube play --network {{ monitoring_network_name }} {{ monitoring_config_dir }}/monitoring-pod.yml
   args:
     executable: /bin/bash
   register: monitoring_deploy

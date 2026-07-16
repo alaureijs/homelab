@@ -1,0 +1,24 @@
+[Unit]
+Description=Prometheus Node Exporter
+Documentation=https://prometheus.io/docs/guides/node-exporter/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User={{ node_exporter_user }}
+Group={{ node_exporter_group }}
+ExecStart={{ node_exporter_bin }} \
+{% if node_exporter_tls_enabled | bool %}
+  --web.config.file={{ node_exporter_web_config }} \
+{% endif %}
+  --web.listen-address={{ node_exporter_listen_address }}:{{ node_exporter_port }} \
+  --collector.systemd \
+  --collector.processes
+Restart=always
+RestartSec=5
+
+SyslogIdentifier=node_exporter
+
+[Install]
+WantedBy=multi-user.target

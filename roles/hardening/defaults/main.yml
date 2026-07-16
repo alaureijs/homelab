@@ -15,6 +15,26 @@ hardening_auditd: true
 hardening_banner: true
 hardening_limits: true
 hardening_permissions: true
+hardening_selinux: true
+
+# --- SELinux (CIS 1.6, STIG V-257750+) ---
+hardening_selinux_mode: enforcing
+hardening_selinux_policy: targeted
+
+# SELinux booleans — per-application (persistent across reboots)
+# Each role sets its own booleans; this is the global allowlist.
+hardening_selinux_booleans:
+  # Container runtime
+  - name: container_manage_cgroup
+    state: true
+  # Nginx reverse proxy
+  - name: httpd_can_network_connect
+    state: true
+  - name: httpd_can_network_relay
+    state: true
+  # Deny audit denial suppression for STIG compliance
+  - name: selinuxuser_execmod
+    state: false
 
 # --- Kernel / Network (CIS 3.x, STIG V-257784+) ---
 # IP forwarding (disable by default; hosts running Podman set to true)

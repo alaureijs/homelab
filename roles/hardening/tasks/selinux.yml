@@ -1,0 +1,43 @@
+---
+- name: Ensure SELinux packages are installed
+  ansible.builtin.dnf:
+    name:
+      - libselinux
+      - policycoreutils
+      - setroubleshoot-server
+    state: present
+
+- name: Configure SELinux mode in config
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: "^SELINUX=", line: "SELINUX={{ hardening_selinux_mode }}" }
+    - { regexp: "^SELINUXTYPE=", line: "SELINUXTYPE={{ hardening_selinux_policy }}" }
+
+- name: Set SELinux enforcing immediately
+  ansible.builtin.command: setenforce 1
+  register: hardening_setenforce
+  changed_when: hardening_setenforce.rc == 0
+  failed_when: false
+  when: hardening_selinux_mode == "enforcing"
+
+- name: Set SELinux booleans
+  ansible.posix.seboolean:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    persistent: true
+  loop: "{{ hardening_selinux_booleans }}"
+
+- name: Check for recent AVC denials
+  ansible.builtin.command: ausearch -m AVC --recent
+  register: hardening_avc_denials
+  changed_when: false
+  failed_when: false
+
+- name: Display AVC denials if any
+  ansible.builtin.debug:
+    msg: "{{ hardening_avc_denials.stdout_lines }}"
+  when: hardening_avc_denials.stdout | length > 0

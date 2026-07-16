@@ -29,7 +29,13 @@
     state: "{{ 'started' if podman_enable_socket else 'stopped' }}"
     enabled: "{{ podman_enable_socket }}"
 
-- name: Allow containers to manage cgroups (SELinux)
-  ansible.builtin.command: setsebool -P container_manage_cgroup true
+- name: Configure SELinux booleans for Podman
+  ansible.posix.seboolean:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    persistent: true
+  loop:
+    - { name: container_manage_cgroup, state: true }
+    - { name: container_read_certs, state: true }
+    - { name: container_manage_public_content, state: true }
   when: ansible_selinux.status == "enabled"
-  changed_when: false

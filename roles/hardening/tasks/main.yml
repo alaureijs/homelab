@@ -71,3 +71,12 @@
     - limits
     - cis
     - stig
+
+- name: SELinux enforcing and application booleans
+  ansible.builtin.include_tasks: selinux.yml
+  when: hardening_selinux
+  tags:
+    - hardening
+    - selinux
+    - cis
+    - stig

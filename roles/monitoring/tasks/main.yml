@@ -428,9 +428,14 @@
   register: monitoring_deploy
   changed_when: "'Pod' in monitoring_deploy.stdout or 'Container' in monitoring_deploy.stdout"
 
-- name: Allow nginx to connect to monitoring services (SELinux)
-  ansible.builtin.command: setsebool -P httpd_can_network_connect 1
-  changed_when: false
+- name: Configure SELinux booleans for monitoring
+  ansible.posix.seboolean:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    persistent: true
+  loop:
+    - { name: httpd_can_network_connect, state: true }
+    - { name: httpd_can_network_relay, state: true }
   when: ansible_selinux.status == "enabled"
 
 - name: Install nginx

@@ -27,6 +27,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - mTLS for node-exporter scraping (monitoring CA, server/client certs)
   - Prometheus scrapes node-exporter via FQDN from inventory (not localhost)
   - node-exporter binds to host IP (not 127.0.0.1)
+- `node_exporter` role — binary install, systemd service, TLS web config.
+- Certificate auto-renewal — both `certificates` and `monitoring` roles
+  check certificate expiry via `x509_certificate_info` and regenerate
+  when within `certificates_renew_threshold_days` (default 30 days).
+  Force renewal via `certificates_force_renewal` / `monitoring_cert_force_renewal`
+  extra vars. CA renewal cascades to dependent server/client certs.
 - `inventory/group_vars/all/main.yml` — centralized version management
   for all container images and platform components (single source of truth).
 - `harbor_containers` role — syncs container images to Harbor through proxy
@@ -98,6 +104,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `certificates` role now uses `certificates_extra_sans` list instead of
   hardcoded `harbor_hostname`. Each group/host defines its own SANs
   (e.g., `harbor.local.lan` for harbor, `monitoring.local.lan` for monitoring).
+- `versions.yml` merged into `group_vars/all/main.yml` — single file for
+  all configuration and version variables.
 
 ### Removed
 

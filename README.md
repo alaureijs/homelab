@@ -11,23 +11,30 @@ ansible/
 ├── inventory/
 │   ├── hosts.yml                        # Inventory (all host groups)
 │   ├── group_vars/
-│   │   ├── all.yml                      # Global variables
-│   │   ├── all/vault.yml                # Encrypted secrets (ansible-vault)
-│   │   ├── harbor/                      # Harbor group vars (all Harbor settings)
-│   │   │   ├── main.yml                 # Harbor version, ports, passwords, firewall
+│   │   ├── all/                         # Global variables
+│   │   │   ├── main.yml                 # All vars including version management
+│   │   │   └── vault.yml                # Encrypted secrets (ansible-vault)
+│   │   ├── harbor/                      # Harbor group vars
+│   │   │   ├── main.yml                 # Harbor settings, users, projects
 │   │   │   └── images.yml               # Container images for sync, proxy projects
-│   │   ├── libvirt/                     # Libvirt group vars (VM defaults)
+│   │   ├── monitoring/                  # Monitoring group vars
+│   │   │   └── main.yml                 # Grafana/Prometheus/Alertmanager config
+│   │   ├── libvirt/                     # Libvirt group vars
 │   │   │   └── main.yml                 # VM specs, network, DNS, connection
 │   │   ├── webservers.yml               # Webserver group vars
 │   │   └── dbservers.yml                # Database group vars
 │   └── host_vars/
 │       ├── web01/main.yml               # Web01 host variables
-│       └── ansible01/
+│       ├── ansible01/
+│       │   ├── main.yml                 # Host-specific (IP, MAC, hostname)
+│       │   └── provision.yml            # Harbor, packages, firewall
+│       └── ansible02/
 │           ├── main.yml                 # Host-specific (IP, MAC, hostname)
-│           └── provision.yml            # General provisioning (timezone, packages)
+│           └── provision.yml            # Monitoring, packages, firewall
 ├── playbooks/
 │   ├── site.yml                         # Main playbook (webservers, dbservers)
 │   ├── provision-ansible01.yml          # Provision ansible01 VM for Harbor
+│   ├── provision-ansible02.yml          # Provision ansible02 VM for monitoring
 │   ├── harbor-users.yml                 # Configure Harbor users, projects, roles
 │   ├── harbor-certs.yml                 # Regenerate TLS certificates
 │   └── sync-update-containers.yml       # Sync images and check upstream versions
@@ -41,7 +48,9 @@ ansible/
 │   ├── harbor/                          # Harbor offline install with Podman
 │   ├── harbor_config/                   # Harbor users, projects, registries via API
 │   ├── harbor_containers/               # Sync container images to Harbor
-│   └── monitoring/                      # Monitoring stack (Grafana, Prometheus, etc.)
+│   ├── monitoring/                      # Monitoring stack (Grafana, Prometheus, etc.)
+│   └── node_exporter/                   # Node Exporter with mTLS
+├── LIFECYCLE.md                         # Version management and update procedures
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
 ```
@@ -52,6 +61,40 @@ ansible/
 - `ansible.posix`, `community.crypto`, `containers.podman` collections
 - SSH access to target hosts
 - `ansible-vault` for encrypted variables
+
+## System Dependencies
+
+Packages installed by roles on target hosts (Rocky Linux 10):
+
+| Role | Packages | Purpose |
+|------|----------|---------|
+| playbook pre_tasks | `device-mapper-persistent-data`, `lvm2`, `curl`, `wget`, `git`, `vim` | Base utilities |
+| `podman` | `podman`, `buildah`, `skopeo` | Container tools |
+| `podman` | `python3-pip` | Python package manager (for podman-compose) |
+| `podman` | `podman-compose` (pip) | Compose file support for Harbor |
+| `certificates` | `python3-cryptography` | Required by `community.crypto` modules |
+| `firewall` | `firewalld` | Host firewall |
+| `monitoring` | `nginx` | Reverse proxy for Grafana/Prometheus |
+
+Tools expected to exist (not installed by roles):
+
+| Tool | Required by | Package |
+|------|-------------|---------|
+| `openssl` | `monitoring` (CA cert generation) | `openssl` |
+| `update-ca-trust` | `monitoring` (trust Harbor CA) | `ca-certificates` |
+| `setsebool` | `podman`, `monitoring` (SELinux) | `policycoreutils` |
+| `python3` | `harbor`, `harbor_containers` (inline scripts) | `python3` |
+| `python3-yaml` | `harbor` (compose patching) | `python3-pyyaml` |
+| `podman` | `harbor`, `harbor_containers` | installed by `podman` role |
+| `skopeo` | `harbor_containers` (version check) | installed by `podman` role |
+
+Host-only (not on target VMs):
+
+| Tool | Required by | Package |
+|------|-------------|---------|
+| `cloud-localds` | VM cloud-init generation | `cloud-utils` (CachyOS) |
+| `ufw` | `scripts/ufw-libvirt.sh` | `ufw` (CachyOS) |
+| `libvirt` / `virsh` | VM lifecycle | `libvirt` (CachyOS) |
 
 ## Quick Start
 
@@ -74,15 +117,15 @@ ansible-playbook playbooks/site.yml
 
 ## Inventory
 
-| Group        | Host      | IP              | Description         |
-|--------------|-----------|-----------------|---------------------|
-| webservers   | web01     | 192.168.1.10    | Web server          |
-| webservers   | web02     | 192.168.1.11    | Web server          |
-| dbservers    | db01      | 192.168.1.20    | Database server     |
-| monitoring   | ansible02 | 192.168.100.11  | Monitoring (Rocky 10 VM) |
-| harbor       | ansible01 | 192.168.100.10  | Harbor (Rocky 10 VM)|
-| libvirt      | ansible01 | 192.168.100.10  | Rocky Linux 10 VM   |
-| libvirt      | ansible02 | 192.168.100.11  | Rocky Linux 10 VM   |
+| Group        | Host      | IP              | Description                     |
+|--------------|-----------|-----------------|---------------------------------|
+| webservers   | web01     | 192.168.1.10    | Web server                      |
+| webservers   | web02     | 192.168.1.11    | Web server                      |
+| dbservers    | db01      | 192.168.1.20    | Database server                 |
+| monitoring   | ansible02 | 192.168.100.11  | Monitoring stack (Rocky 10 VM)  |
+| harbor       | ansible01 | 192.168.100.10  | Harbor registry (Rocky 10 VM)   |
+| libvirt      | ansible01 | 192.168.100.10  | Rocky Linux 10 VM               |
+| libvirt      | ansible02 | 192.168.100.11  | Rocky Linux 10 VM               |
 
 ## Libvirt VM: ansible01
 
@@ -212,6 +255,24 @@ The sync playbook pulls images through proxy cache projects (auto-caches
 from upstream registries), then pushes them to non-proxy Harbor projects.
 Service account credentials are written to a temporary `auth.json` file
 (workaround for broken `podman login` in Podman 5.8.2).
+
+### Certificate Renewal
+
+Certificates are automatically renewed when within 30 days of expiry.
+No manual action needed — renewal runs on every playbook apply.
+
+```bash
+# Force renewal (e.g. after changing SANs)
+ansible-playbook playbooks/provision-ansible02.yml \
+  -e certificates_force_renewal=true \
+  -e monitoring_cert_force_renewal=true
+
+# Check certificate expiry
+openssl x509 -in /etc/pki/tls/certs/ansible02.crt -noout -enddate
+openssl x509 -in /etc/prometheus/mtls/ca.crt -noout -enddate
+```
+
+See [LIFECYCLE.md](LIFECYCLE.md) for full renewal procedures and thresholds.
 
 ### Harbor Configuration
 

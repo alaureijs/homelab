@@ -1,0 +1,18 @@
+---
+- name: Set login warning banner
+  ansible.builtin.copy:
+    content: "{{ hardening_warning_banner }}\n"
+    dest: "{{ hardening_warning_banner_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: hardening_banner
+
+- name: Set SSH warning banner
+  ansible.builtin.copy:
+    content: "{{ hardening_ssh_warning_banner }}\n"
+    dest: "{{ hardening_ssh_banner }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: hardening_banner

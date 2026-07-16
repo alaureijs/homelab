@@ -1,0 +1,73 @@
+---
+- name: Kernel and network hardening
+  ansible.builtin.include_tasks: sysctl.yml
+  when: hardening_sysctl
+  tags:
+    - hardening
+    - sysctl
+    - cis
+    - stig
+
+- name: SSH hardening
+  ansible.builtin.include_tasks: ssh.yml
+  when: hardening_ssh
+  tags:
+    - hardening
+    - ssh
+    - cis
+    - stig
+
+- name: File permission hardening
+  ansible.builtin.include_tasks: file_permissions.yml
+  when: hardening_file_permissions
+  tags:
+    - hardening
+    - permissions
+    - cis
+    - stig
+
+- name: Service hardening
+  ansible.builtin.include_tasks: services.yml
+  when: hardening_services
+  tags:
+    - hardening
+    - services
+    - cis
+    - stig
+
+- name: Password and authentication hardening
+  ansible.builtin.include_tasks: password_auth.yml
+  when: hardening_password_auth
+  tags:
+    - hardening
+    - password
+    - pam
+    - cis
+    - stig
+
+- name: Audit logging
+  ansible.builtin.include_tasks: auditd.yml
+  when: hardening_auditd
+  tags:
+    - hardening
+    - audit
+    - cis
+    - stig
+
+- name: Warning banners
+  ansible.builtin.include_tasks: banner.yml
+  when: hardening_banner
+  tags:
+    - hardening
+    - banner
+    - cis
+    - stig
+
+- name: Resource limits
+  ansible.builtin.include_tasks: limits.yml
+  when: hardening_limits
+  tags:
+    - hardening
+    - limits
+    - cis
+    - stig

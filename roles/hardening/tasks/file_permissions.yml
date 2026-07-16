@@ -1,0 +1,73 @@
+---
+- name: Ensure sticky bit is set on world-writable directories
+  ansible.builtin.command: >
+    find / -xdev -type d \( -perm -0002 -a ! -perm -1000 \)
+    -exec chmod u+t {} +
+  changed_when: false
+  when: hardening_sticky_bit
+
+- name: Restrict world-writable files
+  ansible.builtin.command: >
+    find / -xdev -type f -perm -0002
+    -exec chmod o-w {} +
+  changed_when: false
+
+- name: Disable core dumps for SUID programs
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: "^\\*\\s+hard\\s+core"
+    line: "* hard core 0"
+    state: present
+  when: hardening_core_dump_suid
+
+- name: Disable core dumps via sysctl
+  ansible.posix.sysctl:
+    name: fs.suid_dumpable
+    value: "0"
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+    reload: true
+    state: present
+  when: hardening_core_dump_suid
+
+- name: Set core dump pattern to deny
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.d/99-hardening.conf
+    regexp: "^kernel.core_pattern"
+    line: "kernel.core_pattern={{ hardening_core_dump_pattern }}"
+    state: present
+  when: hardening_disable_core_dumps
+
+- name: Ensure cron directories are owned by root
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - /etc/cron.hourly
+    - /etc/cron.daily
+    - /etc/cron.weekly
+    - /etc/cron.monthly
+    - /etc/cron.d
+  when: hardening_cron_owner_root
+
+- name: Set default umask to 027
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: "^umask"
+    line: "umask {{ hardening_umask }}"
+    insertafter: "^# umask"
+  loop:
+    - /etc/profile
+    - /etc/bashrc
+  when: hardening_umask != ""
+
+- name: Remove world-writable files from critical directories
+  ansible.builtin.command: >
+    find {{ item }} -xdev -type f
+    \( -perm -0002 -o -nouser -o -nogroup \)
+    -print
+  register: hardening_world_writable_files
+  changed_when: false
+  loop: "{{ hardening_protect_dirs }}"
+  when: hardening_permissions

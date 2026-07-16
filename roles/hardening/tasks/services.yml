@@ -1,0 +1,138 @@
+---
+- name: Disable unnecessary services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    masked: true
+  loop: "{{ hardening_disable_services }}"
+  ignore_errors: true
+  register: hardening_disable_result
+  failed_when:
+    - hardening_disable_result is failed
+    - "'Could not find the requested service' not in hardening_disable_result.msg"
+
+- name: Ensure chrony is running
+  ansible.builtin.systemd:
+    name: chronyd
+    state: started
+    enabled: true
+  when: hardening_chrony
+  failed_when: false
+
+- name: Ensure chrony is installed
+  ansible.builtin.dnf:
+    name: chrony
+    state: present
+  when: hardening_chrony
+
+- name: Mask rsh services (STIG V-257793)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    masked: true
+  loop:
+    - rsh.socket
+    - rlogin.socket
+    - rexec.socket
+  failed_when: false
+
+- name: Disable USB storage (CIS 1.1.1.3)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install usb-storage"
+    line: "install usb-storage /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable cramfs (CIS 1.1.1.2)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install cramfs"
+    line: "install cramfs /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable freevxfs (CIS 1.1.1.4)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install freevxfs"
+    line: "install freevxfs /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable hfs (CIS 1.1.1.5)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install hfs"
+    line: "install hfs /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable hfsplus (CIS 1.1.1.6)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install hfsplus"
+    line: "install hfsplus /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable udf (CIS 1.1.1.8)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install udf"
+    line: "install udf /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable dccp (CIS 3.1.1)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install dccp"
+    line: "install dccp /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable sctp (CIS 3.1.2)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install sctp"
+    line: "install sctp /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable rds (CIS 3.1.3)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install rds"
+    line: "install rds /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Disable tipc (CIS 3.1.4)
+  ansible.builtin.lineinfile:
+    path: /etc/modprobe.d/hardening.conf
+    regexp: "^install tipc"
+    line: "install tipc /bin/true"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"

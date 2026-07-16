@@ -1,0 +1,22 @@
+---
+- name: Set nofile limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: "^\\*\\s+{{ item.type }}\\s+nofile"
+    line: "* {{ item.type }} nofile {{ item.value }}"
+    state: present
+  loop:
+    - { type: soft, value: "{{ hardening_nofile_soft }}" }
+    - { type: hard, value: "{{ hardening_nofile_hard }}" }
+  when: hardening_limits
+
+- name: Set nproc limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: "^\\*\\s+{{ item.type }}\\s+nproc"
+    line: "* {{ item.type }} nproc {{ item.value }}"
+    state: present
+  loop:
+    - { type: soft, value: "{{ hardening_nproc_soft }}" }
+    - { type: hard, value: "{{ hardening_nproc_hard }}" }
+  when: hardening_limits

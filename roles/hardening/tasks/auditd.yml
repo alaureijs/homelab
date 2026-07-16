@@ -1,0 +1,54 @@
+---
+- name: Install auditd
+  ansible.builtin.dnf:
+    name:
+      - audit
+      - audit-libs
+    state: present
+
+- name: Configure auditd log settings
+  ansible.builtin.lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: "^log_file =", line: "log_file = {{ hardening_auditd_log_file }}" }
+    - { regexp: "^max_log_file =", line: "max_log_file = {{ hardening_auditd_max_log_file }}" }
+    - { regexp: "^num_logs =", line: "num_logs = {{ hardening_auditd_num_logs }}" }
+    - { regexp: "^space_left =", line: "space_left = {{ hardening_auditd_space_left }}" }
+    - { regexp: "^admin_space_left =", line: "admin_space_left = {{ hardening_auditd_admin_space_left }}" }
+    - { regexp: "^flush =", line: "flush = {{ hardening_auditd_flush }}" }
+    - { regexp: "^freq =", line: "freq = {{ hardening_auditd_freq }}" }
+    - { regexp: "^disp_qos =", line: "disp_qos = {{ hardening_auditd_disp_qos }}" }
+    - { regexp: "^log_format =", line: "log_format = ENRICHED" }
+    - { regexp: "^write_logs =", line: "write_logs = yes" }
+    - { regexp: "^priority_boost =", line: "priority_boost = 4" }
+    - { regexp: "^name_format =", line: "name_format = HOSTNAME" }
+  notify: Restart auditd
+
+- name: Deploy audit rules
+  ansible.builtin.lineinfile:
+    path: /etc/audit/rules.d/hardening.rules
+    line: "{{ item }}"
+    state: present
+    create: true
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ hardening_audit_rules }}"
+  notify: Restart auditd
+
+- name: Ensure auditd is running
+  ansible.builtin.systemd:
+    name: auditd
+    state: started
+    enabled: true
+
+- name: Lock audit configuration (immutable) — requires reboot
+  ansible.builtin.lineinfile:
+    path: /etc/audit/rules.d/hardening.rules
+    line: "-e 2"
+    state: present
+  when: hardening_audit_immutable | default(false)
+  notify: Restart auditd

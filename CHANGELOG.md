@@ -8,6 +8,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `hardening` role — STIG and CIS Benchmark system hardening for Rocky Linux 10:
+  - Kernel/network hardening (sysctl): IP forwarding, source routing, ICMP
+    redirects, SYN cookies, log martians, RFC 1337, reverse path filtering
+  - SSH hardening: protocol 2, restricted algorithms (STIG-approved ciphers,
+    MACs, KexAlgorithms), X11 forwarding disabled, idle timeout, max auth tries
+  - File permissions: sticky bit on world-writable dirs, core dump restrictions,
+    cron ownership, umask 027
+  - Service hardening: disable unnecessary services (avahi, cups, rpcbind, etc.),
+    mask rsh services, disable unused kernel modules (cramfs, freevxfs, hfs, udf,
+    dccp, sctp, rds, tipc, USB storage)
+  - Password/auth: pwquality (minlen 14, complexity), faillock (5 attempts,
+    15min lockout), password history (5), SHA-512, aging policies
+  - Audit logging: auditd with CIS 4.1 rules (identity, authorization,
+    logins, file deletion, privilege escalation, MAC policy, time/network changes)
+  - Warning banners: login and SSH authorized users notice
+  - Resource limits: nofile/nproc 65536
+  - All modules independently toggleable via `hardening_*` defaults
 - `ansible02` host — Rocky Linux 10 VM (2 vCPU, 4 GB RAM, 80 GB disk)
   at `192.168.100.11` on `ansible-net` network.
 - `monitoring` inventory group with `group_vars/monitoring/main.yml`.

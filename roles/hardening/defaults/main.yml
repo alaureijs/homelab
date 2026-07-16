@@ -1,0 +1,297 @@
+---
+# hardening role defaults
+# STIG and CIS Benchmark hardening for Rocky Linux 10 / RHEL 10
+#
+# Each section can be independently enabled/disabled.
+# Set to false to skip a section entirely.
+
+# --- Module toggles ---
+hardening_sysctl: true
+hardening_ssh: true
+hardening_file_permissions: true
+hardening_services: true
+hardening_password_auth: true
+hardening_auditd: true
+hardening_banner: true
+hardening_limits: true
+hardening_permissions: true
+
+# --- Kernel / Network (CIS 3.x, STIG V-257784+) ---
+# IP forwarding (disable on hosts, enable on routers)
+hardening_ip_forwarding: false
+
+# IPv6 (disable if not in use)
+hardening_ipv6_disable: false
+
+# SYN flood protection
+hardening_syncookies: true
+
+# Source routing
+hardening_accept_source_route: false
+
+# ICMP redirects
+hardening_accept_redirects: false
+hardening_send_redirects: false
+
+# IP spoofing
+hardening_rp_filter: true
+
+# Log Martian packets
+hardening_log_martians: true
+
+# Ignore ICMP broadcasts
+hardening_ignore_broadcasts: true
+
+# Ignore bogus ICMP errors
+hardening_ignore_bogus_errors: true
+
+# Reverse path filtering
+hardening_reverse_path_filter: true
+
+# TCP SYN cookies (syncookies already covered above)
+
+# Hardened network sysctl values
+hardening_tcp_rfc1337: true
+hardening_tcp_timestamps: false
+
+# Computed sysctl dictionary (used by sysctl.yml)
+hardening_sysctl_params:
+  net.ipv4.ip_forward: "{{ '1' if hardening_ip_forwarding else '0' }}"
+  net.ipv4.conf.all.send_redirects: "{{ '1' if hardening_send_redirects else '0' }}"
+  net.ipv4.conf.default.send_redirects: "{{ '1' if hardening_send_redirects else '0' }}"
+  net.ipv4.conf.all.accept_source_route: "{{ '1' if hardening_accept_source_route else '0' }}"
+  net.ipv4.conf.default.accept_source_route: "{{ '1' if hardening_accept_source_route else '0' }}"
+  net.ipv4.conf.all.accept_redirects: "{{ '1' if hardening_accept_redirects else '0' }}"
+  net.ipv4.conf.default.accept_redirects: "{{ '1' if hardening_accept_redirects else '0' }}"
+  net.ipv4.conf.all.secure_redirects: "{{ '1' if hardening_accept_redirects else '0' }}"
+  net.ipv4.conf.default.secure_redirects: "{{ '1' if hardening_accept_redirects else '0' }}"
+  net.ipv4.conf.all.log_martians: "{{ '1' if hardening_log_martians else '0' }}"
+  net.ipv4.conf.default.log_martians: "{{ '1' if hardening_log_martians else '0' }}"
+  net.ipv4.conf.all.ignore_broadcasts: "{{ '1' if hardening_ignore_broadcasts else '0' }}"
+  net.ipv4.icmp_echo_ignore_broadcasts: "{{ '1' if hardening_ignore_broadcasts else '0' }}"
+  net.ipv4.icmp_ignore_bogus_error_responses: "{{ '1' if hardening_ignore_bogus_errors else '0' }}"
+  net.ipv4.conf.all.rp_filter: "{{ '1' if hardening_reverse_path_filter else '0' }}"
+  net.ipv4.conf.default.rp_filter: "{{ '1' if hardening_reverse_path_filter else '0' }}"
+  net.ipv4.tcp_syncookies: "{{ '1' if hardening_syncookies else '0' }}"
+  net.ipv4.tcp_rfc1337: "{{ '1' if hardening_tcp_rfc1337 else '0' }}"
+  net.ipv4.tcp_timestamps: "{{ '1' if hardening_tcp_timestamps else '0' }}"
+  net.ipv6.conf.all.accept_redirects: "{{ '1' if hardening_ipv6_disable else '0' }}"
+  net.ipv6.conf.default.accept_redirects: "{{ '1' if hardening_ipv6_disable else '0' }}"
+  net.ipv6.conf.all.accept_source_route: "{{ '1' if hardening_ipv6_disable else '0' }}"
+  net.ipv6.conf.default.accept_source_route: "{{ '1' if hardening_ipv6_disable else '0' }}"
+  net.ipv4.conf.all.bootp_relay: "0"
+  net.ipv4.conf.all.proxy_arp: "0"
+  net.ipv4.conf.all.shared_media: "1"
+  net.ipv4.conf.default.shared_media: "1"
+
+# --- SSH (CIS 5.2, STIG V-257795+) ---
+hardening_ssh_port: 22
+hardening_ssh_protocol: 2
+hardening_ssh_x11_forwarding: false
+hardening_ssh_max_auth_tries: 4
+hardening_ssh_max_sessions: 10
+hardening_ssh_login_grace_time: 60
+hardening_ssh_client_alive_interval: 300
+hardening_ssh_client_alive_count: 3
+hardening_ssh_permit_root_login: "prohibit-password"
+hardening_ssh_permit_empty_passwords: false
+hardening_ssh_permit_user_environment: false
+hardening_ssh_permit_tunnel: false
+hardening_ssh_allow_agent_forwarding: false
+hardening_ssh_allow_tcp_forwarding: "no"
+hardening_ssh_print_last_log: true
+hardening_ssh_x11_display_offset: 10
+hardening_ssh_max_startups_start: 10
+hardening_ssh_max_startups_rate: 30
+hardening_ssh_max_startups_full: 60
+hardening_ssh_log_level: "VERBOSE"
+hardening_ssh_deny_users: []
+hardening_ssh_allow_users: []
+hardening_ssh_deny_groups: []
+hardening_ssh_allow_groups: []
+
+# Host key algorithms (STIG-approved only)
+hardening_ssh_host_key_algorithms:
+  - ssh-ed25519
+  - ecdsa-sha2-nistp521
+  - rsa-sha2-512
+  - rsa-sha2-256
+
+# Kex algorithms (STIG-approved, no diffie-hellman-group1-sha1)
+hardening_ssh_kex_algorithms:
+  - diffie-hellman-group18-sha512
+  - diffie-hellman-group16-sha512
+  - ecdh-sha2-nistp521
+  - ecdh-sha2-nistp384
+  - ecdh-sha2-nistp256
+
+# Ciphers (STIG-approved only)
+hardening_ssh_ciphers:
+  - aes256-gcm@openssh.com
+  - chacha20-poly1305@openssh.com
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+
+# MACs (STIG-approved only)
+hardening_ssh_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+  - hmac-sha2-512
+  - hmac-sha2-256
+
+# --- File Permissions (CIS 6.x, STIG V-258060+) ---
+# World-writable files should have sticky bit
+hardening_sticky_bit: true
+
+# Disable core dumps for SUID programs
+hardening_core_dump_suid: true
+
+# Restrict cron to root
+hardening_cron_owner_root: true
+
+# Set umask 027
+hardening_umask: "027"
+
+# --- Core dumps ---
+hardening_disable_core_dumps: true
+hardening_core_dump_pattern: "|/bin/false"
+
+# SUID/SGID audit list (files to check exist)
+hardening_suid_sgid_audit: true
+
+# --- Services (CIS 2.x) ---
+# Services to disable
+hardening_disable_services:
+  - avahi-daemon
+  - cups
+  - rpcbind
+  - smb
+  - nfs
+  - vsftpd
+  - dovecot
+  - smb
+  - squid
+  - ypserv
+  - rsh.socket
+  - rlogin.socket
+  - rexec.socket
+  - telnet.socket
+  - tftp.socket
+  - xinetd
+
+# Time synchronization (ensure chrony is running)
+hardening_chrony: true
+
+# --- Password / Auth (CIS 5.3, STIG V-257790+) ---
+# Password aging
+hardening_password_max_days: 365
+hardening_password_min_days: 7
+hardening_password_warn_days: 14
+hardening_password_min_len: 14
+hardening_password_remember: 5
+
+# PAM pwquality (CIS 5.3.1)
+hardening_pwquality_minlen: 14
+hardening_pwquality_dcredit: -1
+hardening_pwquality_ucredit: -1
+hardening_pwquality_ocredit: -1
+hardening_pwquality_lcredit: -1
+hardening_pwquality_maxrepeat: 3
+hardening_pwquality_maxclassrepeat: 4
+
+# PAM lockout (CIS 5.3.4)
+hardening_lockout_attempts: 5
+hardening_lockout_unlock_time: 900
+
+# PAM remember (CIS 5.3.3)
+hardening_pam_remember: 5
+hardening_pam_remember_retry: 3
+
+# --- Auditd (CIS 4.1, STIG V-257793+) ---
+hardening_auditd_log_file: /var/log/audit/audit.log
+hardening_auditd_max_log_file: 32
+hardening_auditd_num_logs: 5
+hardening_auditd_space_left: 150
+hardening_auditd_admin_space_left: 75
+hardening_auditd_flush: data
+hardening_auditd_freq: 50
+hardening_auditd_disp_qos: lossy
+
+# Audit rules (CIS 4.1.4+)
+hardening_audit_rules:
+  # Identity
+  - "-w /etc/group -p wa -k identity"
+  - "-w /etc/passwd -p wa -k identity"
+  - "-w /etc/gshadow -p wa -k identity"
+  - "-w /etc/shadow -p wa -k identity"
+  - "-w /etc/security/opasswd -p wa -k identity"
+  # Authorization
+  - "-w /etc/sudoers -p wa -k scope"
+  - "-w /etc/sudoers.d/ -p wa -k scope"
+  - "-w /var/log/sudo.log -p wa -k actions"
+  # Login/logout
+  - "-w /var/log/lastlog -p wa -k logins"
+  - "-w /var/run/faillock/ -p wa -k logins"
+  # Session
+  - "-w /var/run/utmp -p wa -k session"
+  - "-w /var/log/wtmp -p wa -k logins"
+  - "-w /var/log/btmp -p wa -k logins"
+  # File deletion
+  - "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete"
+  # Privileged commands
+  - "-a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -k privilege_escalation"
+  - "-a always,exit -F arch=b64 -S execve -C gid!=egid -F egid=0 -k privilege_escalation"
+  # System calls
+  - "-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod"
+  - "-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod"
+  - >-
+    -a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr
+    -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000
+    -F auid!=4294967295 -k perm_mod
+  - "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts"
+  # Time changes
+  - "-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change"
+  - "-w /etc/localtime -p wa -k time-change"
+  # Network
+  - "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale"
+  - "-w /etc/issue -p wa -k system-locale"
+  - "-w /etc/issue.net -p wa -k system-locale"
+  - "-w /etc/hosts -p wa -k system-locale"
+  - "-w /etc/sysconfig/network -p wa -k system-locale"
+  # MAC
+  - "-w /etc/selinux/ -p wa -k MAC-policy"
+  # Immutable (requires reboot to add new rules)
+  # - "-e 2"
+
+# --- Banner / Warning (CIS 1.7, STIG V-257754+) ---
+hardening_warning_banner: |
+  Authorized users only. All activity may be monitored and reported.
+  Unauthorized access is prohibited and will be prosecuted.
+hardening_warning_banner_path: /etc/issue
+
+# SSH banner
+hardening_ssh_banner: /etc/issue.net
+hardening_ssh_warning_banner: |
+  Authorized users only. All activity may be monitored and reported.
+
+# --- Limits (CIS 1.5) ---
+hardening_nofile_soft: 65536
+hardening_nofile_hard: 65536
+hardening_nproc_soft: 65536
+hardening_nproc_hard: 65536
+
+# --- File/directory permissions ---
+hardening_home_mode: "0700"
+hardening_umask_value: "077"
+
+# Directories that should be owned by root and not world-writable
+hardening_protect_dirs:
+  - /etc
+  - /usr
+  - /var
+  - /boot
+  - /sbin
+  - /bin
+  - /lib
+  - /lib64

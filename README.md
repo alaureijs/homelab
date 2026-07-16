@@ -49,7 +49,8 @@ ansible/
 │   ├── harbor_config/                   # Harbor users, projects, registries via API
 │   ├── harbor_containers/               # Sync container images to Harbor
 │   ├── monitoring/                      # Monitoring stack (Grafana, Prometheus, etc.)
-│   └── node_exporter/                   # Node Exporter with mTLS
+│   ├── node_exporter/                   # Node Exporter with mTLS
+│   └── hardening/                       # STIG/CIS system hardening
 ├── LIFECYCLE.md                         # Version management and update procedures
 └── scripts/
     └── ufw-libvirt.sh                   # UFW rules for libvirt networks
@@ -75,6 +76,7 @@ Packages installed by roles on target hosts (Rocky Linux 10):
 | `certificates` | `python3-cryptography` | Required by `community.crypto` modules |
 | `firewall` | `firewalld` | Host firewall |
 | `monitoring` | `nginx` | Reverse proxy for Grafana/Prometheus |
+| `hardening` | `audit`, `audit-libs`, `libpwquality`, `chrony` | Audit logging, password quality, NTP |
 
 Tools expected to exist (not installed by roles):
 

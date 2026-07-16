@@ -198,6 +198,13 @@ hardening_disable_services:
   - telnet.socket
   - tftp.socket
   - xinetd
+  - bluetooth
+  - udisks2
+  - gssproxy
+  - kdump
+  - mdmonitor
+  - sssd
+  - rngd
 
 # Time synchronization (ensure chrony is running)
 hardening_chrony: true

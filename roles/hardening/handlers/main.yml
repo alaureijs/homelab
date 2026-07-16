@@ -5,6 +5,5 @@
     state: restarted
 
 - name: Restart auditd
-  ansible.builtin.systemd:
-    name: auditd
-    state: restarted
+  ansible.builtin.command: augenrules --load
+  changed_when: true

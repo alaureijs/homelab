@@ -29,6 +29,7 @@
     - role: firewall
     - role: certificates
     - role: podman
+    - role: hardening
     - role: node_exporter
 
 # Play 2: Deploy monitoring stack on monitoring host

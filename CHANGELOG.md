@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `hardening` playbook — standalone playbook for running hardening on any host.
+- `hardening` role added to `provision-ansible01.yml` and `provision-ansible02.yml`.
 - `hardening` role — STIG and CIS Benchmark system hardening for Rocky Linux 10:
   - Kernel/network hardening (sysctl): IP forwarding, source routing, ICMP
     redirects, SYN cookies, log martians, RFC 1337, reverse path filtering

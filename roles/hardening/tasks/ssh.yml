@@ -9,19 +9,32 @@
   loop:
     - { regexp: "^#?Port ", line: "Port {{ hardening_ssh_port }}" }
     - { regexp: "^#?Protocol ", line: "Protocol {{ hardening_ssh_protocol }}" }
-    - { regexp: "^#?X11Forwarding ", line: "X11Forwarding {{ hardening_ssh_x11_forwarding | lower }}" }
-    - { regexp: "^#?MaxAuthTries ", line: "MaxAuthTries {{ hardening_ssh_max_auth_tries }}" }
-    - { regexp: "^#?MaxSessions ", line: "MaxSessions {{ hardening_ssh_max_sessions }}" }
-    - { regexp: "^#?LoginGraceTime ", line: "LoginGraceTime {{ hardening_ssh_login_grace_time }}" }
-    - { regexp: "^#?ClientAliveInterval ", line: "ClientAliveInterval {{ hardening_ssh_client_alive_interval }}" }
-    - { regexp: "^#?ClientAliveCountMax ", line: "ClientAliveCountMax {{ hardening_ssh_client_alive_count }}" }
-    - { regexp: "^#?PermitRootLogin ", line: "PermitRootLogin {{ hardening_ssh_permit_root_login }}" }
-    - { regexp: "^#?PermitEmptyPasswords ", line: "PermitEmptyPasswords {{ hardening_ssh_permit_empty_passwords | lower }}" }
-    - { regexp: "^#?PermitUserEnvironment ", line: "PermitUserEnvironment {{ hardening_ssh_permit_user_environment | lower }}" }
-    - { regexp: "^#?PermitTunnel ", line: "PermitTunnel {{ hardening_ssh_permit_tunnel | lower }}" }
-    - { regexp: "^#?AllowAgentForwarding ", line: "AllowAgentForwarding {{ hardening_ssh_allow_agent_forwarding | lower }}" }
-    - { regexp: "^#?AllowTcpForwarding ", line: "AllowTcpForwarding {{ hardening_ssh_allow_tcp_forwarding }}" }
-    - { regexp: "^#?PrintLastLog ", line: "PrintLastLog {{ hardening_ssh_print_last_log | lower }}" }
+    - { regexp: "^#?X11Forwarding ",
+        line: "X11Forwarding {{ hardening_ssh_x11_forwarding | ternary('yes', 'no') }}" }
+    - { regexp: "^#?MaxAuthTries ",
+        line: "MaxAuthTries {{ hardening_ssh_max_auth_tries }}" }
+    - { regexp: "^#?MaxSessions ",
+        line: "MaxSessions {{ hardening_ssh_max_sessions }}" }
+    - { regexp: "^#?LoginGraceTime ",
+        line: "LoginGraceTime {{ hardening_ssh_login_grace_time }}" }
+    - { regexp: "^#?ClientAliveInterval ",
+        line: "ClientAliveInterval {{ hardening_ssh_client_alive_interval }}" }
+    - { regexp: "^#?ClientAliveCountMax ",
+        line: "ClientAliveCountMax {{ hardening_ssh_client_alive_count }}" }
+    - { regexp: "^#?PermitRootLogin ",
+        line: "PermitRootLogin {{ hardening_ssh_permit_root_login }}" }
+    - { regexp: "^#?PermitEmptyPasswords ",
+        line: "PermitEmptyPasswords {{ hardening_ssh_permit_empty_passwords | ternary('yes', 'no') }}" }
+    - { regexp: "^#?PermitUserEnvironment ",
+        line: "PermitUserEnvironment {{ hardening_ssh_permit_user_environment | ternary('yes', 'no') }}" }
+    - { regexp: "^#?PermitTunnel ",
+        line: "PermitTunnel {{ hardening_ssh_permit_tunnel | ternary('yes', 'no') }}" }
+    - { regexp: "^#?AllowAgentForwarding ",
+        line: "AllowAgentForwarding {{ hardening_ssh_allow_agent_forwarding | ternary('yes', 'no') }}" }
+    - { regexp: "^#?AllowTcpForwarding ",
+        line: "AllowTcpForwarding {{ hardening_ssh_allow_tcp_forwarding }}" }
+    - { regexp: "^#?PrintLastLog ",
+        line: "PrintLastLog {{ hardening_ssh_print_last_log | ternary('yes', 'no') }}" }
     - { regexp: "^#?X11DisplayOffset ",
         line: "X11DisplayOffset {{ hardening_ssh_x11_display_offset }}" }
     - { regexp: "^#?MaxStartups",

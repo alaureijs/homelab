@@ -35,4 +35,5 @@
     - role: firewall
     - role: podman
     - role: certificates
+    - role: hardening
     - role: harbor

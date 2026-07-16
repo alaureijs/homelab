@@ -12,3 +12,6 @@ vm_hostname: ansible01
 vm_dns_entries:
   - name: harbor.local.lan
     ip: 192.168.100.10
+
+# Hardening — Podman requires IP forwarding
+hardening_ip_forwarding: true

@@ -2,9 +2,6 @@
 ansible_user: root
 ansible_python_interpreter: /usr/bin/python3
 
-# Hardening — Podman requires IP forwarding
-hardening_ip_forwarding: true
-
 # Domain
 lab_domain: local.lan
 

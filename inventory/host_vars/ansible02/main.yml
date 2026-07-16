@@ -17,3 +17,6 @@ vm_hostname: ansible02
 vm_dns_entries:
   - name: monitoring.local.lan
     ip: 192.168.100.11
+
+# Hardening — Podman requires IP forwarding
+hardening_ip_forwarding: true

@@ -372,6 +372,11 @@ Use `scripts/ufw-libvirt.sh` to apply these automatically.
 - **Storage pool**: `sdb` on `/dev/sdb` (XFS, 465 GB Samsung SSD)
 - **Network**: `ansible-net` (NAT, bridge `virbr-ansible`)
 
+## Lifecycle Management
+
+See [LIFECYCLE.md](LIFECYCLE.md) for version management procedures,
+update workflows, and troubleshooting.
+
 ## License
 
 Internal use.

@@ -17,11 +17,11 @@ hardening_limits: true
 hardening_permissions: true
 
 # --- Kernel / Network (CIS 3.x, STIG V-257784+) ---
-# IP forwarding (disable on hosts, enable on routers)
+# IP forwarding (disable by default; hosts running Podman set to true)
 hardening_ip_forwarding: false
 
-# IPv6 (disable if not in use)
-hardening_ipv6_disable: false
+# IPv6 redirect/source-route hardening (disable unless needed)
+hardening_ipv6_disable: true
 
 # SYN flood protection
 hardening_syncookies: true
@@ -75,10 +75,10 @@ hardening_sysctl_params:
   net.ipv4.tcp_syncookies: "{{ '1' if hardening_syncookies else '0' }}"
   net.ipv4.tcp_rfc1337: "{{ '1' if hardening_tcp_rfc1337 else '0' }}"
   net.ipv4.tcp_timestamps: "{{ '1' if hardening_tcp_timestamps else '0' }}"
-  net.ipv6.conf.all.accept_redirects: "{{ '1' if hardening_ipv6_disable else '0' }}"
-  net.ipv6.conf.default.accept_redirects: "{{ '1' if hardening_ipv6_disable else '0' }}"
-  net.ipv6.conf.all.accept_source_route: "{{ '1' if hardening_ipv6_disable else '0' }}"
-  net.ipv6.conf.default.accept_source_route: "{{ '1' if hardening_ipv6_disable else '0' }}"
+  net.ipv6.conf.all.accept_redirects: "{{ '0' if hardening_ipv6_disable else '1' }}"
+  net.ipv6.conf.default.accept_redirects: "{{ '0' if hardening_ipv6_disable else '1' }}"
+  net.ipv6.conf.all.accept_source_route: "{{ '0' if hardening_ipv6_disable else '1' }}"
+  net.ipv6.conf.default.accept_source_route: "{{ '0' if hardening_ipv6_disable else '1' }}"
   net.ipv4.conf.all.bootp_relay: "0"
   net.ipv4.conf.all.proxy_arp: "0"
   net.ipv4.conf.all.shared_media: "1"

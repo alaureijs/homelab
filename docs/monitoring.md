@@ -34,7 +34,7 @@ https://monitoring.local.lan/prometheus/
 
 ## Grafana Dashboards
 
-Dashboards are provisioned via ConfigMaps defined in the pod manifest. To add a new dashboard:
+Dashboards are provisioned via ConfigMaps defined in `defaults/main.yml`. To add a new dashboard:
 
 1. Export dashboard JSON from Grafana UI (Share → Export → Save to file)
 2. Place JSON file in `roles/monitoring/files/dashboards/`
@@ -60,12 +60,26 @@ Dashboards are auto-refreshed every 30 seconds from ConfigMap volumes.
 
 ### ConfigMap Structure
 
-- `monitoring-datasources`: Prometheus and Alertmanager datasource config
-- `monitoring-dashboards-provider`: Dashboard provisioning provider config
-- `monitoring-dashboard-{name}`: Individual dashboard JSON files
-- `monitoring-prometheus`: Prometheus scrape config (prometheus.yml)
-- `monitoring-prometheus-rules`: Alert rules (node-exporter.yml)
-- `monitoring-alertmanager`: Alertmanager configuration
+All ConfigMaps are defined in `defaults/main.yml` via `monitoring_configmaps`:
+
+```yaml
+monitoring_configmaps:
+  - name: "{{ monitoring_pod_name }}-datasources"
+    file: "{{ role_path }}/files/grafana/datasources.yml"
+  - name: "{{ monitoring_pod_name }}-prometheus"
+    template: "{{ role_path }}/templates/prometheus.yml.j2"
+```
+
+- Use `file` for static content
+- Use `template` for Jinja2 templates
+
+### ConfigMap Files
+
+- `files/grafana/datasources.yml` — Grafana datasource config
+- `files/grafana/dashboards-provider.yml` — Dashboard provisioning provider
+- `files/prometheus/rules.yml` — Alert rules
+- `templates/prometheus.yml.j2` — Prometheus scrape config (templated)
+- `templates/alertmanager.yml.j2` — Alertmanager config (templated)
 
 ### Default Dashboards
 

@@ -110,6 +110,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `monitoring-prometheus-rules`: Alert rules (node-exporter.yml)
   - `monitoring-alertmanager`: Alertmanager configuration
 - Default alert rules: HighCPUUsage, HighMemoryUsage, HighDiskUsage, NodeDown
+- ConfigMap structure defined in `defaults/main.yml` via `monitoring_configmaps`:
+  - Use `file` for static content, `template` for Jinja2 templates
+  - Config files in `files/grafana/` and `files/prometheus/`
+  - Templates in `templates/` (prometheus.yml.j2, alertmanager.yml.j2)
 
 ### Changed
 

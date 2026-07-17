@@ -380,6 +380,49 @@
     name: "{{ monitoring_network_name }}"
     state: present
 
+- name: Render Prometheus configuration
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/prometheus.yml.j2"
+    dest: /tmp/monitoring-prometheus.yml
+    mode: "0644"
+
+- name: Render Alertmanager configuration
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/alertmanager.yml.j2"
+    dest: /tmp/monitoring-alertmanager.yml
+    mode: "0644"
+
+- name: Read Grafana datasources
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/grafana/datasources.yml"
+  register: monitoring_cm_datasources
+
+- name: Read Grafana dashboards provider
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/grafana/dashboards-provider.yml"
+  register: monitoring_cm_dashboards_provider
+
+- name: Read Prometheus rules
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/files/prometheus/rules.yml"
+  register: monitoring_cm_prometheus_rules
+
+- name: Read rendered Prometheus config
+  ansible.builtin.slurp:
+    src: /tmp/monitoring-prometheus.yml
+  register: monitoring_cm_prometheus
+
+- name: Read rendered Alertmanager config
+  ansible.builtin.slurp:
+    src: /tmp/monitoring-alertmanager.yml
+  register: monitoring_cm_alertmanager
+
+- name: Read Grafana dashboards
+  ansible.builtin.slurp:
+    src: "{{ item.file }}"
+  loop: "{{ monitoring_grafana_dashboards }}"
+  register: monitoring_cm_dashboards
+
 - name: Template monitoring pod manifest
   ansible.builtin.template:
     src: monitoring-pod.yml.j2

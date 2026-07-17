@@ -53,3 +53,17 @@ monitoring_grafana_dashboards:
     file: "{{ role_path }}/files/dashboards/node-exporter.json"
   - name: prometheus
     file: "{{ role_path }}/files/dashboards/prometheus.json"
+
+# ConfigMaps (inline in pod manifest)
+# Use 'file' for static content, 'template' for Jinja2 templates
+monitoring_configmaps:
+  - name: "{{ monitoring_pod_name }}-datasources"
+    file: "{{ role_path }}/files/grafana/datasources.yml"
+  - name: "{{ monitoring_pod_name }}-dashboards-provider"
+    file: "{{ role_path }}/files/grafana/dashboards-provider.yml"
+  - name: "{{ monitoring_pod_name }}-prometheus"
+    template: "{{ role_path }}/templates/prometheus.yml.j2"
+  - name: "{{ monitoring_pod_name }}-prometheus-rules"
+    file: "{{ role_path }}/files/prometheus/rules.yml"
+  - name: "{{ monitoring_pod_name }}-alertmanager"
+    template: "{{ role_path }}/templates/alertmanager.yml.j2"

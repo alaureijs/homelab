@@ -6,21 +6,7 @@ metadata:
     app: monitoring
 data:
   datasources.yml: |
-    apiVersion: 1
-    datasources:
-      - name: Prometheus
-        type: prometheus
-        access: proxy
-        url: https://{{ monitoring_hostname }}/prometheus/
-        isDefault: true
-        editable: false
-      - name: Alertmanager
-        type: alertmanager
-        access: proxy
-        url: https://{{ monitoring_hostname }}:9093
-        editable: false
-        jsonData:
-          implementation: prometheus
+{{ monitoring_cm_datasources.content | b64decode | indent(4) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -30,18 +16,7 @@ metadata:
     app: monitoring
 data:
   dashboards.yml: |
-    apiVersion: 1
-    providers:
-      - name: 'default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        updateIntervalSeconds: 30
-        options:
-          path: /var/lib/grafana/dashboards
-          foldersFromFilesStructure: false
+{{ monitoring_cm_dashboards_provider.content | b64decode | indent(4) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -51,50 +26,7 @@ metadata:
     app: monitoring
 data:
   prometheus.yml: |
-    global:
-      scrape_interval: {{ monitoring_prometheus_scrape_interval }}
-      evaluation_interval: {{ monitoring_prometheus_evaluation_interval }}
-
-      external_labels:
-        cluster: local
-        environment: lab
-
-    rule_files:
-      - /etc/prometheus/rules/*.yml
-
-    alerting:
-      alertmanagers:
-        - static_configs:
-            - targets:
-                - localhost:9093
-
-    scrape_configs:
-      - job_name: prometheus
-        metrics_path: /prometheus/metrics
-        static_configs:
-          - targets:
-              - localhost:9090
-
-      - job_name: node-exporter
-        scheme: https
-        tls_config:
-          ca_file: {{ monitoring_mtls_ca_cert }}
-          cert_file: {{ monitoring_mtls_client_cert }}
-          key_file: {{ monitoring_mtls_client_key }}
-        static_configs:
-          - targets:
-{% for host in groups['all'] | sort %}
-{% if hostvars[host].get('node_exporter_enabled', true) %}
-              - "{{ hostvars[host]['vm_hostname'] }}.{{ lab_domain }}:{{ hostvars[host].get('node_exporter_port', 9100) }}"
-{% endif %}
-{% endfor %}
-            labels:
-              cluster: local
-
-      - job_name: alertmanager
-        static_configs:
-          - targets:
-              - localhost:9093
+{{ monitoring_cm_prometheus.content | b64decode | indent(4) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -103,45 +35,8 @@ metadata:
   labels:
     app: monitoring
 data:
-  node-exporter.yml: |
-    groups:
-      - name: node-exporter
-        rules:
-          - alert: HighCPUUsage
-            expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-            for: 5m
-            labels:
-              severity: warning
-            annotations:
-              summary: "High CPU usage on {{ $labels.instance }}"
-              description: "CPU usage is above 80% for more than 5 minutes"
-
-          - alert: HighMemoryUsage
-            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
-            for: 5m
-            labels:
-              severity: warning
-            annotations:
-              summary: "High memory usage on {{ $labels.instance }}"
-              description: "Memory usage is above 80% for more than 5 minutes"
-
-          - alert: HighDiskUsage
-            expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
-            for: 5m
-            labels:
-              severity: warning
-            annotations:
-              summary: "High disk usage on {{ $labels.instance }}"
-              description: "Disk usage is above 85% for more than 5 minutes"
-
-          - alert: NodeDown
-            expr: up{job="node-exporter"} == 0
-            for: 1m
-            labels:
-              severity: critical
-            annotations:
-              summary: "Node {{ $labels.instance }} is down"
-              description: "Node has been unreachable for more than 1 minute"
+  rules.yml: |
+{{ monitoring_cm_prometheus_rules.content | b64decode | indent(4) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -151,30 +46,20 @@ metadata:
     app: monitoring
 data:
   alertmanager.yml: |
-    global:
-{% if monitoring_alertmanager_smtp_smarthost %}
-      smtp_smarthost: "{{ monitoring_alertmanager_smtp_smarthost }}"
-      smtp_from: "{{ monitoring_alertmanager_smtp_from }}"
-      smtp_auth_username: "{{ monitoring_alertmanager_smtp_auth_username }}"
-      smtp_auth_password: "{{ monitoring_alertmanager_smtp_auth_password }}"
-{% endif %}
-
-    route:
-      group_by: ['alertname']
-      group_wait: 10s
-      group_interval: 10s
-      repeat_interval: 1h
-      receiver: default
-
-    receivers:
-      - name: default
-
-    inhibit_rules:
-      - source_match:
-          severity: critical
-        target_match:
-          severity: warning
-        equal: ['alertname', 'dev', 'instance']
+{{ monitoring_cm_alertmanager.content | b64decode | indent(4) }}
+{% for dashboard in monitoring_grafana_dashboards %}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-dashboard-{{ dashboard.name }}
+  labels:
+    app: monitoring
+    dashboard: "{{ dashboard.name }}"
+data:
+  {{ dashboard.name }}.json: |
+{{ monitoring_cm_dashboards.results[loop.index0].content | b64decode | indent(4) }}
+{% endfor %}
 ---
 apiVersion: v1
 kind: Pod

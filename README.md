@@ -82,6 +82,7 @@ ansible-playbook playbooks/harbor-users.yml
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration, logging, management
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack details, mTLS, troubleshooting
 - [docs/elasticsearch.md](docs/elasticsearch.md) — ELK stack deployment, configuration, troubleshooting
+- [docs/elk-configuration.md](docs/elk-configuration.md) — ELK configuration manual (without role changes)
 - [docs/hardening.md](docs/hardening.md) — Hardening modules, SELinux, audit rules
 - [docs/vm.md](docs/vm.md) — VM lifecycle, cloud-init, host UFW
 

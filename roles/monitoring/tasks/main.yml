@@ -20,8 +20,6 @@
     mode: "0755"
   loop:
     - "{{ monitoring_config_dir }}"
-    - "{{ monitoring_config_dir }}/prometheus"
-    - "{{ monitoring_config_dir }}/alertmanager"
     - "{{ monitoring_data_dir }}"
     - "{{ monitoring_data_dir }}/prometheus"
     - "{{ monitoring_data_dir }}/alertmanager"
@@ -381,24 +379,6 @@
   containers.podman.podman_network:
     name: "{{ monitoring_network_name }}"
     state: present
-
-- name: Template Prometheus configuration
-  ansible.builtin.template:
-    src: prometheus.yml.j2
-    dest: "{{ monitoring_config_dir }}/prometheus/prometheus.yml"
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Restart monitoring pod
-
-- name: Template Alertmanager configuration
-  ansible.builtin.template:
-    src: alertmanager.yml.j2
-    dest: "{{ monitoring_config_dir }}/alertmanager/alertmanager.yml"
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Restart monitoring pod
 
 - name: Template monitoring pod manifest
   ansible.builtin.template:

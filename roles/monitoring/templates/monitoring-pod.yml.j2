@@ -42,19 +42,139 @@ data:
         options:
           path: /var/lib/grafana/dashboards
           foldersFromFilesStructure: false
-{% for dashboard in monitoring_grafana_dashboards %}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ monitoring_pod_name }}-dashboard-{{ dashboard.name }}
+  name: {{ monitoring_pod_name }}-prometheus
   labels:
     app: monitoring
-    dashboard: "{{ dashboard.name }}"
 data:
-  {{ dashboard.name }}.json: |
-{{ lookup('file', dashboard.file) | indent(4) }}
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ monitoring_prometheus_scrape_interval }}
+      evaluation_interval: {{ monitoring_prometheus_evaluation_interval }}
+
+      external_labels:
+        cluster: local
+        environment: lab
+
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - localhost:9093
+
+    scrape_configs:
+      - job_name: prometheus
+        metrics_path: /prometheus/metrics
+        static_configs:
+          - targets:
+              - localhost:9090
+
+      - job_name: node-exporter
+        scheme: https
+        tls_config:
+          ca_file: {{ monitoring_mtls_ca_cert }}
+          cert_file: {{ monitoring_mtls_client_cert }}
+          key_file: {{ monitoring_mtls_client_key }}
+        static_configs:
+          - targets:
+{% for host in groups['all'] | sort %}
+{% if hostvars[host].get('node_exporter_enabled', true) %}
+              - "{{ hostvars[host]['vm_hostname'] }}.{{ lab_domain }}:{{ hostvars[host].get('node_exporter_port', 9100) }}"
+{% endif %}
 {% endfor %}
+            labels:
+              cluster: local
+
+      - job_name: alertmanager
+        static_configs:
+          - targets:
+              - localhost:9093
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-prometheus-rules
+  labels:
+    app: monitoring
+data:
+  node-exporter.yml: |
+    groups:
+      - name: node-exporter
+        rules:
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on {{ $labels.instance }}"
+              description: "CPU usage is above 80% for more than 5 minutes"
+
+          - alert: HighMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on {{ $labels.instance }}"
+              description: "Memory usage is above 80% for more than 5 minutes"
+
+          - alert: HighDiskUsage
+            expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High disk usage on {{ $labels.instance }}"
+              description: "Disk usage is above 85% for more than 5 minutes"
+
+          - alert: NodeDown
+            expr: up{job="node-exporter"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Node {{ $labels.instance }} is down"
+              description: "Node has been unreachable for more than 1 minute"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-alertmanager
+  labels:
+    app: monitoring
+data:
+  alertmanager.yml: |
+    global:
+{% if monitoring_alertmanager_smtp_smarthost %}
+      smtp_smarthost: "{{ monitoring_alertmanager_smtp_smarthost }}"
+      smtp_from: "{{ monitoring_alertmanager_smtp_from }}"
+      smtp_auth_username: "{{ monitoring_alertmanager_smtp_auth_username }}"
+      smtp_auth_password: "{{ monitoring_alertmanager_smtp_auth_password }}"
+{% endif %}
+
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: default
+
+    receivers:
+      - name: default
+
+    inhibit_rules:
+      - source_match:
+          severity: critical
+        target_match:
+          severity: warning
+        equal: ['alertname', 'dev', 'instance']
 ---
 apiVersion: v1
 kind: Pod
@@ -117,7 +237,10 @@ spec:
         - name: prometheus-data
           mountPath: /prometheus
         - name: prometheus-config
-          mountPath: /etc/prometheus
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+        - name: prometheus-rules
+          mountPath: /etc/prometheus/rules
         - name: prometheus-mtls
           mountPath: /etc/prometheus/mtls
       resources:
@@ -139,7 +262,8 @@ spec:
         - name: alertmanager-data
           mountPath: /alertmanager
         - name: alertmanager-config
-          mountPath: /etc/alertmanager
+          mountPath: /etc/alertmanager/alertmanager.yml
+          subPath: alertmanager.yml
       resources:
         limits:
           memory: 256M
@@ -167,9 +291,11 @@ spec:
         path: {{ monitoring_data_dir }}/prometheus
         type: DirectoryOrCreate
     - name: prometheus-config
-      hostPath:
-        path: {{ monitoring_config_dir }}/prometheus
-        type: Directory
+      configMap:
+        name: {{ monitoring_pod_name }}-prometheus
+    - name: prometheus-rules
+      configMap:
+        name: {{ monitoring_pod_name }}-prometheus-rules
     - name: prometheus-mtls
       hostPath:
         path: {{ monitoring_mtls_dir }}
@@ -179,6 +305,5 @@ spec:
         path: {{ monitoring_data_dir }}/alertmanager
         type: DirectoryOrCreate
     - name: alertmanager-config
-      hostPath:
-        path: {{ monitoring_config_dir }}/alertmanager
-        type: Directory
+      configMap:
+        name: {{ monitoring_pod_name }}-alertmanager

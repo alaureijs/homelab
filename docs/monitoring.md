@@ -8,7 +8,7 @@ Monitoring stack on ansible02 (192.168.100.11), accessed via `monitoring.local.l
 - Podman CNI network (`monitoring`) for container networking
 - nginx reverse proxy on port 443 (HTTPS) with TLS
 - Prometheus scrapes node-exporter via FQDN with mTLS
-- Grafana config via Kubernetes ConfigMaps (inline in pod manifest)
+- All configuration via Kubernetes ConfigMaps (inline in pod manifest)
 
 ## Services
 
@@ -63,11 +63,21 @@ Dashboards are auto-refreshed every 30 seconds from ConfigMap volumes.
 - `monitoring-datasources`: Prometheus and Alertmanager datasource config
 - `monitoring-dashboards-provider`: Dashboard provisioning provider config
 - `monitoring-dashboard-{name}`: Individual dashboard JSON files
+- `monitoring-prometheus`: Prometheus scrape config (prometheus.yml)
+- `monitoring-prometheus-rules`: Alert rules (node-exporter.yml)
+- `monitoring-alertmanager`: Alertmanager configuration
 
 ### Default Dashboards
 
 - **Node Exporter**: CPU, Memory, Disk, Network traffic panels
 - **Prometheus**: Targets up, TSDB size, scrape samples, scrape duration
+
+### Default Alert Rules
+
+- **HighCPUUsage**: CPU > 80% for 5 minutes (warning)
+- **HighMemoryUsage**: Memory > 80% for 5 minutes (warning)
+- **HighDiskUsage**: Disk > 85% for 5 minutes (warning)
+- **NodeDown**: Node unreachable for 1 minute (critical)
 
 ## mTLS
 

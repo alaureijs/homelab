@@ -79,6 +79,7 @@ roles/
 3. **Bind to `127.0.0.1`** via `hostIP` for nginx reverse proxy
 4. **Write auth.json** directly for `podman kube play` (no `--authfile` support)
 5. **Fix permissions after deploy** — containers run as non-root (uid 1000, 472, 65534)
+6. **Use ConfigMaps** for configuration (inline in pod manifest, not hostPath)
 
 ### Networking
 - All services behind nginx reverse proxy on port 443 (HTTPS)
@@ -109,7 +110,7 @@ roles/
 ### Adding a New Dashboard
 1. Export JSON from Grafana UI
 2. Place in `roles/monitoring/files/dashboards/`
-3. Add to `monitoring_grafana_dashboards` in group_vars
+3. Add to `monitoring_grafana_dashboards` in defaults/main.yml
 4. Re-run provisioning playbook
 
 ### Adding a New Host

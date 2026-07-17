@@ -22,13 +22,10 @@
     - "{{ monitoring_config_dir }}"
     - "{{ monitoring_config_dir }}/prometheus"
     - "{{ monitoring_config_dir }}/alertmanager"
-    - "{{ monitoring_config_dir }}/grafana/provisioning/datasources"
-    - "{{ monitoring_config_dir }}/grafana/provisioning/dashboards"
     - "{{ monitoring_data_dir }}"
     - "{{ monitoring_data_dir }}/prometheus"
     - "{{ monitoring_data_dir }}/alertmanager"
     - "{{ monitoring_data_dir }}/grafana"
-    - "{{ monitoring_data_dir }}/grafana/dashboards"
 
 - name: Set grafana data directory ownership
   ansible.builtin.file:
@@ -401,34 +398,6 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Restart monitoring pod
-
-- name: Template Grafana datasources
-  ansible.builtin.template:
-    src: grafana-datasources.yml.j2
-    dest: "{{ monitoring_config_dir }}/grafana/provisioning/datasources/datasources.yml"
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Restart monitoring pod
-
-- name: Template Grafana dashboard provider
-  ansible.builtin.template:
-    src: grafana-dashboards-provider.yml.j2
-    dest: "{{ monitoring_config_dir }}/grafana/provisioning/dashboards/dashboards.yml"
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Restart monitoring pod
-
-- name: Copy Grafana dashboards
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ monitoring_data_dir }}/grafana/dashboards/{{ item | basename }}"
-    owner: root
-    group: root
-    mode: "0644"
-  loop: "{{ monitoring_grafana_dashboards | default([]) }}"
   notify: Restart monitoring pod
 
 - name: Template monitoring pod manifest

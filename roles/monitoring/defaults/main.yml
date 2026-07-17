@@ -47,7 +47,9 @@ monitoring_cert_renew_threshold_days: 30
 # Force mTLS certificate renewal regardless of monitoring_cert_force_renewal
 monitoring_cert_force_renewal: false
 
-# Grafana dashboards to provision (list of JSON files from files/dashboards/)
+# Grafana dashboards to provision via ConfigMaps
 monitoring_grafana_dashboards:
-  - "{{ role_path }}/files/dashboards/node-exporter.json"
-  - "{{ role_path }}/files/dashboards/prometheus.json"
+  - name: node-exporter
+    file: "{{ role_path }}/files/dashboards/node-exporter.json"
+  - name: prometheus
+    file: "{{ role_path }}/files/dashboards/prometheus.json"

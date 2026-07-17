@@ -102,12 +102,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Trivy vulnerability scanner enabled in Harbor with auto-scan on all
   projects.
 - `monitoring.local.lan` DNS entry in `ansible-net` network → 192.168.100.11.
-- Grafana dashboard provisioning via file-based provider:
-  - `grafana-dashboards-provider.yml.j2` template for provisioning config
-  - `monitoring_grafana_dashboards` variable for dashboard list
+- Grafana dashboard provisioning via ConfigMaps (inline in pod manifest):
+  - `monitoring-grafana-datasources` ConfigMap for datasource config
+  - `monitoring-grafana-dashboards-provider` ConfigMap for provisioning provider
+  - `monitoring-dashboard-{name}` ConfigMaps for individual dashboards
   - Default dashboards: Node Exporter (CPU, Memory, Disk, Network),
     Prometheus (targets, TSDB, scrape metrics)
-  - Auto-refresh every 30 seconds from mounted directory
+  - Auto-refresh every 30 seconds from ConfigMap volumes
 
 ### Changed
 

@@ -8,6 +8,7 @@ Monitoring stack on ansible02 (192.168.100.11), accessed via `monitoring.local.l
 - Podman CNI network (`monitoring`) for container networking
 - nginx reverse proxy on port 443 (HTTPS) with TLS
 - Prometheus scrapes node-exporter via FQDN with mTLS
+- Grafana config via Kubernetes ConfigMaps (inline in pod manifest)
 
 ## Services
 
@@ -33,16 +34,20 @@ https://monitoring.local.lan/prometheus/
 
 ## Grafana Dashboards
 
-Dashboards are provisioned automatically from JSON files. To add a new dashboard:
+Dashboards are provisioned via ConfigMaps defined in the pod manifest. To add a new dashboard:
 
 1. Export dashboard JSON from Grafana UI (Share → Export → Save to file)
 2. Place JSON file in `roles/monitoring/files/dashboards/`
-3. Add to `inventory/group_vars/monitoring/main.yml`:
+3. Add to `roles/monitoring/defaults/main.yml`:
 
 ```yaml
 monitoring_grafana_dashboards:
-  - "{{ role_path }}/files/dashboards/node-exporter.json"
-  - "{{ role_path }}/files/dashboards/my-new-dashboard.json"
+  - name: node-exporter
+    file: "{{ role_path }}/files/dashboards/node-exporter.json"
+  - name: prometheus
+    file: "{{ role_path }}/files/dashboards/prometheus.json"
+  - name: my-new-dashboard
+    file: "{{ role_path }}/files/dashboards/my-new-dashboard.json"
 ```
 
 4. Re-run provisioning:
@@ -51,7 +56,13 @@ monitoring_grafana_dashboards:
 ansible-playbook playbooks/provision-ansible02.yml
 ```
 
-Dashboards are auto-refreshed every 30 seconds from the mounted directory.
+Dashboards are auto-refreshed every 30 seconds from ConfigMap volumes.
+
+### ConfigMap Structure
+
+- `monitoring-datasources`: Prometheus and Alertmanager datasource config
+- `monitoring-dashboards-provider`: Dashboard provisioning provider config
+- `monitoring-dashboard-{name}`: Individual dashboard JSON files
 
 ### Default Dashboards
 

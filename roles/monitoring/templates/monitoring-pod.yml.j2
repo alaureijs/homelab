@@ -1,4 +1,62 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-datasources
+  labels:
+    app: monitoring
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: https://{{ monitoring_hostname }}/prometheus/
+        isDefault: true
+        editable: false
+      - name: Alertmanager
+        type: alertmanager
+        access: proxy
+        url: https://{{ monitoring_hostname }}:9093
+        editable: false
+        jsonData:
+          implementation: prometheus
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-dashboards-provider
+  labels:
+    app: monitoring
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+          foldersFromFilesStructure: false
+{% for dashboard in monitoring_grafana_dashboards %}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ monitoring_pod_name }}-dashboard-{{ dashboard.name }}
+  labels:
+    app: monitoring
+    dashboard: "{{ dashboard.name }}"
+data:
+  {{ dashboard.name }}.json: |
+{{ lookup('file', dashboard.file) | indent(4) }}
+{% endfor %}
+---
+apiVersion: v1
 kind: Pod
 metadata:
   name: {{ monitoring_pod_name }}
@@ -25,11 +83,16 @@ spec:
         - name: grafana-data
           mountPath: /var/lib/grafana
         - name: grafana-datasources
-          mountPath: /etc/grafana/provisioning/datasources
+          mountPath: /etc/grafana/provisioning/datasources/datasources.yml
+          subPath: datasources.yml
         - name: grafana-dashboards-provider
-          mountPath: /etc/grafana/provisioning/dashboards
-        - name: grafana-dashboards
-          mountPath: /var/lib/grafana/dashboards
+          mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
+          subPath: dashboards.yml
+{% for dashboard in monitoring_grafana_dashboards %}
+        - name: grafana-dashboard-{{ dashboard.name }}
+          mountPath: /var/lib/grafana/dashboards/{{ dashboard.name }}.json
+          subPath: {{ dashboard.name }}.json
+{% endfor %}
       resources:
         limits:
           memory: 512M
@@ -89,17 +152,16 @@ spec:
         path: {{ monitoring_data_dir }}/grafana
         type: DirectoryOrCreate
     - name: grafana-datasources
-      hostPath:
-        path: {{ monitoring_config_dir }}/grafana/provisioning/datasources
-        type: Directory
+      configMap:
+        name: {{ monitoring_pod_name }}-datasources
     - name: grafana-dashboards-provider
-      hostPath:
-        path: {{ monitoring_config_dir }}/grafana/provisioning/dashboards
-        type: DirectoryOrCreate
-    - name: grafana-dashboards
-      hostPath:
-        path: {{ monitoring_data_dir }}/grafana/dashboards
-        type: DirectoryOrCreate
+      configMap:
+        name: {{ monitoring_pod_name }}-dashboards-provider
+{% for dashboard in monitoring_grafana_dashboards %}
+    - name: grafana-dashboard-{{ dashboard.name }}
+      configMap:
+        name: {{ monitoring_pod_name }}-dashboard-{{ dashboard.name }}
+{% endfor %}
     - name: prometheus-data
       hostPath:
         path: {{ monitoring_data_dir }}/prometheus

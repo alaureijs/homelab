@@ -31,23 +31,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `observability.local.lan` DNS entry in `ansible-net` network → 192.168.100.12.
 - ELK container images synced to Harbor:
   - elasticsearch:8.17.0, logstash:8.17.0, kibana:8.17.0
-
-### Changed
-
-- `harbor_hostname` moved from `group_vars/harbor/main.yml` and
-  `group_vars/monitoring/main.yml` to `group_vars/all/main.yml`
-  (single source of truth).
-- `roles/harbor/defaults/main.yml` — removed duplicate `harbor_hostname`
-  variable (now centralized in `group_vars/all/main.yml`).
-- `certificates` role — fixed `epoch_time` filter error (replaced with
-  raw epoch output in certificates status debug message).
-- `elk` role deploy task — runs `chown -R 1000:1000` on Elasticsearch
-  data directory after `kube play` to fix permission denied errors.
-- ELK container volumes restructured — separate host directories for
-  Logstash config and pipeline to avoid `subPath` issues with Podman.
-
-### Added
-
 - Harbor container logging to `/var/log/harbor/` via host rsyslog (journald
   → per-container files). Logrotate with 14-day retention, daily rotation.
 - `hardening` playbook — standalone playbook for running hardening on any host.
@@ -122,6 +105,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `harbor_hostname` moved from `group_vars/harbor/main.yml` and
+  `group_vars/monitoring/main.yml` to `group_vars/all/main.yml`
+  (single source of truth).
+- `roles/harbor/defaults/main.yml` — removed duplicate `harbor_hostname`
+  variable (now centralized in `group_vars/all/main.yml`).
+- `certificates` role — fixed `epoch_time` filter error (replaced with
+  raw epoch output in certificates status debug message).
+- `elk` role deploy task — runs `chown -R 1000:1000` on Elasticsearch
+  data directory after `kube play` to fix permission denied errors.
+- ELK container volumes restructured — separate host directories for
+  Logstash config and pipeline to avoid `subPath` issues with Podman.
 - Harbor `harbor-log` container no longer receives logs (Podman doesn't
   support syslog log driver). Host rsyslog now reads container logs from
   journald and routes them to `/var/log/harbor/<container>.log` files.

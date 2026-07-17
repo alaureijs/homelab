@@ -2,20 +2,58 @@
 
 ## Overview
 
-Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12).
+Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12) for centralized log management.
 
 ## Architecture
 
 ```
-Client → nginx (443) → Kibana (5601) → Elasticsearch (9200)
-                 └→ Elasticsearch (9200)
-Logstash (5044) → Elasticsearch (9200)
+Client (Filebeat) → Logstash (5044) → Elasticsearch (9200)
+                                          ↓
+Kibana (5601) ← nginx (443) → Elasticsearch (9200)
 ```
 
-- **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elasticsearch/`
-- **Logstash**: Beats input (5044), grok filters, ES output, 2g heap
+- **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elk/elasticsearch/`
+- **Logstash**: Beats input (5044), grok filters for syslog/nginx, ES output, 2g heap
 - **Kibana**: HTTP UI on 5601, connected to Elasticsearch
 - **Nginx**: HTTPS reverse proxy on 443, routes `/kibana/` and `/elasticsearch/`
+
+## Access URLs
+
+- Kibana: `https://observability.local.lan/kibana/`
+- Elasticsearch: `https://observability.local.lan/elasticsearch/`
+
+## Usage
+
+### Send Logs to ELK Stack
+
+Install Filebeat on clients and configure it to send logs to Logstash:
+
+```yaml
+# /etc/filebeat/filebeat.yml
+output.logstash:
+  hosts: ["192.168.100.12:5044"]
+
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/*.log
+    fields:
+      type: syslog
+```
+
+### Index Patterns
+
+Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
+
+- `filebeat-{YYYY.MM.dd}` - Filebeat logs
+- `system-{YYYY.MM.dd}` - System logs
+
+### Kibana Usage
+
+1. Open `https://observability.local.lan/kibana/`
+2. Go to **Management → Stack Management → Index Patterns**
+3. Create index pattern: `filebeat-*` or `system-*`
+4. Go to **Discover** to view logs
 
 ## Container Configuration
 
@@ -23,11 +61,6 @@ Logstash (5044) → Elasticsearch (9200)
 - **Volume mounts**: Separate host directories for configs (Logstash config/pipeline split)
 - **Image pulls**: Auth via Harbor credentials, TLS trust via CA cert
 - **Deploy fix**: `chown -R 1000:1000` on Elasticsearch data dir after `kube play`
-
-## Access URLs
-
-- Kibana: `https://observability.local.lan/kibana/`
-- Elasticsearch: `https://observability.local.lan/elasticsearch/`
 
 ## Troubleshooting
 

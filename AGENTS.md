@@ -80,10 +80,18 @@ roles/
 4. **Write auth.json** directly for `podman kube play` (no `--authfile` support)
 5. **Fix permissions after deploy** — containers run as non-root (uid 1000, 472, 65534)
 6. **Use ConfigMaps** for configuration (inline in pod manifest, not hostPath)
+7. **Keep pod manifests K8s-compatible** — prepare for potential Kubernetes migration
 
 ### ConfigMaps with podman kube play
 
 `podman kube play` supports ConfigMaps defined inline in the pod manifest. This is the preferred pattern for configuration.
+
+**K8s Compatibility:**
+- Use standard Kubernetes API versions (`v1`)
+- Use standard resource types (`Pod`, `ConfigMap`, `Service`, `Deployment`)
+- Avoid Podman-specific extensions when possible
+- Use `hostPath` only when necessary (prefer ConfigMaps for config)
+- Use `subPath` for mounting individual files from ConfigMaps
 
 **Structure:**
 ```yaml

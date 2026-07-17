@@ -93,6 +93,11 @@ roles/
 - Use `hostPath` only when necessary (prefer ConfigMaps for config)
 - Use `subPath` for mounting individual files from ConfigMaps
 
+**Known Podman-specific features (K8s migration notes):**
+- `hostIP` on `containerPort` — not supported in K8s; replace with `NetworkPolicy` or `Service` bindings
+- `hostPort` — supported but not recommended for production; use `Service` + `Ingress` instead
+- Podman CNI network (`--network`) — replace with K8s `NetworkPolicy`
+
 **Structure:**
 ```yaml
 apiVersion: v1

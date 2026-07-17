@@ -7,65 +7,53 @@
     group: root
     mode: "0755"
   loop:
-    - "{{ elk_config_dir }}"
-    - "{{ elk_config_dir }}/elasticsearch"
-    - "{{ elk_config_dir }}/logstash/config"
-    - "{{ elk_config_dir }}/logstash/pipeline"
-    - "{{ elk_config_dir }}/kibana"
     - "{{ elk_data_dir }}"
     - "{{ elk_data_dir }}/elasticsearch"
     - "{{ elk_data_dir }}/logstash"
 
-- name: Copy Elasticsearch default config files from image
-  ansible.builtin.shell: |
-    cid=$(podman create {{ elk_elasticsearch_image }})
-    podman cp "$cid":/usr/share/elasticsearch/config/. {{ elk_config_dir }}/elasticsearch/
-    podman rm "$cid"
-  changed_when: true
-
-- name: Deploy Elasticsearch configuration
+- name: Render Elasticsearch configuration
   ansible.builtin.template:
-    src: elasticsearch.yml.j2
-    dest: "{{ elk_config_dir }}/elasticsearch/elasticsearch.yml"
-    owner: root
-    group: root
-    mode: "0644"
+    src: "{{ elk_elasticsearch_config_template }}"
+    dest: /tmp/elk-elasticsearch.yml
   notify: Restart ELK stack
 
-- name: Set Elasticsearch config directory permissions for ES process
-  ansible.builtin.file:
-    path: "{{ elk_config_dir }}/elasticsearch"
-    owner: "1000"
-    group: "1000"
-    mode: "0755"
-  notify: Restart ELK stack
+- name: Read Elasticsearch configuration
+  ansible.builtin.slurp:
+    src: /tmp/elk-elasticsearch.yml
+  register: elk_cm_elasticsearch
 
-- name: Deploy Logstash pipeline configuration
+- name: Render Logstash pipeline configuration
   ansible.builtin.template:
-    src: logstash.conf.j2
-    dest: "{{ elk_config_dir }}/logstash/pipeline/pipeline.conf"
-    owner: root
-    group: root
-    mode: "0644"
+    src: "{{ elk_logstash_pipeline_template }}"
+    dest: /tmp/elk-logstash-pipeline.conf
   notify: Restart ELK stack
 
-- name: Deploy Logstash settings
+- name: Read Logstash pipeline configuration
+  ansible.builtin.slurp:
+    src: /tmp/elk-logstash-pipeline.conf
+  register: elk_cm_logstash_pipeline
+
+- name: Render Logstash settings
   ansible.builtin.template:
-    src: logstash.yml.j2
-    dest: "{{ elk_config_dir }}/logstash/config/logstash.yml"
-    owner: root
-    group: root
-    mode: "0644"
+    src: "{{ elk_logstash_config_template }}"
+    dest: /tmp/elk-logstash.yml
   notify: Restart ELK stack
 
-- name: Deploy Kibana configuration
+- name: Read Logstash settings
+  ansible.builtin.slurp:
+    src: /tmp/elk-logstash.yml
+  register: elk_cm_logstash_config
+
+- name: Render Kibana configuration
   ansible.builtin.template:
-    src: kibana.yml.j2
-    dest: "{{ elk_config_dir }}/kibana/kibana.yml"
-    owner: root
-    group: root
-    mode: "0644"
+    src: "{{ elk_kibana_config_template }}"
+    dest: /tmp/elk-kibana.yml
   notify: Restart ELK stack
+
+- name: Read Kibana configuration
+  ansible.builtin.slurp:
+    src: /tmp/elk-kibana.yml
+  register: elk_cm_kibana
 
 - name: Create ELK log directory
   ansible.builtin.file:

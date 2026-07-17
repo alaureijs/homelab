@@ -114,6 +114,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Use `file` for static content, `template` for Jinja2 templates
   - Config files in `files/grafana/` and `files/prometheus/`
   - Templates in `templates/` (prometheus.yml.j2, alertmanager.yml.j2)
+- Config file location variables in defaults for easy customization:
+  - `monitoring_prometheus_config_template`
+  - `monitoring_prometheus_rules_file`
+  - `monitoring_alertmanager_config_template`
+  - `monitoring_grafana_datasources_file`
+  - `monitoring_grafana_dashboards_provider_file`
 
 ### Changed
 

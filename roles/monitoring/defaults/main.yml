@@ -56,14 +56,21 @@ monitoring_grafana_dashboards:
 
 # ConfigMaps (inline in pod manifest)
 # Use 'file' for static content, 'template' for Jinja2 templates
+# Override these to use custom files: {{ playbook_dir }}/files/... or {{ playbook_dir }}/templates/...
+monitoring_prometheus_config_template: "{{ role_path }}/templates/prometheus.yml.j2"
+monitoring_prometheus_rules_file: "{{ role_path }}/files/prometheus/rules.yml"
+monitoring_alertmanager_config_template: "{{ role_path }}/templates/alertmanager.yml.j2"
+monitoring_grafana_datasources_file: "{{ role_path }}/files/grafana/datasources.yml"
+monitoring_grafana_dashboards_provider_file: "{{ role_path }}/files/grafana/dashboards-provider.yml"
+
 monitoring_configmaps:
   - name: "{{ monitoring_pod_name }}-datasources"
-    file: "{{ role_path }}/files/grafana/datasources.yml"
+    file: "{{ monitoring_grafana_datasources_file }}"
   - name: "{{ monitoring_pod_name }}-dashboards-provider"
-    file: "{{ role_path }}/files/grafana/dashboards-provider.yml"
+    file: "{{ monitoring_grafana_dashboards_provider_file }}"
   - name: "{{ monitoring_pod_name }}-prometheus"
-    template: "{{ role_path }}/templates/prometheus.yml.j2"
+    template: "{{ monitoring_prometheus_config_template }}"
   - name: "{{ monitoring_pod_name }}-prometheus-rules"
-    file: "{{ role_path }}/files/prometheus/rules.yml"
+    file: "{{ monitoring_prometheus_rules_file }}"
   - name: "{{ monitoring_pod_name }}-alertmanager"
-    template: "{{ role_path }}/templates/alertmanager.yml.j2"
+    template: "{{ monitoring_alertmanager_config_template }}"

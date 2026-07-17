@@ -382,29 +382,29 @@
 
 - name: Render Prometheus configuration
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/prometheus.yml.j2"
+    src: "{{ monitoring_prometheus_config_template }}"
     dest: /tmp/monitoring-prometheus.yml
     mode: "0644"
 
 - name: Render Alertmanager configuration
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/alertmanager.yml.j2"
+    src: "{{ monitoring_alertmanager_config_template }}"
     dest: /tmp/monitoring-alertmanager.yml
     mode: "0644"
 
 - name: Read Grafana datasources
   ansible.builtin.slurp:
-    src: "{{ role_path }}/files/grafana/datasources.yml"
+    src: "{{ monitoring_grafana_datasources_file }}"
   register: monitoring_cm_datasources
 
 - name: Read Grafana dashboards provider
   ansible.builtin.slurp:
-    src: "{{ role_path }}/files/grafana/dashboards-provider.yml"
+    src: "{{ monitoring_grafana_dashboards_provider_file }}"
   register: monitoring_cm_dashboards_provider
 
 - name: Read Prometheus rules
   ansible.builtin.slurp:
-    src: "{{ role_path }}/files/prometheus/rules.yml"
+    src: "{{ monitoring_prometheus_rules_file }}"
   register: monitoring_cm_prometheus_rules
 
 - name: Read rendered Prometheus config

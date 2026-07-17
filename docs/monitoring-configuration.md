@@ -8,6 +8,18 @@ The monitoring role uses variables defined in `inventory/group_vars/monitoring/m
 
 ## Configuration Variables
 
+### File Locations
+
+These variables point to config files. Override them to use custom files:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `monitoring_prometheus_config_template` | `{{ role_path }}/templates/prometheus.yml.j2` | Prometheus config template |
+| `monitoring_prometheus_rules_file` | `{{ role_path }}/files/prometheus/rules.yml` | Alert rules file |
+| `monitoring_alertmanager_config_template` | `{{ role_path }}/templates/alertmanager.yml.j2` | Alertmanager config template |
+| `monitoring_grafana_datasources_file` | `{{ role_path }}/files/grafana/datasources.yml` | Grafana datasources file |
+| `monitoring_grafana_dashboards_provider_file` | `{{ role_path }}/files/grafana/dashboards-provider.yml` | Dashboard provider file |
+
 ### Grafana
 
 | Variable | Default | Description |
@@ -51,6 +63,11 @@ Edit `inventory/group_vars/monitoring/main.yml`:
 ---
 # Monitoring stack group variables
 
+# Use custom config files
+monitoring_prometheus_config_template: "{{ playbook_dir }}/templates/prometheus.yml.j2"
+monitoring_prometheus_rules_file: "{{ playbook_dir }}/files/prometheus/rules.yml"
+monitoring_alertmanager_config_template: "{{ playbook_dir }}/templates/alertmanager.yml.j2"
+
 # Grafana
 monitoring_grafana_admin_password: "my-secure-password"
 
@@ -73,6 +90,29 @@ ansible-playbook playbooks/provision-ansible02.yml
 ```
 
 ## Customizing Configurations
+
+### Use Custom Config Files
+
+Instead of modifying role files, create your own in the playbook directory:
+
+```bash
+# Create directory structure
+mkdir -p {{ playbook_dir }}/templates/
+mkdir -p {{ playbook_dir }}/files/prometheus/
+
+# Copy default configs as starting point
+cp roles/monitoring/templates/prometheus.yml.j2 {{ playbook_dir }}/templates/
+cp roles/monitoring/files/prometheus/rules.yml {{ playbook_dir }}/files/prometheus/
+```
+
+Edit `inventory/group_vars/monitoring/main.yml`:
+
+```yaml
+monitoring_prometheus_config_template: "{{ playbook_dir }}/templates/prometheus.yml.j2"
+monitoring_prometheus_rules_file: "{{ playbook_dir }}/files/prometheus/rules.yml"
+```
+
+Now you can customize the files without touching the role.
 
 ### Change Grafana Password
 

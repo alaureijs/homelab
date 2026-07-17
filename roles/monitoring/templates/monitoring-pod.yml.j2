@@ -62,6 +62,93 @@ data:
 {% endfor %}
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ monitoring_pod_name }}-grafana-data
+  labels:
+    app: monitoring
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ monitoring_data_dir }}/grafana
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ monitoring_pod_name }}-grafana-data
+  labels:
+    app: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ monitoring_pod_name }}-prometheus-data
+  labels:
+    app: monitoring
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ monitoring_data_dir }}/prometheus
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ monitoring_pod_name }}-prometheus-data
+  labels:
+    app: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ monitoring_pod_name }}-alertmanager-data
+  labels:
+    app: monitoring
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ monitoring_data_dir }}/alertmanager
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ monitoring_pod_name }}-alertmanager-data
+  labels:
+    app: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
 kind: Pod
 metadata:
   name: {{ monitoring_pod_name }}
@@ -157,9 +244,8 @@ spec:
 
   volumes:
     - name: grafana-data
-      hostPath:
-        path: {{ monitoring_data_dir }}/grafana
-        type: DirectoryOrCreate
+      persistentVolumeClaim:
+        claimName: {{ monitoring_pod_name }}-grafana-data
     - name: grafana-datasources
       configMap:
         name: {{ monitoring_pod_name }}-datasources
@@ -172,9 +258,8 @@ spec:
         name: {{ monitoring_pod_name }}-dashboard-{{ dashboard.name }}
 {% endfor %}
     - name: prometheus-data
-      hostPath:
-        path: {{ monitoring_data_dir }}/prometheus
-        type: DirectoryOrCreate
+      persistentVolumeClaim:
+        claimName: {{ monitoring_pod_name }}-prometheus-data
     - name: prometheus-config
       configMap:
         name: {{ monitoring_pod_name }}-prometheus
@@ -186,9 +271,8 @@ spec:
         path: {{ monitoring_mtls_dir }}
         type: Directory
     - name: alertmanager-data
-      hostPath:
-        path: {{ monitoring_data_dir }}/alertmanager
-        type: DirectoryOrCreate
+      persistentVolumeClaim:
+        claimName: {{ monitoring_pod_name }}-alertmanager-data
     - name: alertmanager-config
       configMap:
         name: {{ monitoring_pod_name }}-alertmanager

@@ -140,6 +140,14 @@ spec:
           memory: 3Gi
         requests:
           memory: 2Gi
+      livenessProbe:
+        httpGet:
+          path: /
+          port: {{ logstash_http_port }}
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
 
     - name: kibana
       image: {{ elk_kibana_image }}

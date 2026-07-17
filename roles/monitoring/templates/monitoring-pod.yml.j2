@@ -190,6 +190,14 @@ spec:
           memory: 512M
         requests:
           memory: 256M
+      livenessProbe:
+        httpGet:
+          path: /api/health
+          port: 3000
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
 
     - name: prometheus
       image: {{ monitoring_prometheus_image }}
@@ -220,6 +228,14 @@ spec:
           memory: 1G
         requests:
           memory: 512M
+      livenessProbe:
+        httpGet:
+          path: /prometheus/-/healthy
+          port: 9090
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
 
     - name: alertmanager
       image: {{ monitoring_alertmanager_image }}
@@ -241,6 +257,14 @@ spec:
           memory: 256M
         requests:
           memory: 128M
+      livenessProbe:
+        httpGet:
+          path: /-/healthy
+          port: 9093
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
 
   volumes:
     - name: grafana-data

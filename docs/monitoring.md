@@ -31,6 +31,32 @@ https://monitoring.local.lan/grafana/
 https://monitoring.local.lan/prometheus/
 ```
 
+## Grafana Dashboards
+
+Dashboards are provisioned automatically from JSON files. To add a new dashboard:
+
+1. Export dashboard JSON from Grafana UI (Share → Export → Save to file)
+2. Place JSON file in `roles/monitoring/files/dashboards/`
+3. Add to `inventory/group_vars/monitoring/main.yml`:
+
+```yaml
+monitoring_grafana_dashboards:
+  - "{{ role_path }}/files/dashboards/node-exporter.json"
+  - "{{ role_path }}/files/dashboards/my-new-dashboard.json"
+```
+
+4. Re-run provisioning:
+
+```bash
+ansible-playbook playbooks/provision-ansible02.yml
+```
+
+Dashboards are auto-refreshed every 30 seconds from the mounted directory.
+
+### Default Dashboard
+
+- **Node Exporter**: CPU, Memory, Disk, Network traffic panels
+
 ## mTLS
 
 Node-exporter scraping uses mutual TLS:

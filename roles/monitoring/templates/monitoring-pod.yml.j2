@@ -26,6 +26,10 @@ spec:
           mountPath: /var/lib/grafana
         - name: grafana-datasources
           mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards-provider
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
       resources:
         limits:
           memory: 512M
@@ -88,6 +92,14 @@ spec:
       hostPath:
         path: {{ monitoring_config_dir }}/grafana/provisioning/datasources
         type: Directory
+    - name: grafana-dashboards-provider
+      hostPath:
+        path: {{ monitoring_config_dir }}/grafana/provisioning/dashboards
+        type: DirectoryOrCreate
+    - name: grafana-dashboards
+      hostPath:
+        path: {{ monitoring_data_dir }}/grafana/dashboards
+        type: DirectoryOrCreate
     - name: prometheus-data
       hostPath:
         path: {{ monitoring_data_dir }}/prometheus

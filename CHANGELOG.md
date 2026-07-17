@@ -8,6 +8,46 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `ansible03` host — Rocky Linux 10 VM (2 vCPU, 8 GB RAM, 120 GB disk)
+  at `192.168.100.12` on `ansible-net` network.
+- `elk` inventory group with `group_vars/elk/main.yml`.
+- `playbooks/provision-ansible03.yml` — provisioning playbook for
+  ELK stack hosts (timezone, packages, firewall, certificates, podman,
+  hardening, node_exporter, elk role).
+- `inventory/host_vars/ansible03/` — VM specs and provisioning variables.
+- `elk` role — deploys Elasticsearch/Logstash/Kibana stack on ansible03:
+  - Elasticsearch 8.17.0 (single-node, security disabled, 4g heap)
+  - Logstash 8.17.0 (beats input, grok filters, ES output, 2g heap)
+  - Kibana 8.17.0 (HTTP 5601, connected to Elasticsearch)
+  - All images pulled from Harbor registry
+  - `podman kube play` with K8s YAML manifest
+  - Podman CNI network (`elk`) for container networking
+  - Hostname-based routing via nginx reverse proxy (HTTPS on 443)
+  - `/kibana/` → Kibana (5601), `/elasticsearch/` → Elasticsearch (9200)
+  - Host volume mounts for configs (Logstash config/pipeline split)
+  - Elasticsearch data directory ownership fix (uid 1000) on deploy
+  - Harbor TLS trust and auth.json for image pulls
+  - rsyslog + logrotate for container log management
+- `observability.local.lan` DNS entry in `ansible-net` network → 192.168.100.12.
+- ELK container images synced to Harbor:
+  - elasticsearch:8.17.0, logstash:8.17.0, kibana:8.17.0
+
+### Changed
+
+- `harbor_hostname` moved from `group_vars/harbor/main.yml` and
+  `group_vars/monitoring/main.yml` to `group_vars/all/main.yml`
+  (single source of truth).
+- `roles/harbor/defaults/main.yml` — removed duplicate `harbor_hostname`
+  variable (now centralized in `group_vars/all/main.yml`).
+- `certificates` role — fixed `epoch_time` filter error (replaced with
+  raw epoch output in certificates status debug message).
+- `elk` role deploy task — runs `chown -R 1000:1000` on Elasticsearch
+  data directory after `kube play` to fix permission denied errors.
+- ELK container volumes restructured — separate host directories for
+  Logstash config and pipeline to avoid `subPath` issues with Podman.
+
+### Added
+
 - Harbor container logging to `/var/log/harbor/` via host rsyslog (journald
   → per-container files). Logrotate with 14-day retention, daily rotation.
 - `hardening` playbook — standalone playbook for running hardening on any host.

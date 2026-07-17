@@ -3,9 +3,6 @@
 certificates_extra_sans:
   - "DNS:monitoring.local.lan"
 
-# Harbor (for pulling images)
-harbor_hostname: harbor.local.lan
-
 # Monitoring stack
 monitoring_hostname: monitoring.local.lan
 monitoring_data_dir: /var/lib/monitoring

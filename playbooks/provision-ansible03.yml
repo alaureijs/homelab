@@ -1,0 +1,33 @@
+---
+- name: Provision ELK stack host (ansible03)
+  hosts: elk
+  become: true
+
+  pre_tasks:
+    - name: Install base packages
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vm_hostname }}"
+
+    - name: Update /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^127\\.0\\.0\\.1.*{{ vm_hostname }}"
+        line: "127.0.0.1   {{ vm_hostname }} localhost"
+        state: present
+
+  roles:
+    - role: firewall
+    - role: certificates
+    - role: podman
+    - role: hardening
+    - role: node_exporter
+    - role: elk

@@ -5,6 +5,9 @@ ansible_python_interpreter: /usr/bin/python3
 # Domain
 lab_domain: local.lan
 
+# Harbor
+harbor_hostname: harbor.local.lan
+
 # Timezone
 timezone: Europe/Amsterdam
 
@@ -30,6 +33,11 @@ prometheus_version: "v3.3.0"
 alertmanager_version: "v0.28.1"
 node_exporter_version: "1.12.1"
 pushgateway_version: "v1.11.0"
+
+# ELK stack
+elasticsearch_version: "8.17.0"
+logstash_version: "8.17.0"
+kibana_version: "8.17.0"
 
 # Base images
 alpine_version: "3.21"

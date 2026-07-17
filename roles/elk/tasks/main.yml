@@ -1,0 +1,212 @@
+---
+- name: Create ELK directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ elk_config_dir }}"
+    - "{{ elk_config_dir }}/elasticsearch"
+    - "{{ elk_config_dir }}/logstash/config"
+    - "{{ elk_config_dir }}/logstash/pipeline"
+    - "{{ elk_config_dir }}/kibana"
+    - "{{ elk_data_dir }}"
+    - "{{ elk_data_dir }}/elasticsearch"
+    - "{{ elk_data_dir }}/logstash"
+
+- name: Copy Elasticsearch default config files from image
+  ansible.builtin.shell: |
+    cid=$(podman create {{ elk_elasticsearch_image }})
+    podman cp "$cid":/usr/share/elasticsearch/config/. {{ elk_config_dir }}/elasticsearch/
+    podman rm "$cid"
+  changed_when: true
+
+- name: Deploy Elasticsearch configuration
+  ansible.builtin.template:
+    src: elasticsearch.yml.j2
+    dest: "{{ elk_config_dir }}/elasticsearch/elasticsearch.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ELK stack
+
+- name: Set Elasticsearch config directory permissions for ES process
+  ansible.builtin.file:
+    path: "{{ elk_config_dir }}/elasticsearch"
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+  notify: Restart ELK stack
+
+- name: Deploy Logstash pipeline configuration
+  ansible.builtin.template:
+    src: logstash.conf.j2
+    dest: "{{ elk_config_dir }}/logstash/pipeline/pipeline.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ELK stack
+
+- name: Deploy Logstash settings
+  ansible.builtin.template:
+    src: logstash.yml.j2
+    dest: "{{ elk_config_dir }}/logstash/config/logstash.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ELK stack
+
+- name: Deploy Kibana configuration
+  ansible.builtin.template:
+    src: kibana.yml.j2
+    dest: "{{ elk_config_dir }}/kibana/kibana.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ELK stack
+
+- name: Create ELK log directory
+  ansible.builtin.file:
+    path: /var/log/elk
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy rsyslog config for ELK container logs
+  ansible.builtin.copy:
+    content: |
+      # ELK container logs — route stdout/stderr from conmon to per-container files
+      template(name="ElkLogFile" type="string" string="/var/log/elk/%programname%.log")
+
+      if $programname == "elasticsearch" or
+         $programname == "logstash" or
+         $programname == "kibana" then {
+          action(type="omfile" dynaFile="ElkLogFile"
+                 fileCreateMode="0644" dirCreateMode="0755")
+          stop
+      }
+    dest: /etc/rsyslog.d/31-elk.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart rsyslog
+
+- name: Deploy logrotate config for ELK logs
+  ansible.builtin.copy:
+    content: |
+      /var/log/elk/*.log {
+          daily
+          rotate 14
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+          dateext
+          dateformat -%Y%m%d
+      }
+    dest: /etc/logrotate.d/elk
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure Podman auth directory exists
+  ansible.builtin.file:
+    path: /root/.config/containers
+    state: directory
+    mode: "0700"
+
+- name: Write Podman auth for Harbor
+  ansible.builtin.copy:
+    content: |
+      {
+        "auths": {
+          "{{ harbor_hostname }}": {
+            "auth": "{{ ('ansible-sync:' + vault_harbor_sync_password) | b64encode }}"
+          }
+        }
+      }
+    dest: /root/.config/containers/auth.json
+    mode: "0600"
+  no_log: true
+
+- name: Fetch Harbor certificate from ansible01
+  ansible.builtin.slurp:
+    src: /etc/pki/tls/certs/harbor.crt
+  delegate_to: ansible01
+  register: elk_harbor_cert
+
+- name: Write Harbor certificate for system trust
+  ansible.builtin.copy:
+    content: "{{ elk_harbor_cert.content | b64decode }}"
+    dest: /etc/pki/ca-trust/source/anchors/harbor.crt
+    mode: "0644"
+  register: elk_harbor_cert_trust
+
+- name: Update CA trust
+  ansible.builtin.command: update-ca-trust
+  changed_when: elk_harbor_cert_trust.changed
+
+- name: Create containers certs directory for Harbor
+  ansible.builtin.file:
+    path: "/etc/containers/certs.d/{{ harbor_hostname }}"
+    state: directory
+    mode: "0755"
+
+- name: Write Harbor certificate for containers
+  ansible.builtin.copy:
+    content: "{{ elk_harbor_cert.content | b64decode }}"
+    dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
+    mode: "0644"
+
+- name: Create Podman network for ELK
+  containers.podman.podman_network:
+    name: "{{ elk_network_name }}"
+    state: present
+  register: elk_network
+
+- name: Set data directory permissions for Elasticsearch
+  ansible.builtin.file:
+    path: "{{ elasticsearch_data_dir }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+  when: elk_network is changed
+
+- name: Template ELK pod manifest
+  ansible.builtin.template:
+    src: elk-pod.yml.j2
+    dest: "{{ elk_config_dir }}/elk-pod.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ELK stack
+
+- name: Deploy ELK stack pod
+  ansible.builtin.shell: |
+    podman kube play --down {{ elk_config_dir }}/elk-pod.yml 2>/dev/null || true
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elk-pod.yml
+    chown -R 1000:1000 {{ elasticsearch_data_dir }}
+    podman restart elk-elasticsearch
+  args:
+    executable: /bin/bash
+  register: elk_kube
+  changed_when: "'Pod' in elk_kube.stdout or 'Container' in elk_kube.stdout"
+
+- name: Install nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Deploy nginx reverse proxy for Kibana
+  ansible.builtin.template:
+    src: nginx-kibana.conf.j2
+    dest: /etc/nginx/conf.d/kibana.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx

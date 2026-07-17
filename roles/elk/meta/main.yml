@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: elk
+  description: ELK stack (Elasticsearch, Logstash, Kibana) deployment
+  author: alaureijs
+  license: MIT
+  min_ansible_version: "2.17"
+  platforms:
+    - name: EL
+      versions:
+        - "10"
+
+dependencies:
+  - role: podman
+  - role: certificates

@@ -81,6 +81,22 @@ harbor_sync_images:
     registry: quay.io
     project: prometheus
 
+  # ELK stack
+  - name: library/elasticsearch
+    tag: "{{ elasticsearch_version }}"
+    registry: docker.io
+    project: library
+
+  - name: library/logstash
+    tag: "{{ logstash_version }}"
+    registry: docker.io
+    project: library
+
+  - name: library/kibana
+    tag: "{{ kibana_version }}"
+    registry: docker.io
+    project: library
+
 # Registry URL to proxy-cache project mapping
 harbor_config_proxy_projects:
   docker.io: docker-hub-cache

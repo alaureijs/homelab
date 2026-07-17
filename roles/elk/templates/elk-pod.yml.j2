@@ -1,0 +1,144 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: elk
+  labels:
+    app: elk
+spec:
+  containers:
+    - name: elasticsearch
+      image: {{ elk_elasticsearch_image }}
+      ports:
+        - containerPort: {{ elasticsearch_http_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ elasticsearch_http_port }}
+        - containerPort: {{ elasticsearch_transport_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ elasticsearch_transport_port }}
+      env:
+        - name: discovery.type
+          value: single-node
+        - name: ES_JAVA_OPTS
+          value: "-Xms{{ elasticsearch_heap_size }} -Xmx{{ elasticsearch_heap_size }}"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: xpack.security.enrollment.enabled
+          value: "false"
+        - name: ingest.geoip.downloader.enabled
+          value: "false"
+      volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+        - name: elasticsearch-config
+          mountPath: /usr/share/elasticsearch/config
+      resources:
+        limits:
+          memory: 5Gi
+        requests:
+          memory: 4Gi
+      readinessProbe:
+        httpGet:
+          path: /_cluster/health
+          port: {{ elasticsearch_http_port }}
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 30
+      livenessProbe:
+        httpGet:
+          path: /_cluster/health
+          port: {{ elasticsearch_http_port }}
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 10
+
+    - name: logstash
+      image: {{ elk_logstash_image }}
+      ports:
+        - containerPort: {{ logstash_beats_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ logstash_beats_port }}
+        - containerPort: {{ logstash_http_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ logstash_http_port }}
+      env:
+        - name: LS_JAVA_OPTS
+          value: "-Xms{{ logstash_heap_size }} -Xmx{{ logstash_heap_size }}"
+      volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/config
+        - name: logstash-pipeline
+          mountPath: /usr/share/logstash/pipeline
+      resources:
+        limits:
+          memory: 3Gi
+        requests:
+          memory: 2Gi
+      readinessProbe:
+        httpGet:
+          path: /
+          port: {{ logstash_http_port }}
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 30
+
+    - name: kibana
+      image: {{ elk_kibana_image }}
+      ports:
+        - containerPort: {{ kibana_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ kibana_port }}
+      env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch:{{ elasticsearch_http_port }}"
+        - name: XPACK_SECURITY_ENABLED
+          value: "false"
+      volumeMounts:
+        - name: kibana-config
+          mountPath: /usr/share/kibana/config
+      resources:
+        limits:
+          memory: 1Gi
+        requests:
+          memory: 512Mi
+      readinessProbe:
+        httpGet:
+          path: /api/status
+          port: {{ kibana_port }}
+        initialDelaySeconds: 60
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 30
+      livenessProbe:
+        httpGet:
+          path: /api/status
+          port: {{ kibana_port }}
+        initialDelaySeconds: 120
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 10
+
+  volumes:
+    - name: elasticsearch-data
+      hostPath:
+        path: {{ elasticsearch_data_dir }}
+        type: DirectoryOrCreate
+    - name: elasticsearch-config
+      hostPath:
+        path: {{ elk_config_dir }}/elasticsearch
+        type: DirectoryOrCreate
+    - name: logstash-config
+      hostPath:
+        path: {{ elk_config_dir }}/logstash/config
+        type: DirectoryOrCreate
+    - name: logstash-pipeline
+      hostPath:
+        path: {{ elk_config_dir }}/logstash/pipeline
+        type: DirectoryOrCreate
+    - name: kibana-config
+      hostPath:
+        path: {{ elk_config_dir }}/kibana
+        type: DirectoryOrCreate

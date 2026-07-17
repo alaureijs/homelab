@@ -41,7 +41,7 @@
       Certificate {{ certificates_name }}:
       exists={{ certificates_existing_cert.stat.exists }},
       {% if certificates_existing_cert.stat.exists %}
-      expires={{ certificates_cert_info.not_after | default('unknown') | int | ansible.builtin.epoch_time('%Y-%m-%d %H:%M:%S') }},
+      expires={{ certificates_cert_info.not_after | default(0) | int }},
       days_left={{ ((certificates_cert_info.not_after | default(0) | int - ansible_date_time.epoch | int) / 86400) | int }},
       {% endif %}
       threshold={{ certificates_renew_threshold_days }}d,

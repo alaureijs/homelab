@@ -1,0 +1,15 @@
+---
+cluster.name: "{{ elasticsearch_cluster_name }}"
+network.host: 0.0.0.0
+http.port: {{ elasticsearch_http_port }}
+transport.port: {{ elasticsearch_transport_port }}
+
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+discovery.type: single-node
+
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+
+ingest.geoip.downloader.enabled: false

@@ -1,7 +1,6 @@
 ---
-# Harbor configuration (harbor_version from group_vars/all/versions.yml)
+# Harbor configuration
 
-harbor_hostname: harbor.local.lan
 harbor_tls_enabled: true
 harbor_enable_trivy: true
 harbor_enable_chartmuseum: false

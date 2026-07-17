@@ -1,0 +1,22 @@
+---
+# Connection
+ansible_host: 192.168.100.12
+
+# VM host-specific
+vm_name: ansible03
+vm_mac: "52:54:00:aa:00:12"
+vm_ip: 192.168.100.12
+
+# VM specs (overrides group defaults)
+vm_vcpus: 2
+vm_memory: 8192
+vm_disk: 120
+
+# DNS host-specific
+vm_hostname: ansible03
+vm_dns_entries:
+  - name: observability.local.lan
+    ip: 192.168.100.12
+
+# Hardening — Podman requires IP forwarding
+hardening_ip_forwarding: true

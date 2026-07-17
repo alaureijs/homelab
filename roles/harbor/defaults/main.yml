@@ -1,11 +1,9 @@
 ---
 # harbor role defaults
 
-# Version managed in group_vars/all/versions.yml
-# harbor_version is set there, role inherits it
+# Version managed in group_vars/all/main.yml
 harbor_install_dir: /opt/harbor
 harbor_data_dir: /data/harbor
-harbor_hostname: harbor.local.lan
 
 harbor_admin_password: "Harbor12345"
 harbor_database_password: "Harbor12345"

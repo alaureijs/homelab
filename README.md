@@ -18,9 +18,10 @@ ansible-galaxy collection install ansible.posix community.crypto containers.podm
 |--------------|-----------|-----------------|-----------------------------------------|
 | harbor       | ansible01 | 192.168.100.10  | Harbor v2.11.0 container registry       |
 | monitoring   | ansible02 | 192.168.100.11  | Grafana/Prometheus/Alertmanager stack   |
-| libvirt      | both      |                 | Rocky Linux 10 VMs on `ansible-net`     |
+| elk          | ansible03 | 192.168.100.12  | Elasticsearch/Logstash/Kibana stack     |
+| libvirt      | all three |                 | Rocky Linux 10 VMs on `ansible-net`     |
 
-DNS: `harbor.local.lan` (192.168.100.10), `monitoring.local.lan` (192.168.100.11)
+DNS: `harbor.local.lan` (192.168.100.10), `monitoring.local.lan` (192.168.100.11), `observability.local.lan` (192.168.100.12)
 
 ## Quick Start
 
@@ -30,6 +31,9 @@ ansible-playbook playbooks/provision-ansible01.yml
 
 # Provision monitoring (ansible02)
 ansible-playbook playbooks/provision-ansible02.yml
+
+# Provision ELK stack (ansible03)
+ansible-playbook playbooks/provision-ansible03.yml
 
 # Sync container images to Harbor
 ansible-playbook playbooks/sync-update-containers.yml
@@ -44,6 +48,7 @@ ansible-playbook playbooks/harbor-users.yml
 |----------|-------------|
 | `provision-ansible01.yml` | Full provisioning for Harbor host |
 | `provision-ansible02.yml` | Full provisioning for monitoring host |
+| `provision-ansible03.yml` | Full provisioning for ELK stack host |
 | `sync-update-containers.yml` | Sync images to Harbor / check upstream updates |
 | `harbor-users.yml` | Manage Harbor users, projects, registries |
 | `harbor-certs.yml` | Regenerate Harbor TLS certificates |
@@ -61,6 +66,7 @@ ansible-playbook playbooks/harbor-users.yml
 | `harbor_containers` | Sync container images to Harbor |
 | `monitoring` | Grafana, Prometheus, Alertmanager, node-exporter |
 | `node_exporter` | Node Exporter with mTLS |
+| `elk` | Elasticsearch, Logstash, Kibana stack |
 | `hardening` | STIG/CIS system hardening (10 toggleable modules) |
 
 ## Environment
@@ -75,6 +81,7 @@ ansible-playbook playbooks/harbor-users.yml
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures, certificate renewal
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration, logging, management
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack details, mTLS, troubleshooting
+- [docs/elasticsearch.md](docs/elasticsearch.md) — ELK stack deployment, configuration, troubleshooting
 - [docs/hardening.md](docs/hardening.md) — Hardening modules, SELinux, audit rules
 - [docs/vm.md](docs/vm.md) — VM lifecycle, cloud-init, host UFW
 

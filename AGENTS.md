@@ -164,6 +164,66 @@ spec:
 - Users can override file locations without modifying role
 - Single pod manifest file contains all resources
 
+### PersistentVolumes with podman kube play
+
+`podman kube play` supports PersistentVolumeClaims defined inline in the pod manifest. Use PV/PVC instead of `hostPath` for data volumes — this is the K8s-compatible pattern.
+
+**Structure:**
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-app-data
+  labels:
+    app: my-app
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /var/lib/my-app
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-app-data
+  labels:
+    app: my-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+  labels:
+    app: my-app
+spec:
+  containers:
+    - name: my-app
+      volumeMounts:
+        - name: data
+          mountPath: /var/lib/my-app
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: my-app-data
+```
+
+**K8s Migration:**
+- PV/PVC is the standard K8s pattern for persistent storage
+- `persistentVolumeReclaimPolicy: Retain` — data survives PV deletion
+- `accessModes: ReadWriteOnce` — single-node only (matches Podman model)
+- In K8s, replace `hostPath` PV with a real provisioner (NFS, Ceph, etc.)
+- PV/PVC names must match between PV, PVC, and pod volume reference
+
 ### Networking
 - All services behind nginx reverse proxy on port 443 (HTTPS)
 - Use Podman CNI networks for inter-container communication

@@ -81,6 +81,76 @@ roles/
 5. **Fix permissions after deploy** — containers run as non-root (uid 1000, 472, 65534)
 6. **Use ConfigMaps** for configuration (inline in pod manifest, not hostPath)
 
+### ConfigMaps with podman kube play
+
+`podman kube play` supports ConfigMaps defined inline in the pod manifest. This is the preferred pattern for configuration.
+
+**Structure:**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+  labels:
+    app: my-app
+data:
+  config.yml: |
+    key: value
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+    - name: my-app
+      volumeMounts:
+        - name: config
+          mountPath: /etc/app/config.yml
+          subPath: config.yml
+  volumes:
+    - name: config
+      configMap:
+        name: my-config
+```
+
+**Pattern in Ansible roles:**
+1. Define config file location variables in `defaults/main.yml`:
+   ```yaml
+   myapp_config_template: "{{ role_path }}/templates/config.yml.j2"
+   myapp_rules_file: "{{ role_path }}/files/rules.yml"
+   ```
+
+2. Tasks read files and render templates before pod creation:
+   ```yaml
+   - name: Render config
+     ansible.builtin.template:
+       src: "{{ myapp_config_template }}"
+       dest: /tmp/myapp-config.yml
+
+   - name: Read config
+     ansible.builtin.slurp:
+       src: /tmp/myapp-config.yml
+     register: myapp_config
+   ```
+
+3. Pod template uses variables for ConfigMap content:
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: myapp-config
+   data:
+     config.yml: |
+   {{ myapp_config.content | b64decode | indent(4) }}
+   ```
+
+**Benefits:**
+- Configuration managed as code (no hostPath mounts)
+- Changes tracked in version control
+- Users can override file locations without modifying role
+- Single pod manifest file contains all resources
+
 ### Networking
 - All services behind nginx reverse proxy on port 443 (HTTPS)
 - Use Podman CNI networks for inter-container communication
@@ -164,6 +234,8 @@ curl -sk https://hostname/service/health
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack
+- [docs/monitoring-configuration.md](docs/monitoring-configuration.md) — Monitoring configuration manual
 - [docs/elasticsearch.md](docs/elasticsearch.md) — ELK stack
+- [docs/elk-configuration.md](docs/elk-configuration.md) — ELK configuration manual
 - [docs/hardening.md](docs/hardening.md) — Hardening modules
 - [docs/vm.md](docs/vm.md) — VM lifecycle

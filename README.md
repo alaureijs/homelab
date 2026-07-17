@@ -81,6 +81,7 @@ ansible-playbook playbooks/harbor-users.yml
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures, certificate renewal
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration, logging, management
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack details, mTLS, troubleshooting
+- [docs/monitoring-configuration.md](docs/monitoring-configuration.md) — Monitoring configuration manual (without role changes)
 - [docs/elasticsearch.md](docs/elasticsearch.md) — ELK stack deployment, configuration, troubleshooting
 - [docs/elk-configuration.md](docs/elk-configuration.md) — ELK configuration manual (without role changes)
 - [docs/hardening.md](docs/hardening.md) — Hardening modules, SELinux, audit rules

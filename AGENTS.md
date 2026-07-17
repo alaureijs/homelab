@@ -224,6 +224,98 @@ spec:
 - In K8s, replace `hostPath` PV with a real provisioner (NFS, Ceph, etc.)
 - PV/PVC names must match between PV, PVC, and pod volume reference
 
+### podman kube play — K8s Compatibility Reference
+
+Full reference of supported K8s features in `podman kube play` (Podman 5.8.2).
+
+**Supported K8s kinds:**
+| Kind | Support |
+|------|---------|
+| Pod | ✅ |
+| Deployment | ✅ (replicas always 1, no rolling updates) |
+| DaemonSet | ✅ |
+| Job | ✅ |
+| PersistentVolumeClaim | ✅ |
+| ConfigMap | ✅ |
+| Secret | ✅ |
+
+**Supported volume types:**
+| Type | Notes |
+|------|-------|
+| `hostPath` | `DirectoryOrCreate`, `Directory`, `FileOrCreate`, `File`, `Socket`, `CharDevice`, `BlockDevice` |
+| `emptyDir` | Anonymous, deleted with pod |
+| `configMap` | Anonymous, deleted with pod |
+| `persistentVolumeClaim` | Creates Podman named volume |
+| `image` | Read-only, rootful only |
+
+**Pod fields:**
+| Field | Support |
+|-------|---------|
+| `containers` | ✅ |
+| `initContainers` | ✅ (default type `once`, use annotation `io.podman.annotations.init.container.type=always`) |
+| `volumes` | ✅ |
+| `restartPolicy` | ✅ (default: `always`) |
+| `terminationGracePeriodSeconds` | ✅ |
+| `hostname` | ✅ |
+| `hostAliases` | ✅ |
+| `dnsConfig` (nameservers, options, searches) | ✅ |
+| `hostNetwork` | ✅ |
+| `hostPID` | ✅ |
+| `hostIPC` | ✅ |
+| `shareProcessNamespace` | ✅ |
+| `securityContext` (runAsUser, runAsGroup, supplementalGroups, seLinuxOptions, sysctls) | ✅ |
+| `nodeSelector`, `nodeName`, `affinity`, `tolerations` | N/A (single-node) |
+| `imagePullSecrets` | no |
+| `serviceAccountName` | no |
+
+**Container fields:**
+| Field | Support |
+|-------|---------|
+| `name`, `image`, `imagePullPolicy` | ✅ |
+| `command`, `args`, `workingDir` | ✅ |
+| `ports` (containerPort, hostIP, hostPort, protocol) | ✅ |
+| `env` (value, valueFrom.configMapKeyRef, valueFrom.secretKeyRef, valueFrom.fieldRef, valueFrom.resourceFieldRef) | ✅ |
+| `envFrom` (configMapRef, secretRef) | ✅ |
+| `volumeMounts` (mountPath, name, readOnly, subPath) | ✅ |
+| `resources` (limits, requests) | ✅ |
+| `livenessProbe` | ✅ |
+| `readinessProbe` | no |
+| `startupProbe` | no |
+| `securityContext` (runAsUser, runAsGroup, readOnlyRootFilesystem, privileged, allowPrivilegeEscalation, capabilities, seLinuxOptions) | ✅ |
+| `lifecycle.stopSignal` | ✅ |
+| `tty`, `stdin` | no |
+
+**Deployment fields:** `replicas` (ignored, always 1), `selector`, `template` ✅; `strategy`, `revisionHistoryLimit` no.
+
+**DaemonSet fields:** `selector`, `template` ✅; `strategy` no.
+
+**Job fields:** `template` ✅; `backoffLimit`, `parallelism`, `completions` no.
+
+**PVC fields:** `storageClassName`, `accessModes`, `resources.requests` ✅.
+
+**ConfigMap fields:** `binaryData`, `data` ✅; `immutable` no.
+
+**Secret:** Supported — creates Podman named secret. Referenced via `env.valueFrom.secretKeyRef` or `envFrom.secretRef`.
+
+**Podman-specific annotations:**
+| Annotation | Purpose |
+|------------|---------|
+| `io.podman.annotations.userns` | User namespace mode (`keep-id`, `auto`, etc.) |
+| `io.podman.annotations.volumes-from/$ctr` | Bind mount volumes from another container |
+| `io.podman.annotations.init.container.type` | Init container type (`once` or `always`) |
+| `io.podman.annotations.infra.name` | Custom infra container name |
+| `io.podman.annotations.pids-limit/$ctr` | Per-container pids limit |
+| `io.podman.annotations.cpuset/$ctr` | CPU core affinity |
+| `io.podman.annotations.memory-nodes/$ctr` | NUMA memory node affinity |
+
+**K8s migration notes:**
+- `hostIP` on containerPort — not in K8s; use `NetworkPolicy` or `Service`
+- `hostPort` — works but not recommended for production; use `Service` + `Ingress`
+- Podman CNI `--network` — replace with K8s `NetworkPolicy`
+- Deployment replicas always 1 — no real replica management
+- No rolling updates, no HPA, no PDB
+- `readinessProbe`/`startupProbe` not supported — use `livenessProbe` only
+
 ### Networking
 - All services behind nginx reverse proxy on port 443 (HTTPS)
 - Use Podman CNI networks for inter-container communication

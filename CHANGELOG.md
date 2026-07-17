@@ -105,7 +105,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Grafana dashboard provisioning via file-based provider:
   - `grafana-dashboards-provider.yml.j2` template for provisioning config
   - `monitoring_grafana_dashboards` variable for dashboard list
-  - Default Node Exporter dashboard (CPU, Memory, Disk, Network)
+  - Default dashboards: Node Exporter (CPU, Memory, Disk, Network),
+    Prometheus (targets, TSDB, scrape metrics)
   - Auto-refresh every 30 seconds from mounted directory
 
 ### Changed

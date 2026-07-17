@@ -50,3 +50,4 @@ monitoring_cert_force_renewal: false
 # Grafana dashboards to provision (list of JSON files from files/dashboards/)
 monitoring_grafana_dashboards:
   - "{{ role_path }}/files/dashboards/node-exporter.json"
+  - "{{ role_path }}/files/dashboards/prometheus.json"

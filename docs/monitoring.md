@@ -53,9 +53,10 @@ ansible-playbook playbooks/provision-ansible02.yml
 
 Dashboards are auto-refreshed every 30 seconds from the mounted directory.
 
-### Default Dashboard
+### Default Dashboards
 
 - **Node Exporter**: CPU, Memory, Disk, Network traffic panels
+- **Prometheus**: Targets up, TSDB size, scrape samples, scrape duration
 
 ## mTLS
 

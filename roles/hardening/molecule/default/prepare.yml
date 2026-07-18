@@ -1,0 +1,11 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Generate SSH host keys
+      ansible.builtin.command: ssh-keygen -A
+      changed_when: false
+      failed_when: false

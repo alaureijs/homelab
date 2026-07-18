@@ -4,14 +4,14 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: https://{{ monitoring_hostname }}/prometheus/
+    url: http://localhost:9090/prometheus/
     isDefault: true
     editable: false
 
   - name: Alertmanager
     type: alertmanager
     access: proxy
-    url: https://{{ monitoring_hostname }}:9093
+    url: http://localhost:9093
     editable: false
     jsonData:
       implementation: prometheus

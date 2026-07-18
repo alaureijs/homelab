@@ -37,7 +37,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+         node_exporter_current_version.stdout is not search(node_exporter_version))
 
     - name: Download node_exporter
       ansible.builtin.get_url:
@@ -47,7 +47,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+         node_exporter_current_version.stdout is not search(node_exporter_version))
 
     - name: Extract node_exporter binary
       ansible.builtin.unarchive:
@@ -57,7 +57,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+         node_exporter_current_version.stdout is not search(node_exporter_version))
 
     - name: Copy node_exporter binary
       ansible.builtin.copy:
@@ -70,7 +70,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search('v' + node_exporter_version))
+         node_exporter_current_version.stdout is not search(node_exporter_version))
       notify: Restart node-exporter
 
     - name: Cleanup tarball
@@ -89,6 +89,7 @@
         permanent: true
         state: enabled
         immediate: true
+      failed_when: false
 
     - name: Ensure node_exporter TLS directory exists
       ansible.builtin.file:

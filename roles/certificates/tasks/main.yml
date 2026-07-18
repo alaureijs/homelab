@@ -20,11 +20,14 @@
     path: "{{ certificates_dir }}/{{ certificates_name }}.crt"
   register: certificates_existing_cert
 
-- name: Get certificate expiry info
-  community.crypto.x509_certificate_info:
-    path: "{{ certificates_dir }}/{{ certificates_name }}.crt"
-  register: certificates_cert_info
+- name: Check if certificate expires within threshold
+  ansible.builtin.command: >-
+    openssl x509 -checkend {{ certificates_renew_threshold_days * 86400 }}
+    -noout -in {{ certificates_dir }}/{{ certificates_name }}.crt
+  register: certificates_expiry_check
   when: certificates_existing_cert.stat.exists
+  changed_when: false
+  failed_when: false
 
 - name: Determine if certificate needs renewal
   ansible.builtin.set_fact:
@@ -32,8 +35,7 @@
       {{ certificates_force_renewal | bool
          or not certificates_existing_cert.stat.exists
          or (certificates_existing_cert.stat.exists
-             and certificates_cert_info.not_after is defined
-             and ((certificates_cert_info.not_after | int - ansible_date_time.epoch | int) < (certificates_renew_threshold_days * 86400))) }}
+             and certificates_expiry_check.rc | default(1) | int != 0) }}
 
 - name: Display certificate status
   ansible.builtin.debug:
@@ -41,8 +43,7 @@
       Certificate {{ certificates_name }}:
       exists={{ certificates_existing_cert.stat.exists }},
       {% if certificates_existing_cert.stat.exists %}
-      expires={{ certificates_cert_info.not_after | default(0) | int }},
-      days_left={{ ((certificates_cert_info.not_after | default(0) | int - ansible_date_time.epoch | int) / 86400) | int }},
+      expires_within={{ certificates_renew_threshold_days }}d={{ certificates_expiry_check.rc | default(1) | int == 0 }},
       {% endif %}
       threshold={{ certificates_renew_threshold_days }}d,
       force={{ certificates_force_renewal }},

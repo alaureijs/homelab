@@ -1,0 +1,18 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    hardening_selinux: false
+    hardening_password_auth: true
+    hardening_auditd: false
+    hardening_chrony: false
+    hardening_disable_core_dumps: false
+    hardening_core_dump_suid: false
+    hardening_sticky_bit: false
+    hardening_permissions: false
+
+  roles:
+    - role: hardening

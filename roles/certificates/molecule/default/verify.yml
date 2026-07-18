@@ -1,0 +1,69 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check certificate exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/certs/test-host.crt
+      register: cert_file
+
+    - name: Assert certificate exists
+      ansible.builtin.assert:
+        that:
+          - cert_file.stat.exists
+          - cert_file.stat.mode == "0644"
+        fail_msg: "Certificate not found or wrong permissions"
+
+    - name: Check private key exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/private/test-host.key
+      register: key_file
+
+    - name: Assert private key exists
+      ansible.builtin.assert:
+        that:
+          - key_file.stat.exists
+          - key_file.stat.mode == "0600"
+        fail_msg: "Private key not found or wrong permissions"
+
+    - name: Verify certificate is valid X509
+      ansible.builtin.command: openssl x509 -in /etc/pki/tls/certs/test-host.crt -noout -text
+      register: cert_text
+      changed_when: false
+
+    - name: Assert certificate subject
+      ansible.builtin.assert:
+        that:
+          - "'CN=test-host' in cert_text.stdout"
+          - "'O=Lab' in cert_text.stdout"
+        fail_msg: "Certificate subject mismatch"
+
+    - name: Assert certificate SANs
+      ansible.builtin.assert:
+        that:
+          - "'DNS:test-host' in cert_text.stdout"
+          - "'IP Address:192.168.100.99' in cert_text.stdout"
+        fail_msg: "Certificate SANs missing"
+
+    - name: Assert certificate is self-signed
+      ansible.builtin.assert:
+        that:
+          - "'C=NL, ST=Noord-Holland, L=Amsterdam, O=Lab, CN=test-host' in cert_text.stdout"
+        fail_msg: "Certificate is not self-signed"
+
+    - name: Verify private key matches certificate
+      ansible.builtin.shell: |
+        openssl x509 -in /etc/pki/tls/certs/test-host.crt -noout -pubkey > /tmp/cert.pub
+        openssl pkey -in /etc/pki/tls/private/test-host.key -pubout > /tmp/key.pub
+        diff /tmp/cert.pub /tmp/key.pub
+      changed_when: false
+      register: key_match
+
+    - name: Assert key matches certificate
+      ansible.builtin.assert:
+        that:
+          - key_match.rc == 0
+        fail_msg: "Private key does not match certificate"

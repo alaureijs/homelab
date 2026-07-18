@@ -7,7 +7,7 @@ metadata:
     app: elk
 data:
   elasticsearch.yml: |
-{{ elk_cm_elasticsearch.content | b64decode | indent(4) }}
+{{ elk_cm_elasticsearch.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -17,7 +17,7 @@ metadata:
     app: elk
 data:
   logstash.yml: |
-{{ elk_cm_logstash_config.content | b64decode | indent(4) }}
+{{ elk_cm_logstash_config.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -27,7 +27,7 @@ metadata:
     app: elk
 data:
   pipeline.conf: |
-{{ elk_cm_logstash_pipeline.content | b64decode | indent(4) }}
+{{ elk_cm_logstash_pipeline.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -37,7 +37,7 @@ metadata:
     app: elk
 data:
   kibana.yml: |
-{{ elk_cm_kibana.content | b64decode | indent(4) }}
+{{ elk_cm_kibana.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: PersistentVolume

@@ -1,0 +1,62 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check node_exporter binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/node_exporter
+      register: ne_binary
+
+    - name: Assert binary exists and is executable
+      ansible.builtin.assert:
+        that:
+          - ne_binary.stat.exists
+          - ne_binary.stat.executable
+        fail_msg: "node_exporter binary not found or not executable"
+
+    - name: Check node_exporter user exists
+      ansible.builtin.command: id node_exporter
+      register: ne_user
+      changed_when: false
+
+    - name: Assert node_exporter user exists
+      ansible.builtin.assert:
+        that:
+          - ne_user.rc == 0
+        fail_msg: "node_exporter user does not exist"
+
+    - name: Check node_exporter service file exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/node-exporter.service
+      register: ne_service
+
+    - name: Assert service file exists
+      ansible.builtin.assert:
+        that:
+          - ne_service.stat.exists
+        fail_msg: "node-exporter.service not found"
+
+    - name: Verify binary version
+      ansible.builtin.command: /usr/local/bin/node_exporter --version
+      register: ne_version
+      changed_when: false
+
+    - name: Assert correct version installed
+      ansible.builtin.assert:
+        that:
+          - "'1.8.2' in ne_version.stdout"
+        fail_msg: "Wrong node_exporter version"
+
+    - name: Check node_exporter is running
+      ansible.builtin.systemd:
+        name: node-exporter
+      register: ne_status
+
+    - name: Assert service is active
+      ansible.builtin.assert:
+        that:
+          - ne_status.status.ActiveState == "active"
+        fail_msg: "node-exporter is not running"

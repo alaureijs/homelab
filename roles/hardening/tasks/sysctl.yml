@@ -1,4 +1,12 @@
 ---
+- name: Ensure sysctl.d directory exists
+  ansible.builtin.file:
+    path: /etc/sysctl.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Configure kernel and network hardening (STIG/CIS)
   ansible.posix.sysctl:
     name: "{{ item.key }}"
@@ -8,11 +16,3 @@
     state: present
   loop: "{{ hardening_sysctl_params | dict2items }}"
   when: item.value != ""
-
-- name: Ensure sysctl.d directory exists
-  ansible.builtin.file:
-    path: /etc/sysctl.d
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"

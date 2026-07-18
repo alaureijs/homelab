@@ -111,11 +111,14 @@
     path: "{{ monitoring_mtls_ca_cert }}"
   register: monitoring_ca_cert
 
-- name: Get monitoring CA expiry info
-  community.crypto.x509_certificate_info:
-    path: "{{ monitoring_mtls_ca_cert }}"
-  register: monitoring_ca_cert_info
+- name: Check if monitoring CA expires within threshold
+  ansible.builtin.command: >-
+    openssl x509 -checkend {{ monitoring_cert_renew_threshold_days * 86400 }}
+    -noout -in {{ monitoring_mtls_ca_cert }}
+  register: monitoring_ca_expiry_check
   when: monitoring_ca_cert.stat.exists
+  changed_when: false
+  failed_when: false
 
 - name: Determine if monitoring CA needs renewal
   ansible.builtin.set_fact:
@@ -123,17 +126,14 @@
       {{ monitoring_cert_force_renewal | bool
          or not monitoring_ca_cert.stat.exists
          or (monitoring_ca_cert.stat.exists
-             and monitoring_ca_cert_info.not_after is defined
-             and ((monitoring_ca_cert_info.not_after | int - ansible_date_time.epoch | int)
-                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+             and monitoring_ca_expiry_check.rc | default(1) | int != 0) }}
 
 - name: Display monitoring CA status
   ansible.builtin.debug:
     msg: >-
       Monitoring CA: exists={{ monitoring_ca_cert.stat.exists }},
       {% if monitoring_ca_cert.stat.exists %}
-      expires={{ monitoring_ca_cert_info.not_after | default('unknown') }},
-      days_left={{ ((monitoring_ca_cert_info.not_after | default(0) | int - ansible_date_time.epoch | int) / 86400) | int }},
+      expires_within={{ monitoring_cert_renew_threshold_days }}d={{ monitoring_ca_expiry_check.rc | default(1) | int == 0 }},
       {% endif %}
       threshold={{ monitoring_cert_renew_threshold_days }}d,
       force={{ monitoring_cert_force_renewal }},
@@ -180,11 +180,14 @@
     path: "{{ node_exporter_server_cert }}"
   register: monitoring_ne_server_cert
 
-- name: Get node-exporter server cert expiry info
-  community.crypto.x509_certificate_info:
-    path: "{{ node_exporter_server_cert }}"
-  register: monitoring_ne_server_cert_info
+- name: Check if node-exporter server cert expires within threshold
+  ansible.builtin.command: >-
+    openssl x509 -checkend {{ monitoring_cert_renew_threshold_days * 86400 }}
+    -noout -in {{ node_exporter_server_cert }}
+  register: monitoring_ne_server_expiry_check
   when: monitoring_ne_server_cert.stat.exists
+  changed_when: false
+  failed_when: false
 
 - name: Determine if node-exporter server cert needs renewal
   ansible.builtin.set_fact:
@@ -193,9 +196,7 @@
          or monitoring_cert_force_renewal | bool
          or not monitoring_ne_server_cert.stat.exists
          or (monitoring_ne_server_cert.stat.exists
-             and monitoring_ne_server_cert_info.not_after is defined
-             and ((monitoring_ne_server_cert_info.not_after | int - ansible_date_time.epoch | int)
-                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+             and monitoring_ne_server_expiry_check.rc | default(1) | int != 0) }}
 
 - name: Generate node-exporter server key
   community.crypto.openssl_privatekey:
@@ -235,11 +236,14 @@
     path: "{{ monitoring_mtls_client_cert }}"
   register: monitoring_client_cert
 
-- name: Get Prometheus client cert expiry info
-  community.crypto.x509_certificate_info:
-    path: "{{ monitoring_mtls_client_cert }}"
-  register: monitoring_client_cert_info
+- name: Check if Prometheus client cert expires within threshold
+  ansible.builtin.command: >-
+    openssl x509 -checkend {{ monitoring_cert_renew_threshold_days * 86400 }}
+    -noout -in {{ monitoring_mtls_client_cert }}
+  register: monitoring_client_expiry_check
   when: monitoring_client_cert.stat.exists
+  changed_when: false
+  failed_when: false
 
 - name: Determine if Prometheus client cert needs renewal
   ansible.builtin.set_fact:
@@ -248,9 +252,7 @@
          or monitoring_cert_force_renewal | bool
          or not monitoring_client_cert.stat.exists
          or (monitoring_client_cert.stat.exists
-             and monitoring_client_cert_info.not_after is defined
-             and ((monitoring_client_cert_info.not_after | int - ansible_date_time.epoch | int)
-                  < (monitoring_cert_renew_threshold_days * 86400))) }}
+             and monitoring_client_expiry_check.rc | default(1) | int != 0) }}
 
 - name: Generate Prometheus client key
   community.crypto.openssl_privatekey:
@@ -395,16 +397,22 @@
 - name: Read Grafana datasources
   ansible.builtin.slurp:
     src: "{{ monitoring_grafana_datasources_file }}"
+  delegate_to: localhost
+  connection: local
   register: monitoring_cm_datasources
 
 - name: Read Grafana dashboards provider
   ansible.builtin.slurp:
     src: "{{ monitoring_grafana_dashboards_provider_file }}"
+  delegate_to: localhost
+  connection: local
   register: monitoring_cm_dashboards_provider
 
 - name: Read Prometheus rules
   ansible.builtin.slurp:
     src: "{{ monitoring_prometheus_rules_file }}"
+  delegate_to: localhost
+  connection: local
   register: monitoring_cm_prometheus_rules
 
 - name: Read rendered Prometheus config
@@ -421,6 +429,8 @@
   ansible.builtin.slurp:
     src: "{{ item.file }}"
   loop: "{{ monitoring_grafana_dashboards }}"
+  delegate_to: localhost
+  connection: local
   register: monitoring_cm_dashboards
 
 - name: Template monitoring pod manifest

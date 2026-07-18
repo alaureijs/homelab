@@ -1,0 +1,91 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    hardening_selinux: false
+    hardening_sticky_bit: false
+    hardening_permissions: false
+
+  tasks:
+    - name: Check sysctl hardening file
+      ansible.builtin.stat:
+        path: /etc/sysctl.d/99-hardening.conf
+      register: sysctl_conf
+
+    - name: Assert sysctl settings exist
+      ansible.builtin.assert:
+        that:
+          - sysctl_conf.stat.exists
+        fail_msg: "Sysctl hardening file not found"
+
+    - name: Read sysctl settings
+      ansible.builtin.command: sysctl net.ipv4.tcp_syncookies net.ipv4.conf.all.send_redirects
+      register: sysctl_vals
+      changed_when: false
+
+    - name: Assert sysctl values applied
+      ansible.builtin.assert:
+        that:
+          - "'net.ipv4.tcp_syncookies = 1' in sysctl_vals.stdout"
+          - "'net.ipv4.conf.all.send_redirects = 0' in sysctl_vals.stdout"
+        fail_msg: "Sysctl values not correctly applied"
+
+    - name: Check sshd_config exists
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config
+      register: sshd_config
+
+    - name: Assert sshd_config exists
+      ansible.builtin.assert:
+        that:
+          - sshd_config.stat.exists
+        fail_msg: "sshd_config not found"
+
+    - name: Read SSH hardening settings
+      ansible.builtin.command: grep -E "^(X11Forwarding|MaxAuthTries|PermitEmptyPasswords)" /etc/ssh/sshd_config
+      register: sshd_settings
+      changed_when: false
+
+    - name: Assert SSH hardening settings
+      ansible.builtin.assert:
+        that:
+          - "'X11Forwarding no' in sshd_settings.stdout_lines"
+          - "'MaxAuthTries 4' in sshd_settings.stdout_lines"
+          - "'PermitEmptyPasswords no' in sshd_settings.stdout_lines"
+        fail_msg: "SSH hardening settings not applied"
+
+    - name: Check banner content
+      ansible.builtin.command: cat /etc/issue
+      register: banner_content
+      changed_when: false
+
+    - name: Assert banner is set
+      ansible.builtin.assert:
+        that:
+          - "'Authorized users only' in banner_content.stdout"
+        fail_msg: "Warning banner not set"
+
+    - name: Check modprobe hardening
+      ansible.builtin.stat:
+        path: /etc/modprobe.d/hardening.conf
+      register: modprobe_conf
+
+    - name: Assert modprobe hardening
+      ansible.builtin.assert:
+        that:
+          - modprobe_conf.stat.exists
+        fail_msg: "Modprobe hardening file not found"
+
+    - name: Count modprobe entries
+      ansible.builtin.command: grep -c "install" /etc/modprobe.d/hardening.conf
+      register: modprobe_count
+      changed_when: false
+
+    - name: Assert modprobe entries
+      ansible.builtin.assert:
+        that:
+          - modprobe_count.stdout | int >= 10
+        fail_msg: "Insufficient modprobe hardening entries"

@@ -6,7 +6,7 @@ metadata:
     app: monitoring
 data:
   datasources.yml: |
-{{ monitoring_cm_datasources.content | b64decode | indent(4) }}
+{{ monitoring_cm_datasources.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -16,7 +16,7 @@ metadata:
     app: monitoring
 data:
   dashboards.yml: |
-{{ monitoring_cm_dashboards_provider.content | b64decode | indent(4) }}
+{{ monitoring_cm_dashboards_provider.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -26,7 +26,7 @@ metadata:
     app: monitoring
 data:
   prometheus.yml: |
-{{ monitoring_cm_prometheus.content | b64decode | indent(4) }}
+{{ monitoring_cm_prometheus.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -36,7 +36,7 @@ metadata:
     app: monitoring
 data:
   rules.yml: |
-{{ monitoring_cm_prometheus_rules.content | b64decode | indent(4) }}
+{{ monitoring_cm_prometheus_rules.content | b64decode | indent(4, first=True) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -46,7 +46,7 @@ metadata:
     app: monitoring
 data:
   alertmanager.yml: |
-{{ monitoring_cm_alertmanager.content | b64decode | indent(4) }}
+{{ monitoring_cm_alertmanager.content | b64decode | indent(4, first=True) }}
 {% for dashboard in monitoring_grafana_dashboards %}
 ---
 apiVersion: v1
@@ -58,7 +58,7 @@ metadata:
     dashboard: "{{ dashboard.name }}"
 data:
   {{ dashboard.name }}.json: |
-{{ monitoring_cm_dashboards.results[loop.index0].content | b64decode | indent(4) }}
+{{ monitoring_cm_dashboards.results[loop.index0].content | b64decode | indent(4, first=True) }}
 {% endfor %}
 ---
 apiVersion: v1

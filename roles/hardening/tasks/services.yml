@@ -11,6 +11,7 @@
   failed_when:
     - hardening_disable_result is failed
     - "'Could not find the requested service' not in hardening_disable_result.msg"
+    - "'System has not been booted with systemd' not in hardening_disable_result.msg"
 
 - name: Ensure chrony is running
   ansible.builtin.systemd:
@@ -70,7 +71,7 @@
 - name: Disable hfs (CIS 1.1.1.5)
   ansible.builtin.lineinfile:
     path: /etc/modprobe.d/hardening.conf
-    regexp: "^install hfs"
+    regexp: "^install hfs "
     line: "install hfs /bin/true"
     create: true
     owner: root

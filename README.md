@@ -92,6 +92,7 @@ ansible-playbook playbooks/harbor-users.yml
 - [docs/elk-configuration.md](docs/elk-configuration.md) — ELK configuration manual (without role changes)
 - [docs/hardening.md](docs/hardening.md) — Hardening modules, SELinux, audit rules
 - [docs/vm.md](docs/vm.md) — VM lifecycle, cloud-init, host UFW
+- [docs/cloud-kvm.md](docs/cloud-kvm.md) — Setting up VMs with cloud images in KVM
 
 ## License
 

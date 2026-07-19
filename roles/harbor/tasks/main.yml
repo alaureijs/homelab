@@ -112,6 +112,28 @@
         replace: "  skip_update: true"
       when: not harbor_installed.stat.exists
 
+- name: Configure metrics in harbor.yml
+  when: harbor_enable_metrics | bool
+  block:
+    - name: Enable Harbor metrics
+      ansible.builtin.replace:
+        path: "{{ harbor_install_dir }}/harbor.yml"
+        regexp: '# metric:\n#   enabled: false\n#   port: 9090\n#   path: /metrics'
+        replace: |
+          metric:
+            enabled: true
+            port: {{ harbor_metrics_port }}
+            path: /metrics
+      register: harbor_metrics_config
+      notify: Restart harbor
+
+    - name: Open metrics port in firewall
+      ansible.posix.firewalld:
+        port: "{{ harbor_metrics_port }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+
 - name: Create docker symlink for podman
   ansible.builtin.file:
     src: /usr/bin/podman
@@ -188,6 +210,9 @@
         data = yaml.safe_load(f)
     for svc in data.get('services', {}).values():
         svc.pop('logging', None)
+        img = svc.get('image', '')
+        if img.startswith('goharbor/'):
+            svc['image'] = '{{ harbor_hostname }}/library/' + img
     with open('docker-compose.yml', 'w') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     "

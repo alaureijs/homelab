@@ -85,6 +85,8 @@ monitoring_configmaps:
 
 - **Node Exporter**: CPU, Memory, Disk, Network traffic panels
 - **Prometheus**: Targets up, TSDB size, scrape samples, scrape duration
+- **Harbor**: Request Rate, Request Duration p95, Project Count, Artifact Pull Rate
+- **Elasticsearch**: Cluster Health gauge, Node Heap Usage, Active Shards, Index Docs Count
 
 ### Default Alert Rules
 
@@ -92,6 +94,13 @@ monitoring_configmaps:
 - **HighMemoryUsage**: Memory > 80% for 5 minutes (warning)
 - **HighDiskUsage**: Disk > 85% for 5 minutes (warning)
 - **NodeDown**: Node unreachable for 1 minute (critical)
+- **HarborHighLatency**: Request p95 > 2s (warning)
+- **HarborPushFailure**: 5xx on push (critical)
+- **HarborDown**: Harbor metrics unreachable (critical)
+- **ClusterRed**: Elasticsearch cluster red (critical)
+- **ClusterYellow**: Elasticsearch cluster yellow (warning)
+- **HighHeap**: Elasticsearch heap > 80% (warning)
+- **ElasticsearchDown**: Exporter unreachable (critical)
 
 ## mTLS
 
@@ -104,6 +113,8 @@ Node-exporter scraping uses mutual TLS:
 Prometheus scrapes:
 - `ansible01.local.lan:9100` (Harbor host)
 - `ansible02.local.lan:9100` (monitoring host)
+- `harbor.local.lan:8090` (Harbor metrics, basic auth)
+- `ansible03.local.lan:9114` (Elasticsearch exporter)
 
 ## Certificate Renewal
 

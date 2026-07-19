@@ -5,12 +5,12 @@
   gather_facts: false
 
   tasks:
-    - name: Check certificate exists
+    - name: Check self-signed certificate exists
       ansible.builtin.stat:
         path: /etc/pki/tls/certs/test-host.crt
       register: cert_file
 
-    - name: Assert certificate exists
+    - name: Assert self-signed certificate exists
       ansible.builtin.assert:
         that:
           - cert_file.stat.exists
@@ -67,3 +67,105 @@
         that:
           - key_match.rc == 0
         fail_msg: "Private key does not match certificate"
+
+    # --- CA certificate ---
+
+    - name: Check CA certificate exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/certs/test-ca.crt
+      register: ca_cert
+
+    - name: Assert CA certificate exists
+      ansible.builtin.assert:
+        that:
+          - ca_cert.stat.exists
+          - ca_cert.stat.mode == "0644"
+        fail_msg: "CA certificate not found or wrong permissions"
+
+    - name: Verify CA certificate is valid X509
+      ansible.builtin.command: openssl x509 -in /etc/pki/tls/certs/test-ca.crt -noout -text
+      register: ca_text
+      changed_when: false
+
+    - name: Assert CA certificate is a CA
+      ansible.builtin.assert:
+        that:
+          - "'CA:TRUE' in ca_text.stdout"
+          - "'CN=Test CA' in ca_text.stdout"
+        fail_msg: "CA certificate does not have CA:TRUE or correct CN"
+
+    - name: Check CA key exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/private/test-ca.key
+      register: ca_key
+
+    - name: Assert CA key exists
+      ansible.builtin.assert:
+        that:
+          - ca_key.stat.exists
+          - ca_key.stat.mode == "0600"
+        fail_msg: "CA key not found or wrong permissions"
+
+    # --- Server certificate ---
+
+    - name: Check server certificate exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/certs/test-server.crt
+      register: srv_cert
+
+    - name: Assert server certificate exists
+      ansible.builtin.assert:
+        that:
+          - srv_cert.stat.exists
+          - srv_cert.stat.mode == "0644"
+        fail_msg: "Server certificate not found or wrong permissions"
+
+    - name: Verify server certificate is valid X509
+      ansible.builtin.command: openssl x509 -in /etc/pki/tls/certs/test-server.crt -noout -text
+      register: srv_text
+      changed_when: false
+
+    - name: Assert server certificate SANs
+      ansible.builtin.assert:
+        that:
+          - "'DNS:localhost' in srv_text.stdout"
+          - "'IP Address:127.0.0.1' in srv_text.stdout"
+        fail_msg: "Server certificate SANs missing"
+
+    - name: Assert server cert is signed by CA
+      ansible.builtin.assert:
+        that:
+          - "'CN=Test CA' in srv_text.stdout"
+        fail_msg: "Server certificate not signed by Test CA"
+
+    # --- Client certificate ---
+
+    - name: Check client certificate exists
+      ansible.builtin.stat:
+        path: /etc/pki/tls/certs/test-client.crt
+      register: cli_cert
+
+    - name: Assert client certificate exists
+      ansible.builtin.assert:
+        that:
+          - cli_cert.stat.exists
+          - cli_cert.stat.mode == "0644"
+        fail_msg: "Client certificate not found or wrong permissions"
+
+    - name: Verify client certificate is valid X509
+      ansible.builtin.command: openssl x509 -in /etc/pki/tls/certs/test-client.crt -noout -text
+      register: cli_text
+      changed_when: false
+
+    - name: Assert client cert has clientAuth
+      ansible.builtin.assert:
+        that:
+          - "'TLS Web Client Authentication' in cli_text.stdout"
+          - "'CN=test-host' in cli_text.stdout"
+        fail_msg: "Client certificate missing clientAuth or wrong CN"
+
+    - name: Assert client cert is signed by CA
+      ansible.builtin.assert:
+        that:
+          - "'CN=Test CA' in cli_text.stdout"
+        fail_msg: "Client certificate not signed by Test CA"

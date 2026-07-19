@@ -178,6 +178,30 @@ spec:
         timeoutSeconds: 10
         failureThreshold: 10
 
+    - name: elasticsearch-exporter
+      image: {{ elk_elasticsearch_exporter_image }}
+      args:
+        - "--es.uri=http://elasticsearch:{{ elasticsearch_http_port }}"
+        - "--es.all"
+        - "--es.indices"
+      ports:
+        - containerPort: {{ elk_elasticsearch_exporter_port }}
+          hostPort: {{ elk_elasticsearch_exporter_port }}
+          hostIP: "0.0.0.0"
+      resources:
+        limits:
+          memory: 128M
+        requests:
+          memory: 64M
+      livenessProbe:
+        httpGet:
+          path: /metrics
+          port: {{ elk_elasticsearch_exporter_port }}
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+
   volumes:
     - name: elasticsearch-data
       persistentVolumeClaim:

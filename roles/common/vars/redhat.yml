@@ -1,0 +1,50 @@
+---
+# Protected packages for Enterprise Linux (Rocky, RHEL, Alma, CentOS)
+# Only packages whose removal would immediately brick or seriously break the OS.
+_common_protected_packages:
+  # Init and core system
+  - systemd
+  - systemd-libs
+  - systemd-pam
+  - glibc
+  - glibc-minimal-langpack
+  - libgcc
+
+  # Boot
+  - kernel
+  - kernel-core
+  - kernel-modules
+  - grub2
+  - grub2-efi
+  - dracut
+
+  # Package management
+  - dnf
+  - dnf-plugins-core
+  - rpm
+  - rpm-libs
+
+  # Shell and coreutils
+  - bash
+  - coreutils
+  - util-linux
+  - util-linux-core
+
+  # Remote access
+  - openssh-server
+  - openssh-clients
+  - sudo
+
+  # TLS trust
+  - ca-certificates
+  - openssl
+  - openssl-libs
+
+  # Ansible runtime
+  - python3
+
+  # Container runtime
+  - podman
+  - crun
+  - containers-common
+  - container-selinux

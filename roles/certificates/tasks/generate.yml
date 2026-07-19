@@ -1,0 +1,218 @@
+---
+- name: Set cert paths
+  ansible.builtin.set_fact:
+    _cert_dir: "{{ cert.dir | default(certificates_dir) }}"
+    _cert_key_dir: "{{ cert.key_dir | default(certificates_key_dir) }}"
+    _cert_days: "{{ cert.days | default(3650) }}"
+    _cert_force: "{{ cert.force | default(false) | bool }}"
+    _cert_path: "{{ cert.dir | default(certificates_dir) }}/{{ cert.name }}.crt"
+    _cert_key_path: "{{ cert.key_dir | default(certificates_key_dir) }}/{{ cert.name }}.key"
+
+# --- selfsigned ---
+
+- name: Self-signed certificate
+  when: cert.type == "selfsigned"
+  block:
+    - name: Check if certificate exists
+      ansible.builtin.stat:
+        path: "{{ _cert_path }}"
+      register: _cert_exists
+
+    - name: Check if certificate expires within threshold
+      ansible.builtin.command: >-
+        openssl x509 -checkend {{ certificates_renew_threshold_days * 86400 }}
+        -noout -in {{ _cert_path }}
+      register: _cert_expiry
+      when: _cert_exists.stat.exists
+      changed_when: false
+      failed_when: false
+
+    - name: Determine if certificate needs renewal
+      ansible.builtin.set_fact:
+        _cert_needs_renewal: >-
+          {{ _cert_force
+             or not _cert_exists.stat.exists
+             or (_cert_exists.stat.exists
+                 and _cert_expiry.rc | default(1) | int != 0) }}
+
+    - name: Display certificate status
+      ansible.builtin.debug:
+        msg: >-
+          {{ cert.name }}: exists={{ _cert_exists.stat.exists }},
+          {% if _cert_exists.stat.exists %}
+          expires_within={{ certificates_renew_threshold_days }}d={{ _cert_expiry.rc | default(1) | int == 0 }},
+          {% endif %}
+          needs_renewal={{ _cert_needs_renewal }}
+
+    - name: Build default SANs
+      ansible.builtin.set_fact:
+        _cert_sans: "{{ cert.subject_alt_name | default(['DNS:' + vm_hostname, 'IP:' + vm_ip | string] + (cert.extra_sans | default([]))) }}"
+
+    - name: Generate private key
+      community.crypto.openssl_privatekey:
+        path: "{{ _cert_key_path }}"
+        size: 4096
+        mode: "0600"
+      when: _cert_needs_renewal | bool
+
+    - name: Generate CSR
+      community.crypto.openssl_csr:
+        path: "/tmp/{{ cert.name }}.csr"
+        privatekey_path: "{{ _cert_key_path }}"
+        common_name: "{{ cert.subject | default({}) | combine({'CN': vm_hostname}) | combine({'CN': cert.subject.CN}) if cert.subject is defined else vm_hostname }}"
+        organization_name: "{{ cert.subject.O | default('Lab') if cert.subject is defined else 'Lab' }}"
+        subject_alt_name: "{{ _cert_sans }}"
+      when: _cert_needs_renewal | bool
+
+    - name: Generate self-signed certificate
+      community.crypto.x509_certificate:
+        path: "{{ _cert_path }}"
+        privatekey_path: "{{ _cert_key_path }}"
+        csr_path: "/tmp/{{ cert.name }}.csr"
+        provider: selfsigned
+        selfsigned_not_after: "+{{ _cert_days }}d"
+        mode: "0644"
+      when: _cert_needs_renewal | bool
+
+    - name: Remove CSR
+      ansible.builtin.file:
+        path: "/tmp/{{ cert.name }}.csr"
+        state: absent
+
+# --- ca ---
+
+- name: CA certificate
+  when: cert.type == "ca"
+  block:
+    - name: Check if CA certificate exists
+      ansible.builtin.stat:
+        path: "{{ _cert_path }}"
+      register: _cert_exists
+
+    - name: Check if CA certificate expires within threshold
+      ansible.builtin.command: >-
+        openssl x509 -checkend {{ certificates_renew_threshold_days * 86400 }}
+        -noout -in {{ _cert_path }}
+      register: _cert_expiry
+      when: _cert_exists.stat.exists
+      changed_when: false
+      failed_when: false
+
+    - name: Determine if CA needs renewal
+      ansible.builtin.set_fact:
+        _cert_needs_renewal: >-
+          {{ _cert_force
+             or not _cert_exists.stat.exists
+             or (_cert_exists.stat.exists
+                 and _cert_expiry.rc | default(1) | int != 0) }}
+
+    - name: Display CA certificate status
+      ansible.builtin.debug:
+        msg: >-
+          CA {{ cert.name }}: exists={{ _cert_exists.stat.exists }},
+          {% if _cert_exists.stat.exists %}
+          expires_within={{ certificates_renew_threshold_days }}d={{ _cert_expiry.rc | default(1) | int == 0 }},
+          {% endif %}
+          needs_renewal={{ _cert_needs_renewal }}
+
+    - name: Generate CA private key
+      community.crypto.openssl_privatekey:
+        path: "{{ _cert_key_path }}"
+        size: 4096
+        mode: "0600"
+      when: _cert_needs_renewal | bool
+
+    - name: Generate CA certificate
+      ansible.builtin.command: >-
+        openssl req -x509 -new -nodes
+        -key {{ _cert_key_path }}
+        -sha256 -days {{ _cert_days }}
+        -out {{ _cert_path }}
+        -subj "/CN={{ cert.subject.CN | default('CA') }}/O={{ cert.subject.O | default('Lab') }}"
+        -addext "basicConstraints=critical,CA:TRUE,pathlen:0"
+        -addext "keyUsage=critical,keyCertSign,cRLSign"
+      changed_when: _cert_needs_renewal | bool
+      when: _cert_needs_renewal | bool
+
+# --- ownca ---
+
+- name: CA-signed certificate
+  when: cert.type == "ownca"
+  block:
+    - name: Verify CA certificate path is set
+      ansible.builtin.assert:
+        that:
+          - cert.ca_cert is defined
+          - cert.ca_cert | length > 0
+        fail_msg: "ca_cert must be set for ownca type"
+
+    - name: Verify CA key path is set
+      ansible.builtin.assert:
+        that:
+          - cert.ca_key is defined
+          - cert.ca_key | length > 0
+        fail_msg: "ca_key must be set for ownca type"
+
+    - name: Check if certificate exists
+      ansible.builtin.stat:
+        path: "{{ _cert_path }}"
+      register: _cert_exists
+
+    - name: Check if certificate expires within threshold
+      ansible.builtin.command: >-
+        openssl x509 -checkend {{ certificates_renew_threshold_days * 86400 }}
+        -noout -in {{ _cert_path }}
+      register: _cert_expiry
+      when: _cert_exists.stat.exists
+      changed_when: false
+      failed_when: false
+
+    - name: Determine if certificate needs renewal
+      ansible.builtin.set_fact:
+        _cert_needs_renewal: >-
+          {{ _cert_force
+             or not _cert_exists.stat.exists
+             or (_cert_exists.stat.exists
+                 and _cert_expiry.rc | default(1) | int != 0) }}
+
+    - name: Display ownca certificate status
+      ansible.builtin.debug:
+        msg: >-
+          CA-signed {{ cert.name }}: exists={{ _cert_exists.stat.exists }},
+          {% if _cert_exists.stat.exists %}
+          expires_within={{ certificates_renew_threshold_days }}d={{ _cert_expiry.rc | default(1) | int == 0 }},
+          {% endif %}
+          needs_renewal={{ _cert_needs_renewal }}
+
+    - name: Generate private key
+      community.crypto.openssl_privatekey:
+        path: "{{ _cert_key_path }}"
+        size: 4096
+        mode: "0600"
+      when: _cert_needs_renewal | bool
+
+    - name: Generate CSR
+      community.crypto.openssl_csr:
+        path: "/tmp/{{ cert.name }}.csr"
+        privatekey_path: "{{ _cert_key_path }}"
+        common_name: "{{ cert.subject.CN | default(vm_hostname) if cert.subject is defined else vm_hostname }}"
+        subject_alt_name: "{{ cert.extra_sans | default(omit) }}"
+        extended_key_usage: "{{ ['clientAuth'] if cert.client | default(false) | bool else omit }}"
+      when: _cert_needs_renewal | bool
+
+    - name: Sign certificate with CA
+      community.crypto.x509_certificate:
+        path: "{{ _cert_path }}"
+        privatekey_path: "{{ _cert_key_path }}"
+        csr_path: "/tmp/{{ cert.name }}.csr"
+        provider: ownca
+        ownca_path: "{{ cert.ca_cert }}"
+        ownca_privatekey_path: "{{ cert.ca_key }}"
+        ownca_not_after: "+{{ _cert_days }}d"
+        mode: "0644"
+      when: _cert_needs_renewal | bool
+
+    - name: Remove CSR
+      ansible.builtin.file:
+        path: "/tmp/{{ cert.name }}.csr"
+        state: absent

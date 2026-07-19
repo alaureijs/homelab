@@ -58,15 +58,16 @@ ansible-playbook playbooks/harbor-users.yml
 
 | Role | Description |
 |------|-------------|
+| `common` | Package management, protected packages, /etc/hosts, chrony |
 | `podman` | Podman/Buildah/Skopeo installation |
-| `certificates` | TLS certificate generation with SANs |
+| `certificates` | TLS certificate generation with SANs (list-based) |
 | `firewall` | Firewalld port configuration |
-| `harbor` | Harbor offline install with Podman |
+| `harbor` | Harbor offline install with Podman, metrics endpoint |
 | `harbor_config` | Harbor users, projects, registries via API |
 | `harbor_containers` | Sync container images to Harbor |
 | `monitoring` | Grafana, Prometheus, Alertmanager, node-exporter |
 | `node_exporter` | Node Exporter with mTLS |
-| `elk` | Elasticsearch, Logstash, Kibana stack |
+| `elk` | Elasticsearch, Logstash, Kibana, Elasticsearch Exporter |
 | `hardening` | STIG/CIS system hardening (10 toggleable modules) |
 
 ## Environment

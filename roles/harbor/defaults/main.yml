@@ -14,6 +14,8 @@ harbor_internal_port: 4443
 
 harbor_enable_trivy: true
 harbor_enable_chartmuseum: false
+harbor_enable_metrics: true
+harbor_metrics_port: 8090
 
 # TLS
 harbor_tls_enabled: true

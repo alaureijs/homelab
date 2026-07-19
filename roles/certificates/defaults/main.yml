@@ -3,32 +3,22 @@
 
 certificates_dir: /etc/pki/tls/certs
 certificates_key_dir: /etc/pki/tls/private
-certificates_name: "{{ vm_hostname }}"
-
-# Set to true to generate self-signed certs, false to use provided ones
-certificates_self_signed: true
 
 # Renew certificates when they expire within this many days
 certificates_renew_threshold_days: 30
 
-# Force certificate renewal regardless of expiry (e.g. after SAN changes)
-certificates_force_renewal: false
-
-# Self-signed certificate parameters
-certificates_self_signed_days: 3650
-certificates_self_signed_subject:
-  C: "NL"
-  ST: "Noord-Holland"
-  L: "Amsterdam"
-  O: "Lab"
-  CN: "{{ vm_hostname }}"
-
-# Subject Alternative Names (SANs) - required by modern browsers
-# Set certificates_extra_sans per host/group to add service DNS names
-certificates_extra_sans: []
-certificates_self_signed_subject_alt_name: >-
-  {{ ["DNS:" + vm_hostname, "IP:" + vm_ip | string] + certificates_extra_sans }}
-
-# Provide existing cert/key content (used when certificates_self_signed: false)
-# certificates_cert_content: ""
-# certificates_key_content: ""
+# List of certificates to generate on this host
+# Each item is a dict with:
+#   name        — filename prefix (without extension)
+#   type        — selfsigned | ca | ownca
+#   dir         — cert output dir (default: certificates_dir)
+#   key_dir     — key output dir (default: certificates_key_dir)
+#   subject     — dict with CN, O, etc. (selfsigned, ca)
+#   ca_cert     — path to CA cert (ownca)
+#   ca_key      — path to CA key (ownca)
+#   extra_sans  — additional SANs list (ownca, selfsigned)
+#   client      — if true, add clientAuth EKU (ownca)
+#   days        — validity period (default: 3650)
+#   force       — force renewal
+#   subject_alt_name — full SANs list override (selfsigned)
+certificates: []

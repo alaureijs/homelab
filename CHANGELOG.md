@@ -28,9 +28,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Elasticsearch data directory ownership fix (uid 1000) on deploy
   - Harbor TLS trust and auth.json for image pulls
   - rsyslog + logrotate for container log management
+  - ConfigMaps for all configuration (K8s-compatible pattern)
+  - PersistentVolumes/PersistentVolumeClaims for data volumes
+  - Liveness probes on all containers
 - `observability.local.lan` DNS entry in `ansible-net` network → 192.168.100.12.
 - ELK container images synced to Harbor:
   - elasticsearch:8.17.0, logstash:8.17.0, kibana:8.17.0
+- elasticsearch-exporter sidecar in ELK pod (port 9114, `prom/elasticsearch-exporter:v1.11.0` from ghcr.io)
 - Harbor container logging to `/var/log/harbor/` via host rsyslog (journald
   → per-container files). Logrotate with 14-day retention, daily rotation.
 - `hardening` playbook — standalone playbook for running hardening on any host.
@@ -72,9 +76,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - mTLS for node-exporter scraping (monitoring CA, server/client certs)
   - Prometheus scrapes node-exporter via FQDN from inventory (not localhost)
   - node-exporter binds to host IP (not 127.0.0.1)
+  - ConfigMaps for all configuration (K8s-compatible pattern)
+  - PersistentVolumes/PersistentVolumeClaims for data volumes
+  - Liveness probes on all containers
 - `node_exporter` role — binary install, systemd service, TLS web config.
 - Certificate auto-renewal — both `certificates` and `monitoring` roles
-  check certificate expiry via `x509_certificate_info` and regenerate
+  check certificate expiry via `openssl x509 -checkend` and regenerate
   when within `certificates_renew_threshold_days` (default 30 days).
   Force renewal via `certificates_force_renewal` / `monitoring_cert_force_renewal`
   extra vars. CA renewal cascades to dependent server/client certs.
@@ -87,20 +94,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Docker Hub (`docker.io`) → `docker-hub-cache` project
   - Quay.io (`quay.io`) → `quay-cache` project
   - GHCR (`ghcr.io`) → `ghcr-cache` project
-- Container images synced to Harbor (15 images across library, prometheus):
+- Container images synced to Harbor (17 images across library, prometheus):
   - Base: alpine, ubuntu, busybox
   - Application: nginx, redis, postgres, mariadb, python, node, golang
   - Monitoring: prometheus, alertmanager, grafana, node-exporter, pushgateway
+  - ELK: elasticsearch, logstash, kibana
+  - Exporters: elasticsearch-exporter (ghcr.io), harbor-exporter (Docker Hub)
 - `meta/main.yml` for all roles with galaxy_info and dependencies.
 - `.ansible-lint` configuration excluding role helper task files.
 - `inventory/group_vars/harbor/images.yml` — container image definitions
   with registry, project, and proxy cache project mappings.
 - `harbor_config_sync_projects` flag — auto-discovers projects from
   `harbor_sync_images` instead of requiring manual project definitions.
-- Normal Harbor service accounts (`ansible-config`, `ansible-sync`) with
-  vault-encrypted passwords for config management and image push/pull.
+- Normal Harbor service accounts (`ansible-config`, `ansible-sync`, `metrics`) with
+  vault-encrypted passwords for config management, image push/pull, and metrics scraping.
 - Trivy vulnerability scanner enabled in Harbor with auto-scan on all
   projects.
+- Harbor metrics endpoint on port 8090 with `goharbor/harbor-exporter:v2.11.0`.
 - `monitoring.local.lan` DNS entry in `ansible-net` network → 192.168.100.11.
 - All monitoring configuration via Kubernetes ConfigMaps:
   - `monitoring-datasources`: Grafana datasource config
@@ -110,6 +120,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `monitoring-prometheus-rules`: Alert rules (node-exporter.yml)
   - `monitoring-alertmanager`: Alertmanager configuration
 - Default alert rules: HighCPUUsage, HighMemoryUsage, HighDiskUsage, NodeDown
+- Prometheus scrape jobs for Harbor (port 8090, basic auth) and Elasticsearch (port 9114)
+- Grafana dashboards for Harbor (4 panels) and Elasticsearch (4 panels)
+- Alert rules for Harbor (HarborHighLatency, HarborPushFailure, HarborDown) and
+  Elasticsearch (ClusterRed, ClusterYellow, HighHeap, ElasticsearchDown)
 - ConfigMap structure defined in `defaults/main.yml` via `monitoring_configmaps`:
   - Use `file` for static content, `template` for Jinja2 templates
   - Config files in `files/grafana/` and `files/prometheus/`
@@ -120,16 +134,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `monitoring_alertmanager_config_template`
   - `monitoring_grafana_datasources_file`
   - `monitoring_grafana_dashboards_provider_file`
+- `common` role — package management with protected package safety:
+  - `vars/el.yml` / `vars/debian.yml`: OS-specific protected package lists
+  - `tasks/main.yml`: include_vars loads OS-specific list, assert blocks
+    removal of protected packages, dnf install/remove, chrony
+  - Managed /etc/hosts entries for all hosts on controller and VMs
+- `controller_hosts_entries` in `group_vars/all/main.yml` — centralized
+  /etc/hosts entries managed by both controller localhost play and common role
+- `certificates` role refactored to accept `certificates` list variable:
+  - `tasks/main.yml` iterates list, `tasks/generate.yml` handles selfsigned|ca|ownca
+  - Monitoring mTLS cert definitions moved to `group_vars/monitoring/main.yml`
+  - Base certificate definition in `group_vars/all/main.yml`
+  - No more include_role calls for certificates in other roles
+- ELK ConfigMaps defined in `defaults/main.yml`:
+  - `elk_elasticsearch_config_template`, `elk_logstash_config_template`
+  - `elk_logstash_pipeline_template`, `elk_kibana_config_template`
 
 ### Changed
 
 - `harbor_hostname` moved from `group_vars/harbor/main.yml` and
   `group_vars/monitoring/main.yml` to `group_vars/all/main.yml`
   (single source of truth).
+- `harbor_metrics_port: 8090` added to `group_vars/all/main.yml`.
 - `roles/harbor/defaults/main.yml` — removed duplicate `harbor_hostname`
   variable (now centralized in `group_vars/all/main.yml`).
-- `certificates` role — fixed `epoch_time` filter error (replaced with
-  raw epoch output in certificates status debug message).
+- `certificates` role — fixed certificate expiry check (replaced
+  `community.crypto.x509_certificate_info` with `openssl x509 -checkend`).
 - `elk` role deploy task — runs `chown -R 1000:1000` on Elasticsearch
   data directory after `kube play` to fix permission denied errors.
 - ELK container volumes restructured — separate host directories for
@@ -150,6 +180,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with `--web.route-prefix=/prometheus/`).
 - mTLS client cert/key permissions set to `0644` for container access
   (Prometheus runs as uid 65534).
+- Prometheus scrape config: Harbor metrics on HTTP port 8090 with basic auth
+  and `insecure_skip_verify`.
+- Harbor compose patching updated to rewrite `goharbor/*` image references
+  to Harbor library copies.
+- Harbor handler updated to re-run `prepare` + patching on every restart.
 - Renamed `playbooks/harbor-sync-images.yml` to `sync-update-containers.yml`.
 - Extracted sync logic from playbook into `harbor_containers` role.
 - `harbor_config` now creates projects from `harbor_sync_images` when
@@ -183,12 +218,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (e.g., `harbor.local.lan` for harbor, `monitoring.local.lan` for monitoring).
 - `versions.yml` merged into `group_vars/all/main.yml` — single file for
   all configuration and version variables.
+- Renamed `roles/common/vars/el.yml` to `roles/common/vars/redhat.yml`
+  (matches `ansible_os_family | lower` for Rocky Linux).
+- Removed `cockpit` from installed packages (port 9090 conflict with Prometheus).
+- ELK pod template: added elasticsearch-exporter sidecar container
+  (port 9114, hostIP 0.0.0.0, 64M-128M memory limits).
 
 ### Removed
 
 - Robot account tasks from `harbor_config` role (fetch, create, display).
   Robot accounts do not work with Harbor v2.11's Podman integration.
 - Robot secrets from vault (replaced by normal user passwords).
+- `packages` variable from `group_vars/all/main.yml` (replaced by
+  `common_install_packages` in common role defaults).
+- Inline package install and chrony tasks from provision playbooks
+  (moved to common role).
 
 ## [0.1.0] - 2026-07-13
 

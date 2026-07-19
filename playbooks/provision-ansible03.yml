@@ -1,14 +1,26 @@
 ---
+# Play 0: Manage controller /etc/hosts
+- name: Update controller hosts file
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure /etc/hosts entries for all hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+      loop: "{{ controller_hosts_entries }}"
+
+# Play 1: Provision ELK stack host (ansible03)
 - name: Provision ELK stack host (ansible03)
   hosts: elk
   become: true
+  gather_facts: true
 
   pre_tasks:
-    - name: Install base packages
-      ansible.builtin.dnf:
-        name: "{{ packages }}"
-        state: present
-
     - name: Set timezone
       community.general.timezone:
         name: "{{ timezone }}"
@@ -17,14 +29,8 @@
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
 
-    - name: Update /etc/hosts
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: "^127\\.0\\.0\\.1.*{{ vm_hostname }}"
-        line: "127.0.0.1   {{ vm_hostname }} localhost"
-        state: present
-
   roles:
+    - role: common
     - role: firewall
     - role: certificates
     - role: podman

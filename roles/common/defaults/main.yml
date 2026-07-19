@@ -1,0 +1,22 @@
+---
+# common role defaults
+
+# Packages to install (override in group_vars or host_vars)
+common_install_packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - device-mapper-persistent-data
+  - lvm2
+
+# Packages to remove (override in group_vars or host_vars)
+common_remove_packages: []
+
+# Packages that must never be removed — removing these endangers OS or application functionality.
+# This list is a hard safety net; tasks will fail if any of these appear in common_remove_packages.
+# Loaded from vars/<os_family>.yml at runtime.
+common_protected_packages: "{{ _common_protected_packages }}"
+
+# Ensure chrony (NTP) is running
+common_enable_chrony: true

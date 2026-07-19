@@ -34,10 +34,6 @@ firewall_ports:
 certificates_extra_sans:
   - "DNS:{{ harbor_hostname }}"
 
-# Hosts entries
-hosts_entries:
-  - "192.168.100.10 harbor.local.lan"
-
 # Users and roles (role IDs: 1=projectAdmin, 2=developer, 3=guest, 4=maintainer, 5=limitedGuest)
 # Note: system admin (user_id=1) is created during Harbor install, not managed here
 harbor_config_users:
@@ -80,6 +76,14 @@ harbor_config_users:
         role_id: 2
       - project_name: ghcr-cache
         role_id: 2
+
+  - username: metrics
+    password: "{{ vault_harbor_metrics_password }}"
+    realname: "Prometheus Metrics"
+    email: metrics@local.lan
+    roles:
+      - project_name: library
+        role_id: 3
 
 # Projects
 harbor_config_projects: []

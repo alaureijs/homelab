@@ -42,3 +42,7 @@ kibana_port: 5601
 # Reverse proxy (nginx)
 elk_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
 elk_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
+
+# Elasticsearch exporter
+elk_elasticsearch_exporter_image: "{{ harbor_hostname }}/library/prom/elasticsearch-exporter:{{ elasticsearch_exporter_version }}"
+elk_elasticsearch_exporter_port: 9114

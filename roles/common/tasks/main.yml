@@ -1,24 +1,40 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
-  when: ansible_os_family == "Debian"
+- name: Load protected packages for OS family
+  ansible.builtin.include_vars: "{{ ansible_os_family | lower }}.yml"
 
-- name: Install base packages
-  ansible.builtin.apt:
-    name:
-      - vim
-      - curl
-      - wget
-      - git
-      - htop
-      - unzip
+- name: Ensure /etc/hosts entries for all hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
     state: present
-  when: ansible_os_family == "Debian"
+  loop: "{{ controller_hosts_entries }}"
 
-- name: Ensure NTP is running
+- name: Check for protected packages in removal list
+  ansible.builtin.assert:
+    that:
+      - common_remove_packages | intersect(common_protected_packages) | length == 0
+    fail_msg: >-
+      BLOCKED: The following protected packages cannot be removed because
+      they are critical for OS or application functionality:
+      {{ common_remove_packages | intersect(common_protected_packages) | join(', ') }}
+    success_msg: No protected packages in removal list
+  when: common_remove_packages | length > 0
+
+- name: Install packages
+  ansible.builtin.dnf:
+    name: "{{ common_install_packages }}"
+    state: present
+  when: common_install_packages | length > 0
+
+- name: Remove packages
+  ansible.builtin.dnf:
+    name: "{{ common_remove_packages }}"
+    state: absent
+  when: common_remove_packages | length > 0
+
+- name: Ensure chrony is running
   ansible.builtin.systemd:
     name: chrony
     state: started
     enabled: true
+  when: common_enable_chrony | bool

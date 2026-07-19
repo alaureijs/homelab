@@ -36,3 +36,70 @@ groups:
         annotations:
           summary: "Node {{ $labels.instance }} is down"
           description: "Node has been unreachable for more than 1 minute"
+
+  - name: harbor
+    rules:
+      - alert: HarborHighLatency
+        expr: histogram_quantile(0.95, rate(harbor_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Harbor high request latency"
+          description: "p95 request duration is above 2s for more than 5 minutes"
+
+      - alert: HarborPushFailure
+        expr: increase(harbor_http_requests_total{method="POST",code=~"5.."}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Harbor push failures detected"
+          description: "Failed push requests detected in the last 5 minutes"
+
+      - alert: HarborDown
+        expr: up{job="harbor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Harbor is unreachable"
+          description: "Cannot reach Harbor metrics endpoint"
+
+  - name: elasticsearch
+    rules:
+      - alert: ElasticsearchClusterRed
+        expr: elasticsearch_cluster_health_status == 2
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Elasticsearch cluster is RED"
+          description: "Cluster health status is red — data loss is possible"
+
+      - alert: ElasticsearchClusterYellow
+        expr: elasticsearch_cluster_health_status == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elasticsearch cluster is YELLOW"
+          description: "Cluster health is yellow — replica shards not allocated"
+
+      - alert: ElasticsearchHighHeap
+        expr: elasticsearch_node_heap_used_bytes / elasticsearch_node_heap_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elasticsearch high heap usage"
+          description: "Heap usage is above 80% for more than 5 minutes"
+
+      - alert: ElasticsearchDown
+        expr: up{job="elasticsearch"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Elasticsearch exporter is down"
+          description: "Cannot reach elasticsearch-exporter on ansible03"

@@ -27,6 +27,7 @@ curl -sk -u admin:\$HARBOR_PASSWORD https://harbor.local.lan/api/v2.0/health
 | ansible-config | projectAdmin | Harbor API configuration |
 | ansible-sync | developer | Image push/pull |
 | viewer | guest | Read-only access |
+| metrics | guest | Prometheus metrics scraping |
 
 All passwords in `inventory/group_vars/all/vault.yml`.
 
@@ -39,7 +40,7 @@ All passwords in `inventory/group_vars/all/vault.yml`.
 
 ## Container Images
 
-15 images synced via proxy cache projects. Versions defined in
+17 images synced via proxy cache projects. Versions defined in
 `inventory/group_vars/all/main.yml`, images in `inventory/group_vars/harbor/images.yml`.
 
 ```bash
@@ -49,6 +50,19 @@ ansible-playbook playbooks/sync-update-containers.yml
 # Check for upstream updates
 ansible-playbook playbooks/sync-update-containers.yml --check
 ```
+
+## Metrics
+
+Harbor exposes Prometheus metrics on port 8090:
+
+```bash
+# Test metrics endpoint
+curl -sk -u "metrics:$VAULT_HARBOR_METRICS_PASSWORD" http://harbor.local.lan:8090/metrics
+```
+
+- **harbor-exporter** image: `goharbor/harbor-exporter:v2.11.0` (synced from Docker Hub)
+- **elasticsearch-exporter** image: `prom/elasticsearch-exporter:v1.11.0` (synced from ghcr.io)
+- Prometheus scrapes both endpoints via the `harbor` and `elasticsearch` jobs
 
 ## Logging
 

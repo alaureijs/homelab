@@ -1,0 +1,48 @@
+---
+# Protected packages for Debian/Ubuntu
+# Only packages whose removal would immediately brick or seriously break the OS.
+_common_protected_packages:
+  # Init and core system
+  - systemd
+  - systemd-sysv
+  - libc6
+  - libgcc-s1
+
+  # Boot
+  - linux-image-generic
+  - linux-generic
+  - grub-pc
+  - grub-efi-amd64
+  - grub-common
+  - grub2-common
+  - initramfs-tools
+  - dracut
+
+  # Package management
+  - apt
+  - dpkg
+
+  # Shell and coreutils
+  - bash
+  - coreutils
+  - util-linux
+  - util-linux-extra
+
+  # Remote access
+  - openssh-server
+  - openssh-client
+  - sudo
+
+  # TLS trust
+  - ca-certificates
+  - openssl
+  - libssl3
+
+  # Ansible runtime
+  - python3
+
+  # Container runtime
+  - podman
+  - crun
+  - containers-common
+  - container-selinux

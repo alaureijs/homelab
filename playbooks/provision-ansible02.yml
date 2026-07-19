@@ -1,4 +1,19 @@
 ---
+# Play 0: Manage controller /etc/hosts
+- name: Update controller hosts file
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure /etc/hosts entries for all hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+      loop: "{{ controller_hosts_entries }}"
+
 # Play 1: Install node-exporter on all hosts
 - name: Provision all hosts
   hosts: all
@@ -10,22 +25,12 @@
       community.general.timezone:
         name: "{{ timezone }}"
 
-    - name: Install required packages
-      ansible.builtin.dnf:
-        name: "{{ packages }}"
-        state: present
-
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
 
-    - name: Ensure chronyd is running
-      ansible.builtin.systemd:
-        name: chronyd
-        state: started
-        enabled: true
-
   roles:
+    - role: common
     - role: firewall
     - role: certificates
     - role: podman

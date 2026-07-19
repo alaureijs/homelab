@@ -97,6 +97,18 @@ harbor_sync_images:
     registry: docker.io
     project: library
 
+  # Exporters
+  - name: prom/elasticsearch-exporter
+    tag: "{{ elasticsearch_exporter_version }}"
+    registry: ghcr.io
+    project: library
+
+  # Harbor exporter
+  - name: goharbor/harbor-exporter
+    tag: "{{ harbor_version }}"
+    registry: docker.io
+    project: library
+
 # Registry URL to proxy-cache project mapping
 harbor_config_proxy_projects:
   docker.io: docker-hub-cache

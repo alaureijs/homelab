@@ -15,6 +15,7 @@ Kibana (5601) ← nginx (443) → Elasticsearch (9200)
 - **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elk/elasticsearch/`
 - **Logstash**: Beats input (5044), grok filters for syslog/nginx, ES output, 2g heap
 - **Kibana**: HTTP UI on 5601, connected to Elasticsearch
+- **Elasticsearch Exporter**: Sidecar on port 9114, scrapes Elasticsearch metrics
 - **Nginx**: HTTPS reverse proxy on 443, routes `/kibana/` and `/elasticsearch/`
 
 ## Access URLs

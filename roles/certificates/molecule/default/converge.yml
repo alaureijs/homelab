@@ -1,8 +1,64 @@
 ---
-- name: Converge
+- name: Converge - selfsigned
   hosts: all
   become: true
   gather_facts: true
 
   roles:
     - role: certificates
+
+- name: Converge - ca
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Generate CA cert via certificates role
+      ansible.builtin.include_role:
+        name: certificates
+      vars:
+        certificates_type: ca
+        certificates_name: test-ca
+        certificates_dir: /etc/pki/tls/certs
+        certificates_key_dir: /etc/pki/tls/private
+        certificates_self_signed_subject:
+          CN: "Test CA"
+          O: "Lab"
+
+- name: Converge - ownca server
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Generate server cert via certificates role
+      ansible.builtin.include_role:
+        name: certificates
+      vars:
+        certificates_type: ownca
+        certificates_name: test-server
+        certificates_dir: /etc/pki/tls/certs
+        certificates_key_dir: /etc/pki/tls/private
+        certificates_ca_cert: /etc/pki/tls/certs/test-ca.crt
+        certificates_ca_key: /etc/pki/tls/private/test-ca.key
+        certificates_subject_alt_name:
+          - "DNS:localhost"
+          - "IP:127.0.0.1"
+
+- name: Converge - ownca client
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Generate client cert via certificates role
+      ansible.builtin.include_role:
+        name: certificates
+      vars:
+        certificates_type: ownca
+        certificates_name: test-client
+        certificates_client: true
+        certificates_dir: /etc/pki/tls/certs
+        certificates_key_dir: /etc/pki/tls/private
+        certificates_ca_cert: /etc/pki/tls/certs/test-ca.crt
+        certificates_ca_key: /etc/pki/tls/private/test-ca.key

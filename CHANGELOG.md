@@ -193,11 +193,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Monitoring mTLS cert definitions moved to `group_vars/monitoring/main.yml`
   - Base certificate definition in `group_vars/all/main.yml`
   - No more include_role calls for certificates in other roles
-- ELK ConfigMaps defined in `defaults/main.yml`:
-  - `elk_elasticsearch_config_template`, `elk_logstash_config_template`
-  - `elk_logstash_pipeline_template`, `elk_kibana_config_template`
-
-### Changed
+- `AGENTS.md` security section updated: TLS 1.3 minimum enforced on all services (nginx reverse proxy and mTLS node-exporter scraping); ECDHE-only key exchange; AES-256-GCM-SHA384 cipher suite specified as requirement
 
 - `harbor_hostname` moved from `group_vars/harbor/main.yml` and
   `group_vars/monitoring/main.yml` to `group_vars/all/main.yml`

@@ -456,6 +456,238 @@ virsh net-dhcp-leases ansible-net     # DHCP leases
 ssh root@<ip-from-above>
 ```
 
+## Enlarging VM Disks
+
+Disk resize is a two-step process: expand the virtual disk on the host,
+then expand the filesystem inside the guest. The steps inside the guest
+depend on whether the disk uses LVM or plain partitions.
+
+### Step 1: Expand the Virtual Disk (Host)
+
+```bash
+# Check current size
+qemu-img info /var/lib/libvirt/sdb/ansible01.qcow2 | grep virtual
+
+# Shut down the VM (recommended — avoids lock issues)
+virsh shutdown ansible01
+
+# Resize to 80 GB
+qemu-img resize /var/lib/libvirt/sdb/ansible01.qcow2 80G
+
+# Start again
+virsh start ansible01
+```
+
+If the VM is running, you can use `virsh blockresize` to resize the
+disk live (the guest kernel may need a rescan):
+
+```bash
+virsh blockresize ansible01 vda --capacity 80G
+```
+
+For a libvirt-managed disk path:
+
+```bash
+virsh blockresize ansible01 /var/lib/libvirt/sdb/ansible01.qcow2 --capacity 80G
+```
+
+Verify inside the guest:
+
+```bash
+lsblk
+# vda should show the new size
+```
+
+### Step 2a: Expand with LVM (Most Server Images)
+
+This is the common layout on RHEL/CentOS/Rocky server images that use
+LVM during installation.
+
+**Identify the layout:**
+
+```bash
+lsblk
+# NAME        MAJ:MIN RM SIZE RO TYPE MOUNTPOINTS
+# vda         252:0    0  80G  0 disk
+# ├─vda1      252:1    0   1M  0 part
+# ├─vda2      252:2    0 500M  0 part /boot/efi
+# ├─vda3      252:3    0   1G  0 part /boot
+# └─vda4      252:4    0  20G  0 part
+#   ├─rl-root 253:0    0  18G  0 lvm  /
+#   └─rl-swap 253:1    0   2G  0 lvm  [SWAP]
+
+pvs
+# PV         VG  Fmt  Attr PSize   PFree
+# /dev/vda4  rl  lvm2 a--  <20.00g    0
+
+vgs
+# VG  #PV #LV #SN Attr   VSize   VFree
+# rl    1   2   0 wz--n- <20.00g    0
+```
+
+The disk has an LVM physical volume (`/dev/vda4`) with a volume group
+(`rl`) containing a root logical volume (`rl-root`).
+
+**Extend the physical volume:**
+
+```bash
+# Grow the partition to fill the disk
+growpart /dev/vda 4
+
+# Scan for the new size
+partprobe /dev/vda
+
+# Extend the physical volume
+pvresize /dev/vda4
+```
+
+`growpart` is from the `cloud-utils-growpart` package. On Rocky/RHEL:
+
+```bash
+dnf install cloud-utils-growpart
+```
+
+**Extend the logical volume and filesystem:**
+
+```bash
+# Check available space in the VG
+vgs
+# VG  VSize   VFree
+# rl  <80.00g 60.00g   <-- 60 GB free
+
+# Extend the root LV to use all free space
+lvextend -l +100%FREE /dev/rl/root
+
+# Resize the XFS filesystem (online, no unmount needed)
+xfs_growfs /
+
+# Verify
+df -h /
+```
+
+For ext4 instead of XFS:
+
+```bash
+lvextend -l +100%FREE /dev/rl/root
+resize2fs /dev/rl/root
+```
+
+**Extend swap (optional):**
+
+```bash
+# Disable swap
+swapoff /dev/rl/swap
+
+# Remove the old swap LV
+lvremove /dev/rl/swap
+
+# Create new larger swap LV
+lvcreate -L 4G -n swap rl
+
+# Format and enable
+mkswap /dev/rl/swap
+swapon /dev/rl/swap
+
+# Update /etc/fstab if the LV name changed
+```
+
+### Step 2b: Expand Without LVM (Plain Partitions)
+
+This is the layout on Rocky Linux cloud images (no LVM).
+
+**Identify the layout:**
+
+```bash
+lsblk
+# NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+# vda    252:0    0   80G  0 disk
+# ├─vda1 252:1    0    2M  0 part
+# ├─vda2 252:2    0  200M  0 part /boot/efi
+# ├─vda3 252:3    0 1000M  0 part /boot
+# └─vda4 252:4    0   59G  0 part /
+```
+
+The root filesystem sits directly on `/dev/vda4` — no LVM in between.
+
+**Extend the partition and filesystem:**
+
+```bash
+# Grow the partition to fill the disk
+growpart /dev/vda 4
+
+# Resize the XFS filesystem (online)
+xfs_growfs /
+
+# Verify
+df -h /
+```
+
+That's it — no LVM steps needed. `growpart` extends the partition and
+`xfs_growfs` extends the filesystem in one sequence.
+
+For ext4:
+
+```bash
+growpart /dev/vda 4
+resize2fs /dev/vda4
+```
+
+### Step 2c: Expand a Separate /home Partition
+
+If `/home` is on its own partition or LV:
+
+**LVM:**
+
+```bash
+lvextend -l +100%FREE /dev/rl/home
+xfs_growfs /home        # or resize2fs /dev/rl/home
+```
+
+**Plain partition:**
+
+```bash
+growpart /dev/vda 5     # adjust partition number
+xfs_growfs /home        # or resize2fs /dev/vda5
+```
+
+### Automating with Ansible
+
+In this project, disk resize is handled by the `libvirt` role at the
+host level. Inside the guest, the provisioning roles handle filesystem
+expand via `growpart` + `xfs_growfs`:
+
+```yaml
+- name: Grow root partition
+  community.general.parted:
+    device: /dev/vda
+    number: 4
+    state: present
+    part_start: 100%
+  when: ansiblehostname == 'ansible01'
+
+- name: Resize root filesystem
+  ansible.builtin.command: xfs_growfs /
+  changed_when: true
+```
+
+For new VMs, the cloud image's `cloud-final` stage typically runs
+`growpart` automatically on first boot, expanding the root filesystem
+to fill the cloud-init-provisioned disk.
+
+### Quick Reference
+
+| Step | Command | Notes |
+|------|---------|-------|
+| Check current size | `qemu-img info <disk>` | Host side |
+| Expand virtual disk | `qemu-img resize <disk> <size>G` | Shutdown recommended |
+| Live block resize | `virsh blockresize <vm> vda --capacity <size>G` | No downtime |
+| Grow partition | `growpart /dev/vda <num>` | Needs `cloud-utils-growpart` |
+| Scan partition table | `partprobe /dev/vda` | After growpart |
+| Extend PV | `pvresize /dev/vda4` | LVM only |
+| Extend LV | `lvextend -l +100%FREE /dev/vg/lv` | LVM only |
+| Grow XFS | `xfs_growfs /` | Online, no unmount |
+| Grow ext4 | `resize2fs /dev/vda4` | Online, no unmount |
+
 ## Common Pitfalls
 
 ### SSH Connection Refused After Boot

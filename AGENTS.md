@@ -4,10 +4,11 @@ Instructions for AI agents working on this Ansible infrastructure project.
 
 ## Project Overview
 
-Infrastructure-as-code for a homelab environment managing three Rocky Linux 10 VMs:
+Infrastructure-as-code for a homelab environment managing four Rocky Linux 10 VMs:
 - **ansible01** (192.168.100.10): Harbor v2.11.0 container registry
 - **ansible02** (192.168.100.11): Grafana/Prometheus/Alertmanager monitoring stack + nginx reverse proxy
 - **ansible03** (192.168.100.12): Elasticsearch/Logstash/Kibana (ELK) logging stack
+- **ansible04** (192.168.100.13): Nextcloud with Deck integration (collaborative workspace)
 
 Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 
@@ -33,19 +34,18 @@ Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 │    libvirt 12.5.0, Podman 5.8.2       │
 ├───────────────────────────────────────┤
 │                                       │
-│ ┌──────────────┐ ┌──────────────┐     │
-│ │   ansible01  │ │    ansible02  │     │
-│ │              │ │              │     │
-│ │  Harbor v2.11│ │ Monitoring   │     │
-│ │              │ │              │     │
-│ │  /data/harbor│ │ Grafana 3000 │     │
-│ │  storage/    │ │ Prometheus   │     │
-│ └──────┬───────┘ │ Alertmanager │     │
-│        │         │ node-exporter│     │
-│        ▼         │ (mTLS:9100)  │     │
-│  nginx :80/443   └──────────────┘     │
-│  direct HTTP(80) │                     │
-├─────────────────►┌──────────────┐     │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐     │
+│ │   ansible01  │ │    ansible02  │ │   ansible04  │     │
+│ │              │ │              │ │              │     │
+│ │  Harbor v2.11│ │ Monitoring   │ │ Nextcloud+Deck│     │
+│ │              │ │              │ │              │     │
+│ │  /data/harbor│ │ Grafana 3000 │ │ Web :443     │     │
+│ │  storage/    │ │ Prometheus   │ │ Deck:443     │     │
+│ └──────┬───────┘ │ Alertmanager │ │              │     │
+│        │         │ node-exporter│ │              │     │
+│        ▼         │ (mTLS:9100)  │ │              │     │
+│  nginx :80/443   └──────────────┘ └──────────────┘     │
+│  direct HTTP(80) │                     │                │
 │                   │    ansible03  │     │
 │                   │              │     │
 │                   │   ELK Stack   │     │
@@ -53,7 +53,7 @@ Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 │                   │ ES:9200/9300 │     │
 │                   │ Logstash     │     │
 │                   │ Kibana 5601  │     │
-└───────────────────┴──────────────┘     │
+└───────────────────┴──────────────┘
     ┌─────────────────────────────────┐  │
     │ Persistent storage:             │  │
     │ PV/PVC on /var/lib/elk/         │  │

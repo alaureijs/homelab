@@ -193,6 +193,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Monitoring mTLS cert definitions moved to `group_vars/monitoring/main.yml`
   - Base certificate definition in `group_vars/all/main.yml`
   - No more include_role calls for certificates in other roles
+- `AGENTS.md` architecture updated: ansible04 added — Rocky Linux 10 VM at 192.168.100.13 running Nextcloud with Deck integration (collaborative workspace)
 - `AGENTS.md` security section updated: TLS 1.3 minimum enforced on all services (nginx reverse proxy and mTLS node-exporter scraping); ECDHE-only key exchange; AES-256-GCM-SHA384 cipher suite specified as requirement
 
 - `harbor_hostname` moved from `group_vars/harbor/main.yml` and

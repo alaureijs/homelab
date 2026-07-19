@@ -1,0 +1,18 @@
+---
+- name: Restart libvirtd
+  ansible.builtin.systemd:
+    name: libvirtd
+    state: restarted
+
+- name: Restart network
+  community.libvirt.virt_net:
+    state: inactive
+    name: "{{ libvirt_network_name }}"
+    uri: "{{ libvirt_uri }}"
+  notify: Start network
+
+- name: Start network
+  community.libvirt.virt_net:
+    state: active
+    name: "{{ libvirt_network_name }}"
+    uri: "{{ libvirt_uri }}"

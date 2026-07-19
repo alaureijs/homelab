@@ -1,0 +1,11 @@
+<pool type="{{ libvirt_storage_pool_type }}">
+  <name>{{ libvirt_storage_pool_name }}</name>
+{% if libvirt_storage_pool_type == 'disk' %}
+  <source>
+    <device path="{{ libvirt_storage_pool_device }}"/>
+  </source>
+{% endif %}
+  <target>
+    <path>{{ libvirt_storage_pool_path }}</path>
+  </target>
+</pool>

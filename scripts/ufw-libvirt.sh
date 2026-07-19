@@ -5,7 +5,12 @@ IFACE="virbr-ansible"
 
 echo "Configuring UFW rules for libvirt network on ${IFACE}..."
 
-# Allow all incoming traffic on the bridge (DHCP, DNS, etc.)
+# Allow DHCP and DNS from VMs on the bridge
+ufw allow in on "${IFACE}" to any port 67 proto udp comment "libvirt DHCP"
+ufw allow in on "${IFACE}" to any port 53 proto udp comment "libvirt DNS"
+ufw allow in on "${IFACE}" to any port 53 proto tcp comment "libvirt DNS TCP"
+
+# Allow all forwarded traffic between VMs on the bridge
 ufw route allow in on "${IFACE}" out on "${IFACE}" comment "libvirt guest cross-traffic"
 
 # Allow forwarded traffic from VMs to external interfaces

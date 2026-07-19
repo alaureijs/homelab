@@ -1,0 +1,38 @@
+#cloud-config
+hostname: {{ vm_hostname }}
+manage_etc_hosts: true
+
+users:
+  - name: root
+    ssh_authorized_keys:
+      - {{ libvirt_ssh_key }}
+    lock_passwd: false
+
+ssh_pwauth: true
+
+disable_root: false
+
+write_files:
+  - path: /root/.ssh/authorized_keys
+    content: "{{ libvirt_ssh_key }}\n"
+    permissions: "0600"
+    owner: root:root
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - lvm2
+  - device-mapper-persistent-data
+
+runcmd:
+  - nmcli connection modify "System eth0" ipv4.dns-search "{{ vm_hostname }}.local.lan"
+  - nmcli connection modify "System eth0" ipv4.dns-search "local.lan"
+  - sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+  - systemctl restart sshd
+
+final_message: "Cloud-init finished after $UPTIME seconds"

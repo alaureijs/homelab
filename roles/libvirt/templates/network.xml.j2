@@ -1,0 +1,30 @@
+<network>
+  <name>{{ libvirt_network_name }}</name>
+  <forward mode="{{ libvirt_network_forward }}">
+    <interface dev="{{ libvirt_network_forward_interface }}"/>
+  </forward>
+  <bridge name="{{ libvirt_network_bridge }}" stp="on" delay="0"/>
+  <ip address="{{ libvirt_network_gateway }}" netmask="255.255.255.0">
+{% if libvirt_network_dhcp_enabled | bool %}
+    <dhcp>
+      <range start="192.168.100.200" end="192.168.100.254"/>
+{% for host in groups['libvirt'] | default([]) %}
+{% if hostvars[host].vm_ip is defined %}
+      <host mac="{{ hostvars[host].vm_mac }}" name="{{ hostvars[host].vm_hostname }}" ip="{{ hostvars[host].vm_ip }}"/>
+{% endif %}
+{% endfor %}
+    </dhcp>
+{% endif %}
+  </ip>
+  <dns>
+{% for host in groups['libvirt'] | default([]) %}
+{% if hostvars[host].vm_dns_entries is defined %}
+{% for entry in hostvars[host].vm_dns_entries %}
+    <host ip="{{ entry.ip }}">
+      <hostname>{{ entry.name }}</hostname>
+    </host>
+{% endfor %}
+{% endif %}
+{% endfor %}
+  </dns>
+</network>

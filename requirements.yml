@@ -8,3 +8,5 @@ collections:
     version: ">=1.8.0"
   - name: community.general
     version: ">=5.0.0"
+  - name: community.libvirt
+    version: ">=2.1.0"

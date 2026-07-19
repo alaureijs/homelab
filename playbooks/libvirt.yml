@@ -1,0 +1,9 @@
+---
+- name: Prepare libvirt for virtual machines
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: libvirt

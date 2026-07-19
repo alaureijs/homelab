@@ -5,11 +5,11 @@ Ansible project for managing infrastructure, including libvirt virtual machines,
 ## Requirements
 
 - Ansible >= 2.17
-- `ansible.posix`, `community.crypto`, `containers.podman` collections
+- `ansible.posix`, `community.crypto`, `community.libvirt`, `containers.podman` collections
 - `ansible-vault` for encrypted variables
 
 ```bash
-ansible-galaxy collection install ansible.posix community.crypto containers.podman
+ansible-galaxy collection install ansible.posix community.crypto community.libvirt containers.podman
 ```
 
 ## Inventory
@@ -26,6 +26,9 @@ DNS: `harbor.local.lan` (192.168.100.10), `monitoring.local.lan` (192.168.100.11
 ## Quick Start
 
 ```bash
+# Create/update libvirt VMs, network, and storage pool
+ansible-playbook playbooks/libvirt.yml
+
 # Provision Harbor (ansible01)
 ansible-playbook playbooks/provision-ansible01.yml
 
@@ -46,6 +49,7 @@ ansible-playbook playbooks/harbor-users.yml
 
 | Playbook | Description |
 |----------|-------------|
+| `libvirt.yml` | Create/update libvirt VMs, network, and storage pool |
 | `provision-ansible01.yml` | Full provisioning for Harbor host |
 | `provision-ansible02.yml` | Full provisioning for monitoring host |
 | `provision-ansible03.yml` | Full provisioning for ELK stack host |
@@ -58,6 +62,7 @@ ansible-playbook playbooks/harbor-users.yml
 
 | Role | Description |
 |------|-------------|
+| `libvirt` | Libvirt VM provisioning (storage pool, network, cloud-init, UEFI) |
 | `common` | Package management, protected packages, /etc/hosts, chrony |
 | `podman` | Podman/Buildah/Skopeo installation |
 | `certificates` | TLS certificate generation with SANs (list-based) |
@@ -75,7 +80,7 @@ ansible-playbook playbooks/harbor-users.yml
 - **Host OS**: CachyOS (Arch-based), kernel 7.1.x
 - **VMs**: Rocky Linux 10.2 (libvirt, UEFI, VirtIO)
 - **Network**: `ansible-net` NAT (192.168.100.0/24, bridge `virbr-ansible`)
-- **Storage**: `sdb` pool on `/dev/sdb` (XFS, 465 GB)
+- **Storage**: `sdb` pool on `/var/lib/libvirt/sdb` (dir-backed, 465 GB)
 
 ## Documentation
 

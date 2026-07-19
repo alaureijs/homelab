@@ -1,0 +1,37 @@
+---
+# libvirt role defaults
+
+# Storage pool
+libvirt_storage_pool_name: sdb
+libvirt_storage_pool_device: /dev/sdb
+libvirt_storage_pool_path: /var/lib/libvirt/sdb
+libvirt_storage_pool_type: "{{ 'disk' if libvirt_storage_pool_device is exists else 'dir' }}"
+
+# Network
+libvirt_network_name: ansible-net
+libvirt_network_bridge: virbr-ansible
+libvirt_network_forward: nat
+libvirt_network_forward_interface: wlan0
+libvirt_network_cidr: "{{ vm_cidr | default(24) }}"
+libvirt_network_gateway: "{{ vm_gateway | default('192.168.100.1') }}"
+libvirt_network_dhcp_enabled: true
+
+# Cloud image
+libvirt_cloud_image_url: https://dl.rockylinux.org/pub/rocky/10.2/images/x86_64/Rocky-10-GenericCloud-Base.latest.x86_64.qcow2
+libvirt_cloud_image_cache: /var/lib/libvirt/images
+libvirt_cloud_image_name: Rocky-10-GenericCloud-Base-latest.x86_64.qcow2
+
+# VM defaults (used when host_vars don't define them)
+libvirt_vm_vcpus: "{{ vm_vcpus | default(2) }}"
+libvirt_vm_memory: "{{ vm_memory | default(2048) }}"
+libvirt_vm_disk_size: "{{ vm_disk | default(60) }}"
+libvirt_vm_os: "{{ vm_os | default('Rocky Linux 10.2') }}"
+
+# Cloud-init
+libvirt_cloud_init_disable: true
+
+# SSH key for root access
+libvirt_ssh_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIckuVJy6bZNaj0/83Dqv23UELep50bUPJMLaQiDTzw molecule
+
+# Libvirt URI
+libvirt_uri: qemu:///system

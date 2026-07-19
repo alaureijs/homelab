@@ -1,0 +1,222 @@
+---
+- name: Install libvirt packages
+  community.general.pacman:
+    name:
+      - libvirt
+      - qemu-full
+      - edk2-ovmf
+      - cloud-utils
+      - virt-install
+      - libvirt-python
+      - python-lxml
+    state: present
+
+- name: Ensure libvirt service is running
+  ansible.builtin.systemd:
+    name: libvirtd
+    state: started
+    enabled: true
+
+- name: Ensure storage pool directory exists
+  ansible.builtin.file:
+    path: "{{ libvirt_storage_pool_path }}"
+    state: directory
+    mode: "0711"
+
+- name: Define storage pool
+  community.libvirt.virt_pool:
+    command: define
+    name: "{{ libvirt_storage_pool_name }}"
+    xml: "{{ lookup('template', 'storage-pool.xml.j2') }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Start storage pool
+  community.libvirt.virt_pool:
+    state: active
+    name: "{{ libvirt_storage_pool_name }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Enable storage pool autostart
+  community.libvirt.virt_pool:
+    autostart: true
+    name: "{{ libvirt_storage_pool_name }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Define network
+  community.libvirt.virt_net:
+    command: define
+    name: "{{ libvirt_network_name }}"
+    xml: "{{ lookup('template', 'network.xml.j2') }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Start network
+  community.libvirt.virt_net:
+    state: active
+    name: "{{ libvirt_network_name }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Enable network autostart
+  community.libvirt.virt_net:
+    autostart: true
+    name: "{{ libvirt_network_name }}"
+    uri: "{{ libvirt_uri }}"
+
+- name: Allow DHCP on bridge
+  community.general.ufw:
+    rule: allow
+    interface: "{{ libvirt_network_bridge }}"
+    direction: in
+    proto: udp
+    to_port: "67"
+    comment: "libvirt DHCP"
+
+- name: Allow DNS on bridge
+  community.general.ufw:
+    rule: allow
+    interface: "{{ libvirt_network_bridge }}"
+    direction: in
+    proto: "{{ item }}"
+    to_port: "53"
+    comment: "libvirt DNS"
+  loop:
+    - udp
+    - tcp
+
+- name: Allow forwarded traffic
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  loop:
+    - ufw route allow in on {{ libvirt_network_bridge }} out on {{ libvirt_network_bridge }} comment "libvirt guest cross-traffic"
+    - ufw route allow in on {{ libvirt_network_bridge }} out on {{ libvirt_network_forward_interface }} comment "libvirt NAT out via {{ libvirt_network_forward_interface }}"
+  changed_when: false
+
+- name: Ensure cloud image cache directory exists
+  ansible.builtin.file:
+    path: "{{ libvirt_cloud_image_cache }}"
+    state: directory
+    mode: "0755"
+
+- name: Download cloud image
+  ansible.builtin.get_url:
+    url: "{{ libvirt_cloud_image_url }}"
+    dest: "{{ libvirt_cloud_image_cache }}/{{ libvirt_cloud_image_name }}"
+    mode: "0644"
+  register: libvirt_cloud_image_download
+
+- name: Copy OVMF VARS template
+  ansible.builtin.copy:
+    src: /usr/share/edk2/x64/OVMF_VARS.4m.fd
+    dest: "{{ libvirt_storage_pool_path }}/{{ vm_name }}_VARS.fd"
+    remote_src: true
+    mode: "0644"
+    force: false
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Create VM disk from cloud image
+  ansible.builtin.command:
+    cmd: >-
+      qemu-img create -f qcow2 -b {{ libvirt_cloud_image_cache }}/{{ libvirt_cloud_image_name }}
+      -F qcow2 {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2
+    creates: "{{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Get VM disk sizes
+  ansible.builtin.shell:
+    cmd: qemu-img info -U --output=json {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2 | python3 -c "import sys,json; print(json.load(sys.stdin)['virtual-size'])"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  register: libvirt_disk_info
+  when: hostvars[item].vm_name is defined
+  changed_when: false
+
+- name: Resize VM disks
+  ansible.builtin.command:
+    cmd: qemu-img resize {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2 {{ vm_disk }}G
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+    vm_disk: "{{ hostvars[item].vm_disk | default(libvirt_vm_disk_size) }}"
+  when:
+    - hostvars[item].vm_name is defined
+    - libvirt_disk_info.results is defined
+    - item_idx < libvirt_disk_info.results | length
+    - (libvirt_disk_info.results[item_idx].stdout | int) != (vm_disk | int) * 1024 * 1024 * 1024
+  loop_control:
+    index_var: item_idx
+
+- name: Generate cloud-init user-data
+  ansible.builtin.template:
+    src: user-data.j2
+    dest: "/tmp/{{ vm_name }}-user-data"
+    mode: "0644"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+    vm_hostname: "{{ hostvars[item].vm_hostname }}"
+    vm_ip: "{{ hostvars[item].vm_ip }}"
+  when: hostvars[item].vm_ip is defined
+
+- name: Generate cloud-init meta-data
+  ansible.builtin.template:
+    src: meta-data.j2
+    dest: "/tmp/{{ vm_name }}-meta-data"
+    mode: "0644"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+    vm_hostname: "{{ hostvars[item].vm_hostname }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Generate cloud-init ISOs
+  ansible.builtin.command:
+    cmd: >-
+      cloud-localds {{ libvirt_storage_pool_path }}/{{ vm_name }}-cloudinit.iso
+      /tmp/{{ vm_name }}-user-data /tmp/{{ vm_name }}-meta-data
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Define VMs
+  community.libvirt.virt:
+    command: define
+    name: "{{ vm_name }}"
+    xml: "{{ lookup('template', 'vm.xml.j2') }}"
+    uri: "{{ libvirt_uri }}"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+    vm_hostname: "{{ hostvars[item].vm_hostname }}"
+    vm_ip: "{{ hostvars[item].vm_ip }}"
+    vm_mac: "{{ hostvars[item].vm_mac }}"
+    vm_vcpus: "{{ hostvars[item].vm_vcpus | default(libvirt_vm_vcpus) }}"
+    vm_memory: "{{ hostvars[item].vm_memory | default(libvirt_vm_memory) }}"
+    vm_disk: "{{ hostvars[item].vm_disk | default(libvirt_vm_disk_size) }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Start VMs
+  community.libvirt.virt:
+    name: "{{ vm_name }}"
+    state: running
+    uri: "{{ libvirt_uri }}"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  when: hostvars[item].vm_name is defined
+
+- name: Enable VM autostart
+  community.libvirt.virt:
+    name: "{{ vm_name }}"
+    autostart: true
+    uri: "{{ libvirt_uri }}"
+  loop: "{{ groups['libvirt'] }}"
+  vars:
+    vm_name: "{{ hostvars[item].vm_name }}"
+  when: hostvars[item].vm_name is defined

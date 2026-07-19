@@ -8,6 +8,53 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `libvirt` role — automated VM provisioning with `community.libvirt` collection:
+  - Storage pool `sdb` (dir-backed on `/var/lib/libvirt/sdb`, autostarted)
+  - Network `ansible-net` (NAT via `wlan0`, bridge `virbr-ansible`, DHCP + DNS)
+  - DHCP host entries with static MAC→IP mappings for all VMs
+  - DNS entries for all VMs and service hostnames
+  - Cloud-init provisioning (user-data/meta-data ISOs via `cloud-localds`)
+  - UEFI/OVMF boot with per-VM NVRAM VARS files
+  - qcow2 VM disks created from cached Rocky Linux cloud image
+  - Disk resize with idempotent size comparison (`qemu-img info -U`)
+  - VM definition, start, and autostart via `community.libvirt.virt`
+  - UFW INPUT rules for DHCP (udp/67) and DNS (udp+tcp/53) on bridge
+  - UFW route rules for guest cross-traffic and NAT forwarding
+- `playbooks/libvirt.yml` — localhost playbook for libvirt VM provisioning.
+- `community.libvirt >= 2.1.0` collection added to `requirements.yml`.
+- `scripts/setup-sudoers.sh` — NOPASSWD sudo configuration for user.
+- `libvirt` inventory group with host_vars for all three VMs.
+- `docs/vm.md` — VM lifecycle documentation with automation, networking,
+  storage, cloud-init, and troubleshooting sections.
+
+### Changed
+
+- `scripts/ufw-libvirt.sh` — replaced blanket bridge allow with specific
+  INPUT rules for DHCP (udp/67) and DNS (udp+tcp/53). Route rules unchanged.
+- `docs/vm.md` — expanded with automation, cloud-init, troubleshooting sections.
+  Updated SSH key, storage description, and ansible03 entries.
+- Storage pool type changed from device-backed (`disk`) to directory-backed
+  (`dir` on `/var/lib/libvirt/sdb`) since `/dev/sdb` is not available.
+- Network forward interface parameterized via `libvirt_network_forward_interface`
+  (defaults to `wlan0`).
+
+### Fixed
+
+- Cloud-init ISOs were not regenerated when user-data templates changed due
+  to `creates:` guard on the `cloud-localds` task. Removed `creates:` so
+  ISOs always reflect current template content.
+- SSH access broken because cloud-init `write_files` for `authorized_keys`
+  and `PermitRootLogin yes` were missing. Added `write_files`, `runcmd` to
+  enable root login and write SSH keys on first boot.
+- Disk resize task compared against a non-existent dict key (`.virtual_size`)
+  instead of parsed JSON stdout. Switched to `shell` module with inline
+  `python3 -c` to extract `virtual-size` and added `qemu-img info -U` for
+  shared access when VMs are running.
+- Network XML template used self-referential forward interface (bridge name
+  instead of physical NIC). Fixed to use `libvirt_network_forward_interface`.
+
+### Added (previous)
+
 - `ansible03` host — Rocky Linux 10 VM (2 vCPU, 8 GB RAM, 120 GB disk)
   at `192.168.100.12` on `ansible-net` network.
 - `elk` inventory group with `group_vars/elk/main.yml`.

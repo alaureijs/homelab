@@ -1,6 +1,14 @@
 ---
 - name: Restart harbor
   ansible.builtin.shell: |
+    set -e
+    for d in common common/config common/config/core common/config/registry \
+             common/config/db common/config/redis common/config/jobservice \
+             common/config/log common/config/nginx common/config/portal \
+             common/config/registryctl common/config/trivy-adapter \
+             common/config/exporter common/config/shared; do
+      mkdir -p "$d"
+    done
     ./prepare --with-trivy
     cp docker-compose.yml docker-compose.yml.bak
     python3 -c "
@@ -9,9 +17,6 @@
         data = yaml.safe_load(f)
     for svc in data.get('services', {}).values():
         svc.pop('logging', None)
-        img = svc.get('image', '')
-        if img.startswith('goharbor/'):
-            svc['image'] = '{{ harbor_hostname }}/library/' + img
     with open('docker-compose.yml', 'w') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     "

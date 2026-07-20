@@ -36,3 +36,4 @@
     - role: certificates
     - role: hardening
     - role: harbor
+    - role: harbor_config

@@ -229,9 +229,11 @@ spec:
         requests:
           memory: 512M
       livenessProbe:
-        httpGet:
-          path: /prometheus/-/healthy
-          port: 9090
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - wget -qO- --timeout=5 http://localhost:9090/prometheus/-/healthy || exit 1
         initialDelaySeconds: 30
         periodSeconds: 30
         timeoutSeconds: 10
@@ -258,9 +260,11 @@ spec:
         requests:
           memory: 128M
       livenessProbe:
-        httpGet:
-          path: /-/healthy
-          port: 9093
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - wget -qO- --timeout=5 http://localhost:9093/-/healthy || exit 1
         initialDelaySeconds: 30
         periodSeconds: 30
         timeoutSeconds: 10

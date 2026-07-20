@@ -194,9 +194,11 @@ spec:
         requests:
           memory: 64M
       livenessProbe:
-        httpGet:
-          path: /metrics
-          port: {{ elk_elasticsearch_exporter_port }}
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - wget -qO- --timeout=5 http://localhost:{{ elk_elasticsearch_exporter_port }}/metrics || exit 1
         initialDelaySeconds: 10
         periodSeconds: 30
         timeoutSeconds: 10

@@ -98,9 +98,9 @@ harbor_sync_images:
     project: library
 
   # Exporters
-  - name: prom/elasticsearch-exporter
+  - name: prometheuscommunity/elasticsearch-exporter
     tag: "{{ elasticsearch_exporter_version }}"
-    registry: ghcr.io
+    registry: docker.io
     project: library
 
   # Harbor exporter

@@ -8,6 +8,83 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `firewall_podman_interfaces` variable in `group_vars/all/main.yml` —
+  list of Podman bridge interfaces to add to firewalld trusted zone
+  (defaults to `podman1`, `cni-podman0`).
+- Harbor cert entry to `inventory/group_vars/harbor/main.yml` certificates
+  list so the certificates role generates Harbor TLS certs.
+- `harbor_config` role added to `playbooks/provision-ansible01.yml` (after
+  harbor role) for Harbor API configuration (users, projects, roles).
+- `elk_elasticsearch_exporter_port: 9114` added to
+  `inventory/group_vars/all/main.yml`.
+- ELK stack versions added to `LIFECYCLE.md` version table.
+
+### Changed
+
+- Harbor handler (`roles/harbor/handlers/main.yml`) — ensures
+  `common/config` subdirectories exist before `prepare`, strips
+  unsupported syslog logging driver from generated `docker-compose.yml`,
+  uses `down` + `up -d` instead of `restart` (to pick up env file changes
+  from `prepare`).
+- Harbor tasks (`roles/harbor/tasks/main.yml`) — always runs
+  `podman-compose down` + `podman-compose up -d` after `prepare` (not
+  `restart`) since `prepare` regenerates htpasswd credentials and env files
+  that `restart` doesn't reload. Strips syslog logging driver from
+  `docker-compose.yml` after `prepare` (Podman doesn't support it).
+- Monitoring pod manifest (`roles/monitoring/templates/monitoring-pod.yml.j2`)
+  — Prometheus and Alertmanager liveness probes changed from `httpGet` to
+  exec-based `wget` probes. Podman 5.8.2 httpGet probes fail silently for
+  some containers despite endpoints being healthy.
+- ELK pod manifest (`roles/elk/templates/elk-pod.yml.j2`) —
+  elasticsearch-exporter liveness probe changed from `httpGet` to
+  exec-based `wget` probe (same Podman httpGet issue).
+- Harbor config role (`roles/harbor_config/tasks/main.yml`) — added health
+  check waits after user/project creation, re-fetches registries after
+  creation, rebuilds registry map after creation.
+- Firewall role (`roles/firewall/tasks/main.yml`) — added task to add
+  Podman bridge interfaces to firewalld trusted zone using
+  `firewall_podman_interfaces` variable.
+- `elasticsearch-exporter` image source changed from
+  `ghcr.io/prom/elasticsearch-exporter` (returns 403) to
+  `docker.io/prometheuscommunity/elasticsearch-exporter:v1.11.0`.
+
+### Fixed
+
+- Vault regenerated with new password — 13 encrypted variables for all
+  services (Harbor admin, sync user, metrics, ELK passwords).
+- `chrony` service name corrected to `chronyd` in `roles/common/tasks/main.yml`
+  (Rocky Linux 10 uses `chronyd`, not `chrony`).
+- `firewalld` task: changed `immediate: true` to `immediate: false` in
+  `roles/firewall/tasks/main.yml` (immediate reload causes race conditions
+  with subsequent firewall tasks).
+- Certificate role (`roles/certificates/tasks/generate.yml`) — added
+  `file` task to ensure `_cert_dir` and `_cert_key_dir` directories exist
+  before certificate generation (previously failed with "Destination
+  directory does not exist").
+- ELK `elk_config_dir` (`/etc/elk`) not created — added `{{ elk_config_dir }}`
+  to the directory creation loop in `roles/elk/tasks/main.yml`.
+- ELK image paths wrong — Harbor stores images at `library/library/*` (due
+  to sync name `library/x` + project `library`); fixed
+  `inventory/group_vars/elk/main.yml` to use correct double-nested paths.
+- Harbor `prepare` directories — role now creates `common/config/*`
+  subdirectories before running `prepare` (previously failed with missing
+  directories).
+- Harbor image retag — role now tags `localhost/goharbor/*` images to
+  `harbor.local.lan/library/goharbor/*` before `podman-compose up -d`.
+- Harbor compose patch — simplified `goharbor/*` image reference rewriting
+  (removed broken `if img.startswith` logic).
+- Prometheus/Alertmanager restart loop — containers were killed every ~90s
+  by failing httpGet liveness probes despite endpoints being healthy;
+  switched to exec-based `wget` probes.
+- elasticsearch-exporter restart loop — same httpGet liveness probe issue;
+  switched to exec-based `wget` probe.
+- ELK log directory documentation — corrected path from `/var/log/harbor/`
+  to `/var/log/elk/` in `docs/elasticsearch.md`.
+
+## [0.1.0] - 2026-07-13
+
+### Added
+
 - `libvirt` role — automated VM provisioning with `community.libvirt` collection:
   - Storage pool `sdb` (dir-backed on `/var/lib/libvirt/sdb`, autostarted)
   - Network `ansible-net` (NAT via `wlan0`, bridge `virbr-ansible`, DHCP + DNS)

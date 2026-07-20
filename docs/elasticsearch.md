@@ -88,7 +88,7 @@ podman login harbor.local.lan --authfile /root/.config/containers/auth.json
 
 ## Logs
 
-Container logs are managed via rsyslog (journald → `/var/log/harbor/`). To view ELK-specific logs:
+Container logs are managed via rsyslog (journald → `/var/log/elk/`). To view ELK-specific logs:
 
 ```bash
 ssh root@192.168.100.12
@@ -107,8 +107,11 @@ ansible-playbook playbooks/provision-ansible03.yml
 ansible-playbook playbooks/provision-ansible03.yml --tags restart-elk
 
 # Check Elasticsearch cluster health
-curl -s https://observability.local.lan/elasticsearch/_cluster/health | jq .
+curl -s http://192.168.100.12:9200/_cluster/health?pretty
 
 # Check Kibana status
-curl -s https://observability.local.lan/kibana/api/status | jq .
+curl -s http://192.168.100.12:5601/api/status | python3 -c 'import sys,json; print(json.load(sys.stdin)["status"]["overall"]["level"])'
+
+# Check Elasticsearch exporter metrics
+curl -s http://192.168.100.12:9114/metrics | head -5
 ```

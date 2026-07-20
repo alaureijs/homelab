@@ -30,9 +30,22 @@ firewall_ports:
   - 443/tcp
   - 22/tcp
 
+# Podman network interfaces to trust
+firewall_podman_interfaces:
+  - podman1
+
 # Certificate SANs
 certificates_extra_sans:
   - "DNS:{{ harbor_hostname }}"
+
+# Certificates (extends group_vars/all)
+certificates:
+  - name: "{{ vm_hostname }}"
+    type: selfsigned
+    extra_sans: "{{ certificates_extra_sans }}"
+  - name: harbor
+    type: selfsigned
+    extra_sans: "{{ certificates_extra_sans }}"
 
 # Users and roles (role IDs: 1=projectAdmin, 2=developer, 3=guest, 4=maintainer, 5=limitedGuest)
 # Note: system admin (user_id=1) is created during Harbor install, not managed here

@@ -23,6 +23,10 @@ group variable references these variables — no hardcoded tags remain elsewhere
 | Alertmanager    | `alertmanager_version` | v0.28.1       |
 | Node Exporter   | `node_exporter_version`| 1.12.1        |
 | Pushgateway     | `pushgateway_version`  | v1.11.0       |
+| Elasticsearch   | `elasticsearch_version`| 8.17.0        |
+| Logstash        | `logstash_version`     | 8.17.0        |
+| Kibana          | `kibana_version`       | 8.17.0        |
+| ES Exporter     | `elasticsearch_exporter_version` | v1.11.0 |
 
 Base images (alpine, ubuntu, nginx, etc.) are also tracked in the same file.
 
@@ -38,6 +42,10 @@ group_vars/all/main.yml          (single source of truth)
     +---> group_vars/monitoring/main.yml     (grafana:{{ grafana_version }})
     |         |
     |         +---> monitoring role          (pod manifest image URIs)
+    |
+    +---> group_vars/elk/main.yml            (elasticsearch:{{ elasticsearch_version }})
+    |         |
+    |         +---> elk role                 (pod manifest image URIs)
     |
     +---> roles/monitoring/defaults/main.yml (same, role defaults)
     |

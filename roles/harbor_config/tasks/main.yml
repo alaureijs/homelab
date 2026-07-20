@@ -1,4 +1,32 @@
 ---
+- name: Wait for Harbor API to be ready
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/health"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  register: _harbor_health
+  until: _harbor_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Wait for Harbor to be fully ready
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/systeminfo/volumes"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  register: _harbor_volumes
+  until: _harbor_volumes.status == 200
+  retries: 10
+  delay: 30
+
 - name: Fetch existing Harbor registries
   ansible.builtin.uri:
     url: "https://{{ harbor_hostname }}/api/v2.0/registries"
@@ -47,6 +75,33 @@
   loop_control:
     label: "{{ item.name }}: {{ item.url }}"
   when: item.name not in (_harbor_config_registries_map | default({}))
+  register: _harbor_reg_create
+  until: _harbor_reg_create.status in [201, 409]
+  retries: 5
+  delay: 30
+
+- name: Re-fetch Harbor registries after creation
+  ansible.builtin.uri:
+    url: "https://{{ harbor_hostname }}/api/v2.0/registries"
+    method: GET
+    user: admin
+    password: "{{ harbor_admin_password }}"
+    force_basic_auth: true
+    return_content: true
+    validate_certs: false
+  register: _harbor_config_registries_response
+  when: harbor_config_registries | length > 0
+
+- name: Rebuild registries lookup map
+  ansible.builtin.set_fact:
+    _harbor_config_registries_map: >-
+      {{ _harbor_config_registries_map | default({}) |
+      combine({item.name: item.id}) }}
+  loop: "{{ _harbor_config_registries_response.json | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}: id={{ item.id }}"
+  when:
+    - harbor_config_registries | length > 0
 
 - name: Fetch existing Harbor projects
   ansible.builtin.uri:

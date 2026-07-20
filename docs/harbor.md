@@ -61,7 +61,7 @@ curl -sk -u "metrics:$VAULT_HARBOR_METRICS_PASSWORD" http://harbor.local.lan:809
 ```
 
 - **harbor-exporter** image: `goharbor/harbor-exporter:v2.11.0` (synced from Docker Hub)
-- **elasticsearch-exporter** image: `prom/elasticsearch-exporter:v1.11.0` (synced from ghcr.io)
+- **elasticsearch-exporter** image: `prometheuscommunity/elasticsearch-exporter:v1.11.0` (synced from Docker Hub)
 - Prometheus scrapes both endpoints via the `harbor` and `elasticsearch` jobs
 
 ## Logging

@@ -8,6 +8,17 @@
     _cert_path: "{{ cert.dir | default(certificates_dir) }}/{{ cert.name }}.crt"
     _cert_key_path: "{{ cert.key_dir | default(certificates_key_dir) }}/{{ cert.name }}.key"
 
+- name: Ensure certificate directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ _cert_dir }}"
+    - "{{ _cert_key_dir }}"
+
 # --- selfsigned ---
 
 - name: Self-signed certificate

@@ -141,6 +141,27 @@
     state: link
     force: true
 
+- name: Ensure common config directories exist for prepare
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ harbor_install_dir }}/common"
+    - "{{ harbor_install_dir }}/common/config"
+    - "{{ harbor_install_dir }}/common/config/core"
+    - "{{ harbor_install_dir }}/common/config/registry"
+    - "{{ harbor_install_dir }}/common/config/db"
+    - "{{ harbor_install_dir }}/common/config/redis"
+    - "{{ harbor_install_dir }}/common/config/jobservice"
+    - "{{ harbor_install_dir }}/common/config/log"
+    - "{{ harbor_install_dir }}/common/config/nginx"
+    - "{{ harbor_install_dir }}/common/config/portal"
+    - "{{ harbor_install_dir }}/common/config/registryctl"
+    - "{{ harbor_install_dir }}/common/config/trivy-adapter"
+
 - name: Run Harbor prepare
   ansible.builtin.command: "{{ harbor_install_dir }}/prepare --with-trivy"
   args:
@@ -210,9 +231,6 @@
         data = yaml.safe_load(f)
     for svc in data.get('services', {}).values():
         svc.pop('logging', None)
-        img = svc.get('image', '')
-        if img.startswith('goharbor/'):
-            svc['image'] = '{{ harbor_hostname }}/library/' + img
     with open('docker-compose.yml', 'w') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     "
@@ -222,7 +240,26 @@
   register: harbor_patch
   changed_when: harbor_patch.rc == 0
 
-- name: Ensure Harbor is started
+- name: Tag Harbor images for offline registry
+  ansible.builtin.shell: |
+    set -e
+    for img in $(podman images --format '{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}' | grep '^localhost/goharbor/'); do
+      new_name=$(echo "$img" | sed 's|^localhost/goharbor/|{{ harbor_hostname }}/library/goharbor/|')
+      podman tag "$img" "$new_name"
+    done
+  args:
+    executable: /bin/bash
+  register: harbor_tag
+  changed_when: "'localhost/' in harbor_tag.stdout or harbor_tag.rc == 0"
+
+- name: Stop Harbor containers before recreate
+  ansible.builtin.command: podman-compose down
+  args:
+    chdir: "{{ harbor_install_dir }}"
+  register: harbor_down
+  changed_when: "'Removed' in harbor_down.stdout or harbor_down.rc == 0"
+
+- name: Start Harbor containers
   ansible.builtin.command: podman-compose up -d
   args:
     chdir: "{{ harbor_install_dir }}"

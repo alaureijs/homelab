@@ -15,7 +15,7 @@
     port: "{{ item }}"
     permanent: true
     state: enabled
-    immediate: true
+    immediate: false
   loop: "{{ firewall_ports }}"
 
 - name: Allow required services
@@ -23,8 +23,17 @@
     service: "{{ item }}"
     permanent: true
     state: enabled
-    immediate: true
+    immediate: false
   loop: "{{ firewall_services }}"
+
+- name: Trust Podman bridge interface
+  ansible.posix.firewalld:
+    interface: "{{ item }}"
+    zone: trusted
+    permanent: true
+    state: enabled
+    immediate: false
+  loop: "{{ firewall_podman_interfaces | default([]) }}"
 
 - name: Reload firewalld
   ansible.builtin.systemd:

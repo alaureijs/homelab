@@ -10,9 +10,9 @@
 - name: Download Prometheus exporter tarballs
   ansible.builtin.get_url:
     url: >-
-      https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.file | default(item.name ~ '-' ~ item.version ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
+      https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.file | default(item.name ~ '-' ~ item.version | regex_replace('^v', '') ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
     dest: >-
-      {{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ item.version ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
+      {{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ item.version | regex_replace('^v', '') ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
     mode: "0644"
   loop: "{{ prometheus_exporters }}"
   loop_control:
@@ -20,68 +20,53 @@
   delegate_to: localhost
   become: false
 
-- name: Check GitHub for latest release
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/{{ item.repo }}/releases/latest"
-    return_content: true
-  register: _exporter_latest
+- name: Check GitHub for latest version
+  ansible.builtin.shell: |
+    set -euo pipefail
+    REPO="{{ item.repo }}"
+    CURRENT="{{ item.version | regex_replace('^v', '') }}"
+
+    LATEST=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" \
+      | python3 -c "import sys,json; print(json.load(sys.stdin).get('tag_name',''))" 2>/dev/null || echo "")
+
+    if [ -z "$LATEST" ]; then
+      LATEST=$(curl -sf "https://api.github.com/repos/$REPO/releases" \
+        | python3 -c "
+    import sys, json
+    releases = json.load(sys.stdin)
+    for r in releases:
+        if not r.get('prerelease', False):
+            print(r.get('tag_name',''))
+            break
+    else:
+        print('')
+    " 2>/dev/null || echo "")
+    fi
+
+    STRIPPED=$(echo "$LATEST" | sed 's/^v//')
+
+    if [ -z "$LATEST" ]; then
+      echo "NONE"
+    elif [ "$STRIPPED" = "$CURRENT" ]; then
+      echo "$LATEST|false"
+    else
+      echo "$LATEST|true"
+    fi
+  args:
+    executable: /bin/bash
   loop: "{{ prometheus_exporters }}"
   loop_control:
     label: "{{ item.name }}"
-  failed_when: false
-  delegate_to: localhost
-  become: false
-
-- name: Fallback to first release if no latest
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/{{ item.item.repo }}/releases"
-    return_content: true
-  register: _exporter_releases
-  loop: "{{ _exporter_latest.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when: item.status == 404
-  failed_when: false
+  register: _exporter_versions
   delegate_to: localhost
   become: false
 
 - name: Build exporter report
   ansible.builtin.set_fact:
-    prometheus_exporters_report: >-
-      {{ prometheus_exporters_report | default({}) | combine(
-          {item.name: {
-            'current_version': item.version,
-            'latest_version': (
-              _exporter_latest.results | selectattr('item.name', 'equalto', item.name) | first
-              | json_query('content.tag_name')
-              | default(
-                  (_exporter_releases.results | default([])
-                   | selectattr('item.item.name', 'equalto', item.name) | first
-                   | json_query('content[0].tag_name') | default('NONE'))
-              )
-            ),
-            'update_available': >-
-              {{ (_exporter_latest.results | selectattr('item.name', 'equalto', item.name) | first
-                  | json_query('content.tag_name')
-                  | default(
-                      (_exporter_releases.results | default([])
-                       | selectattr('item.item.name', 'equalto', item.name) | first
-                       | json_query('content[0].tag_name') | default('NONE'))
-                  )) != 'NONE'
-                 and
-                 (_exporter_latest.results | selectattr('item.name', 'equalto', item.name) | first
-                  | json_query('content.tag_name')
-                  | default(
-                      (_exporter_releases.results | default([])
-                       | selectattr('item.item.name', 'equalto', item.name) | first
-                       | json_query('content[0].tag_name') | default('NONE'))
-                  ) | regex_replace('^v', '')
-                  != item.version | regex_replace('^v', '')) }}
-          }}
-      ) }}
-  loop: "{{ prometheus_exporters }}"
+    prometheus_exporters_report: "{{ prometheus_exporters_report | default({}) | combine({item.item.name: {'current_version': item.item.version, 'latest_version': (item.stdout | default('NONE') | split('|') | first), 'update_available': (item.stdout | default('NONE') | split('|') | last | bool)}}) }}"
+  loop: "{{ _exporter_versions.results }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.item.name }}: {{ item.stdout | default('?') }}"
 
 - name: Ensure reports directory exists
   ansible.builtin.file:

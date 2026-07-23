@@ -1,92 +1,112 @@
 ---
 # Container images to sync to Harbor
-# Versions are defined in group_vars/all/versions.yml
+# Versions are defined in group_vars/all/main.yml
 
 harbor_sync_images:
   # Base images
   - name: library/alpine
-    tag: "{{ alpine_version }}"
+    tags:
+      - "{{ alpine_version }}"
     registry: docker.io
 
   - name: library/ubuntu
-    tag: "{{ ubuntu_version }}"
+    tags:
+      - "{{ ubuntu_version }}"
     registry: docker.io
 
   - name: library/busybox
-    tag: "{{ busybox_version }}"
+    tags:
+      - "{{ busybox_version }}"
     registry: docker.io
 
   # Application images
   - name: library/nginx
-    tag: "{{ nginx_version }}"
+    tags:
+      - "{{ nginx_version }}"
     registry: docker.io
 
   - name: library/redis
-    tag: "{{ redis_version }}"
+    tags:
+      - "{{ redis_version }}"
     registry: docker.io
 
   - name: library/postgres
-    tag: "{{ postgres_version }}"
+    tags:
+      - "{{ postgres_version }}"
     registry: docker.io
 
   - name: library/mariadb
-    tag: "{{ mariadb_version }}"
+    tags:
+      - "{{ mariadb_version }}"
     registry: docker.io
 
   - name: library/python
-    tag: "{{ python_version }}"
+    tags:
+      - "{{ python_version }}"
     registry: docker.io
 
   - name: library/node
-    tag: "{{ node_version }}"
+    tags:
+      - "{{ node_version }}"
     registry: docker.io
 
   - name: library/golang
-    tag: "{{ golang_version }}"
+    tags:
+      - "{{ golang_version }}"
     registry: docker.io
 
   # Monitoring stack
   - name: prometheus/prometheus
-    tag: "{{ prometheus_version }}"
+    tags:
+      - "{{ prometheus_version }}"
     registry: quay.io
 
   - name: prometheus/alertmanager
-    tag: "{{ alertmanager_version }}"
+    tags:
+      - "{{ alertmanager_version }}"
     registry: quay.io
 
   - name: grafana/grafana
-    tag: "{{ grafana_version }}"
+    tags:
+      - "{{ grafana_version }}"
     registry: docker.io
 
   - name: prometheus/node-exporter
-    tag: "{{ node_exporter_version }}"
+    tags:
+      - "{{ node_exporter_version }}"
     registry: quay.io
 
   - name: prometheus/pushgateway
-    tag: "{{ pushgateway_version }}"
+    tags:
+      - "{{ pushgateway_version }}"
     registry: quay.io
 
   # ELK stack
   - name: library/elasticsearch
-    tag: "{{ elasticsearch_version }}"
+    tags:
+      - "{{ elasticsearch_version }}"
     registry: docker.io
 
   - name: library/logstash
-    tag: "{{ logstash_version }}"
+    tags:
+      - "{{ logstash_version }}"
     registry: docker.io
 
   - name: library/kibana
-    tag: "{{ kibana_version }}"
+    tags:
+      - "{{ kibana_version }}"
     registry: docker.io
 
   # Exporters
   - name: prometheuscommunity/elasticsearch-exporter
-    tag: "{{ elasticsearch_exporter_version }}"
+    tags:
+      - "{{ elasticsearch_exporter_version }}"
     registry: docker.io
 
   # Harbor exporter
   - name: goharbor/harbor-exporter
-    tag: "{{ harbor_version }}"
+    tags:
+      - "{{ harbor_version }}"
     registry: docker.io
 
 # Registry URL to proxy-cache project mapping

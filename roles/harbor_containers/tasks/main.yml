@@ -28,17 +28,17 @@
 
 - name: Sync images to Harbor
   ansible.builtin.include_tasks: _sync-image.yml
-  loop: "{{ harbor_sync_images }}"
+  loop: "{{ harbor_sync_images | subelements('tags') }}"
   loop_control:
-    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }} -> {{ item.name | regex_replace('([^/]+)/.*', '\\1') }}/{{ item.name | regex_replace('.*/', '') }}:{{ item.tag }}"
+    label: "{{ item.0.registry }}/{{ item.0.name }}:{{ item.1 }} -> {{ item.0.name | regex_replace('([^/]+)/.*', '\\1') }}/{{ item.0.name | regex_replace('.*/', '') }}:{{ item.1 }}"
 
 - name: Check upstream for latest versions
   ansible.builtin.shell: |
     set -euo pipefail
 
-    IMAGE="{{ item.name }}"
-    REGISTRY="{{ item.registry }}"
-    CURRENT="{{ item.tag }}"
+    IMAGE="{{ item.0.name }}"
+    REGISTRY="{{ item.0.registry }}"
+    CURRENT="{{ item.1 }}"
 
     TAGS=$(skopeo list-tags "docker://$REGISTRY/$IMAGE" 2>/dev/null \
       | python3 -c "
@@ -79,9 +79,9 @@
     echo "$TAGS"
   args:
     executable: /bin/bash
-  loop: "{{ harbor_sync_images }}"
+  loop: "{{ harbor_sync_images | subelements('tags') }}"
   loop_control:
-    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }}"
+    label: "{{ item.0.registry }}/{{ item.0.name }}:{{ item.1 }}"
   register: harbor_containers_upstream_versions
   ignore_errors: true
   changed_when: false
@@ -89,24 +89,25 @@
 - name: Build version report
   ansible.builtin.set_fact:
     harbor_containers_sync_report: >-
-      {{ harbor_containers_sync_report | default({}) | combine({
-          item.item.name | regex_replace('.*/', ''): {
-            'full_name': item.item.name,
-            'current_tag': item.item.tag,
-            'registry': item.item.registry,
-            'project': item.item.name.split('/')[0],
+      {{ harbor_containers_sync_report | default({}) | combine(
+          {item.item.0.name | regex_replace('.*/', ''): {
+            'full_name': item.item.0.name,
+            'current_tag': item.item.1,
+            'registry': item.item.0.registry,
+            'project': item.item.0.name.split('/')[0],
             'synced': true,
             'latest_version': item.stdout | default('NONE'),
             'update_available': (
               item.stdout | default('NONE') != 'NONE' and
-              item.stdout | default('NONE') != item.item.tag
+              item.stdout | default('NONE') != item.item.1
             )
-          }
-        })
-      }}
+          }}
+          if (item.item.0.name | regex_replace('.*/', '') not in harbor_containers_sync_report | default({}))
+          else {}
+      ) }}
   loop: "{{ harbor_containers_upstream_versions.results }}"
   loop_control:
-    label: "{{ item.item.name }}:{{ item.item.tag }} -> {{ item.stdout | default('?') }}"
+    label: "{{ item.item.0.name }}:{{ item.item.1 }} -> {{ item.stdout | default('?') }}"
 
 - name: Generate sync report file
   ansible.builtin.copy:

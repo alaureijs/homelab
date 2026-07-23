@@ -42,10 +42,17 @@ Each item requires three fields:
 
 ```yaml
 harbor_sync_images:
-  - name: <project/image>          # e.g., library/alpine
-    tag: "{{ <component>_version }}" # e.g., "{{ alpine_version }}"
-    registry: <upstream-registry>   # e.g., docker.io
+  - name: <project/image>            # e.g., library/alpine
+    tags:
+      - "{{ <component>_version }}"  # e.g., "{{ alpine_version }}"
+      - "{{ <future_version> }}"     # optional: additional tags to sync
+    registry: <upstream-registry>    # e.g., docker.io
 ```
+
+`tags` is a list — each tag is synced to Harbor independently. This allows
+keeping old versions alongside new ones, or pre-syncing future versions that
+applications are not yet using. The first tag in the list is the **primary
+version** used for version variable generation in `images.yml`.
 
 See [Naming Convention](#naming-convention) for details on how `name` controls
 the Harbor path and version variable.
@@ -100,9 +107,12 @@ name.split('/')[-1] → short name
 This is used in `_sync-image.yml` to tag and push:
 
 ```yaml
-harbor_containers_project: "{{ item.name | regex_replace('([^/]+)/.*', '\\1') }}"
-harbor_containers_short: "{{ item.name | regex_replace('.*/', '') }}"
+harbor_containers_project: "{{ item.0.name | regex_replace('([^/]+)/.*', '\\1') }}"
+harbor_containers_short: "{{ item.0.name | regex_replace('.*/', '') }}"
 ```
+
+The loop uses `subelements('tags')`, so `item.0` is the image dict and
+`item.1` is the tag string.
 
 So for `prometheuscommunity/elasticsearch-exporter`:
 
@@ -188,15 +198,18 @@ elasticsearch_version: "9.4.4"
 ```yaml
 harbor_sync_images:
   - name: library/alpine
-    tag: "{{ alpine_version }}"
+    tags:
+      - "{{ alpine_version }}"
     registry: docker.io
 
   - name: grafana/grafana
-    tag: "{{ grafana_version }}"
+    tags:
+      - "{{ grafana_version }}"
     registry: docker.io
 
   - name: prometheus/prometheus
-    tag: "{{ prometheus_version }}"
+    tags:
+      - "{{ prometheus_version }}"
     registry: quay.io
 
 harbor_config_proxy_projects:

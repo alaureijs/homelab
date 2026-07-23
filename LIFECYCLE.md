@@ -35,7 +35,7 @@ Base images (alpine, ubuntu, nginx, etc.) are also tracked in the same file.
 ```
 group_vars/all/main.yml          (single source of truth)
     |
-    +---> group_vars/harbor/images.yml       (tag: "{{ grafana_version }}")
+    +---> group_vars/harbor/images.yml       (tags: ["{{ grafana_version }}"])
     |         |
     |         +---> harbor_containers role   (sync images to Harbor)
     |
@@ -73,7 +73,7 @@ podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
 
 #### Procedure
 
-1. **Edit `group_vars/all/main.yml`** — bump the tag:
+1. **Edit `group_vars/all/main.yml`** — bump the version:
 
    ```yaml
    grafana_version: "12.0.0"   # was 11.6.0
@@ -226,7 +226,7 @@ Update base images synced to Harbor (alpine, nginx, postgres, etc.).
 
 #### Procedure
 
-1. **Edit `group_vars/all/main.yml`** — bump the tag:
+1. **Edit `group_vars/all/main.yml`** — bump the version:
 
    ```yaml
    alpine_version: "3.22"
@@ -379,9 +379,9 @@ To sync a new image to Harbor:
    ```yaml
    harbor_sync_images:
      - name: library/new-image
-       tag: "{{ new_image_version }}"
+       tags:
+         - "{{ new_image_version }}"
        registry: docker.io
-       project: library
    ```
 
 2. Add the version variable to `inventory/group_vars/all/main.yml`:

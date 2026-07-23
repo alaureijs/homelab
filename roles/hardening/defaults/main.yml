@@ -7,7 +7,7 @@
 
 # --- Module toggles ---
 hardening_sysctl: true
-hardening_ssh: true
+hardening_ssh_enabled: true
 hardening_file_permissions: true
 hardening_services: true
 hardening_password_auth: true
@@ -104,60 +104,56 @@ hardening_sysctl_params:
   net.ipv4.conf.default.shared_media: "1"
 
 # --- SSH (CIS 5.2, STIG V-257795+) ---
-hardening_ssh_port: 22
-hardening_ssh_protocol: 2
-hardening_ssh_x11_forwarding: false
-hardening_ssh_max_auth_tries: 4
-hardening_ssh_max_sessions: 10
-hardening_ssh_login_grace_time: 60
-hardening_ssh_client_alive_interval: 300
-hardening_ssh_client_alive_count: 3
-hardening_ssh_permit_root_login: "prohibit-password"
-hardening_ssh_permit_empty_passwords: false
-hardening_ssh_permit_user_environment: false
-hardening_ssh_permit_tunnel: false
-hardening_ssh_allow_agent_forwarding: false
-hardening_ssh_allow_tcp_forwarding: "no"
-hardening_ssh_print_last_log: true
-hardening_ssh_x11_display_offset: 10
-hardening_ssh_max_startups_start: 10
-hardening_ssh_max_startups_rate: 30
-hardening_ssh_max_startups_full: 60
-hardening_ssh_log_level: "VERBOSE"
-hardening_ssh_deny_users: []
-hardening_ssh_allow_users: []
-hardening_ssh_deny_groups: []
-hardening_ssh_allow_groups: []
-
-# Host key algorithms (STIG-approved only)
-hardening_ssh_host_key_algorithms:
-  - ssh-ed25519
-  - ecdsa-sha2-nistp521
-  - rsa-sha2-512
-  - rsa-sha2-256
-
-# Kex algorithms (STIG-approved, no diffie-hellman-group1-sha1)
-hardening_ssh_kex_algorithms:
-  - diffie-hellman-group18-sha512
-  - diffie-hellman-group16-sha512
-  - ecdh-sha2-nistp521
-  - ecdh-sha2-nistp384
-  - ecdh-sha2-nistp256
-
-# Ciphers (STIG-approved only)
-hardening_ssh_ciphers:
-  - aes256-gcm@openssh.com
-  - chacha20-poly1305@openssh.com
-  - aes256-ctr
-  - aes192-ctr
-  - aes128-ctr
-
-# MACs (STIG-approved only)
-hardening_ssh_macs:
-  - hmac-sha2-512-etm@openssh.com
-  - hmac-sha2-256-etm@openssh.com
-  - hmac-sha2-512
-  - hmac-sha2-256
+hardening_ssh:
+  port: 22
+  protocol: 2
+  x11_forwarding: false
+  max_auth_tries: 4
+  max_sessions: 10
+  login_grace_time: 60
+  client_alive_interval: 300
+  client_alive_count: 3
+  permit_root_login: "prohibit-password"
+  permit_empty_passwords: false
+  permit_user_environment: false
+  permit_tunnel: false
+  allow_agent_forwarding: false
+  allow_tcp_forwarding: "no"
+  print_last_log: true
+  x11_display_offset: 10
+  max_startups_start: 10
+  max_startups_rate: 30
+  max_startups_full: 60
+  log_level: "VERBOSE"
+  deny_users: []
+  allow_users: []
+  deny_groups: []
+  allow_groups: []
+  banner: /etc/issue.net
+  warning_banner: |
+    Authorized users only. All activity may be monitored and reported.
+  host_key_algorithms:
+    - ssh-ed25519
+    - ecdsa-sha2-nistp521
+    - rsa-sha2-512
+    - rsa-sha2-256
+  kex_algorithms:
+    - diffie-hellman-group18-sha512
+    - diffie-hellman-group16-sha512
+    - ecdh-sha2-nistp521
+    - ecdh-sha2-nistp384
+    - ecdh-sha2-nistp256
+  ciphers:
+    - aes256-gcm@openssh.com
+    - chacha20-poly1305@openssh.com
+    - aes256-ctr
+    - aes192-ctr
+    - aes128-ctr
+  macs:
+    - hmac-sha2-512-etm@openssh.com
+    - hmac-sha2-256-etm@openssh.com
+    - hmac-sha2-512
+    - hmac-sha2-256
 
 # --- File Permissions (CIS 6.x, STIG V-258060+) ---
 # World-writable files should have sticky bit
@@ -295,11 +291,6 @@ hardening_warning_banner: |
   Authorized users only. All activity may be monitored and reported.
   Unauthorized access is prohibited and will be prosecuted.
 hardening_warning_banner_path: /etc/issue
-
-# SSH banner
-hardening_ssh_banner: /etc/issue.net
-hardening_ssh_warning_banner: |
-  Authorized users only. All activity may be monitored and reported.
 
 # --- Limits (CIS 1.5) ---
 hardening_nofile_soft: 65536

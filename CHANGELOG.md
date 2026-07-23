@@ -21,11 +21,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harbor systemd service (`roles/harbor/templates/harbor.service.j2`) —
   `oneshot` + `RemainAfterExit=yes` service for autostart. Handles
   `podman-compose up -d` / `down` lifecycle.
-- `reports/` directory under `playbooks/` for sync report output
-  (`sync-report-*.yml`, `images.yml`).
-- `roles/harbor_containers/templates/images.yml.j2` — Jinja2 template
-  that generates `playbooks/reports/images.yml` from `harbor_sync_images`
-  and sync report, replacing hardcoded image list.
+- `prometheus_exporters` role — downloads Prometheus exporter tarballs
+  from GitHub releases to `files/prometheus/exporters/`. Checks upstream
+  for latest versions, generates report in `reports/`.
+- `playbooks/download-exporters.yml` — standalone playbook for downloading
+  exporter tarballs.
+- Version variables for new exporters in `group_vars/all/main.yml`:
+  `mysqld_exporter_version`, `postgres_exporter_version`,
+  `nginx_exporter_version`, `logstash_exporter_version`.
+- "Binaries in Git" rule in `AGENTS.md` — never commit binaries, tarballs,
+  or downloaded artifacts to the repository.
 
 ### Changed
 
@@ -73,6 +78,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `AGENTS.md` updated — vault inline encryption documentation with
   correct/incorrect examples; `sync-update-containers.yml` prerequisites,
   required variables, and project naming convention added.
+- Hardening SSH configuration refactored — module toggle renamed from
+  `hardening_ssh` to `hardening_ssh_enabled`. All SSH settings consolidated
+  into single `hardening_ssh` dict (port, protocol, crypto, access control,
+  banner) in `roles/hardening/defaults/main.yml`.
+- Reports directory moved from `playbooks/reports/` to project root
+  `reports/`. Added to `.gitignore`.
+- `harbor_containers` role — removed `images.yml` generation task and
+  `images.yml.j2` template. Sync report is now the only output.
+- `harbor_containers_local_report_dir` changed from `reports` to
+  `../reports` (resolves to project root via `{{ playbook_dir }}/../reports`).
+- `.gitignore` updated — added `reports/` and
+  `files/prometheus/exporters/` to prevent committing generated files
+  and downloaded binaries.
 
 ### Fixed
 

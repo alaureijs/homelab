@@ -77,6 +77,7 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `monitoring` | Grafana/Prometheus/Alertmanager via ConfigMaps | ansible02 |
 | `elk` | Elasticsearch/Logstash/Kibana via ConfigMaps + PVCs | ansible03 |
 | `node_exporter` | Binary install, systemd service, mTLS web config | all hosts (sidecar on ELK) |
+| `prometheus_exporters` | Download exporter tarballs from GitHub releases | localhost (controller) |
 | `certificates` | Selfsigned/CA certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
 | `common` | Package management, protected package safety, chrony | all VMs |
 | `firewall` | firewalld rules for services, UFW for libvirt host bridge | ansible02 |
@@ -106,6 +107,12 @@ $ANSIBLE_VAULT;1.1;AES256
 616263...
 ```
 5. **Module names**: Always use FQCN (e.g., `ansible.builtin.copy`, not `copy`)
+
+### Binaries in Git
+- **Never commit binaries, tarballs, or downloaded artifacts** to the repository
+- Add binary directories to `.gitignore` (e.g., `files/prometheus/exporters/`)
+- Roles that download files must use `files/` or `reports/` as local staging areas, never commit their contents
+- Container images are synced to Harbor, not stored in git
 
 ### Variable Naming
 - Role defaults: `rolename_variable_name` (e.g., `monitoring_grafana_password`)
@@ -368,6 +375,8 @@ ls /var/log/harbor/
 
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration
+- [docs/harbor-containers.md](docs/harbor-containers.md) — Harbor container sync
+- [docs/prometheus_exporters.md](docs/prometheus_exporters.md) — Exporter tarball downloads
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack
 - [docs/monitoring-configuration.md](docs/monitoring-configuration.md) — Monitoring configuration manual
 - [docs/elasticsearch.md](docs/elasticsearch.md) — ELK stack

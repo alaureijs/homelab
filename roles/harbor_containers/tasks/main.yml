@@ -121,14 +121,6 @@
     dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
     flat: true
 
-- name: Generate images.yml with latest versions
-  ansible.builtin.template:
-    src: images.yml.j2
-    dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/images.yml"
-    mode: "0644"
-  delegate_to: localhost
-  become: false
-
 - name: Display sync summary
   ansible.builtin.debug:
     msg: |
@@ -142,8 +134,7 @@
       {% endfor %}
 
       Reports saved to:
-        reports/sync-report-{{ ansible_date_time.date }}.yml
-        reports/images.yml
+        {{ harbor_containers_local_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml
 
 - name: Remove Harbor auth file
   ansible.builtin.file:

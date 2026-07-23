@@ -10,7 +10,7 @@ All modules independently toggleable via `hardening_*` defaults in
 | Module | Default | Description |
 |--------|---------|-------------|
 | `hardening_sysctl` | on | Kernel/network hardening (SYN cookies, log martians, RPF) |
-| `hardening_ssh` | on | SSH hardening (protocol 2, restricted ciphers/MACs) |
+| `hardening_ssh_enabled` | on | SSH hardening (protocol 2, restricted ciphers/MACs) |
 | `hardening_file_permissions` | on | Sticky bit, core dumps, cron ownership |
 | `hardening_services` | on | Disable unnecessary services, mask rsh |
 | `hardening_password_auth` | on | pwquality (minlen 14), faillock, password history |

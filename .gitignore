@@ -8,3 +8,5 @@ __pycache__/
 .cache/
 .retry
 collections/
+reports/
+files/prometheus/exporters/

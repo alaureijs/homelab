@@ -1,0 +1,7 @@
+---
+- name: Download Prometheus exporter tarballs
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  roles:
+    - role: prometheus_exporters

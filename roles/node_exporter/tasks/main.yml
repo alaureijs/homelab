@@ -23,7 +23,7 @@
       register: node_exporter_installed
 
     - name: Get installed node_exporter version
-      ansible.builtin.command: "{{ node_exporter_bin }} --version"
+      ansible.builtin.shell: "{{ node_exporter_bin }} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+'"
       register: node_exporter_current_version
       changed_when: false
       failed_when: false
@@ -31,13 +31,13 @@
 
     - name: Set node_exporter download URL
       ansible.builtin.set_fact:
-        node_exporter_download_url: "{{ node_exporter_github_url }}/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        node_exporter_download_url: "{{ node_exporter_github_url }}/{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
       vars:
         node_exporter_github_url: https://github.com/prometheus/node_exporter/releases/download
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search(node_exporter_version))
+         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
 
     - name: Download node_exporter
       ansible.builtin.get_url:
@@ -47,7 +47,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search(node_exporter_version))
+         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
 
     - name: Extract node_exporter binary
       ansible.builtin.unarchive:
@@ -57,7 +57,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search(node_exporter_version))
+         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
 
     - name: Copy node_exporter binary
       ansible.builtin.copy:
@@ -70,7 +70,7 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout is not search(node_exporter_version))
+         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
       notify: Restart node-exporter
 
     - name: Cleanup tarball

@@ -10,7 +10,7 @@
 
 - name: SSH hardening
   ansible.builtin.include_tasks: ssh.yml
-  when: hardening_ssh
+  when: hardening_ssh_enabled
   tags:
     - hardening
     - ssh

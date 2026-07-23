@@ -29,12 +29,16 @@ prometheus_version: "v3.13.1"
 alertmanager_version: "v0.33.1"
 node_exporter_version: "v1.12.1"
 pushgateway_version: "v1.11.3"
+elasticsearch_exporter_version: "v1.11.0"
+mysqld_exporter_version: "v0.19.0"
+postgres_exporter_version: "v0.20.1"
+nginx_exporter_version: "v1.5.1"
+logstash_exporter_version: "v1.9.1"
 
 # ELK stack
 elasticsearch_version: "9.4.4"
 logstash_version: "9.4.4"
 kibana_version: "9.4.4"
-elasticsearch_exporter_version: "v1.11.0"
 
 # Base images
 alpine_version: "3.24"

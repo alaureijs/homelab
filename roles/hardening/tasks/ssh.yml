@@ -7,40 +7,40 @@
     state: present
     validate: "sshd -t -f %s"
   loop:
-    - { regexp: "^#?Port ", line: "Port {{ hardening_ssh_port }}" }
-    - { regexp: "^#?Protocol ", line: "Protocol {{ hardening_ssh_protocol }}" }
+    - { regexp: "^#?Port ", line: "Port {{ hardening_ssh.port }}" }
+    - { regexp: "^#?Protocol ", line: "Protocol {{ hardening_ssh.protocol }}" }
     - { regexp: "^#?X11Forwarding ",
-        line: "X11Forwarding {{ hardening_ssh_x11_forwarding | ternary('yes', 'no') }}" }
+        line: "X11Forwarding {{ hardening_ssh.x11_forwarding | ternary('yes', 'no') }}" }
     - { regexp: "^#?MaxAuthTries ",
-        line: "MaxAuthTries {{ hardening_ssh_max_auth_tries }}" }
+        line: "MaxAuthTries {{ hardening_ssh.max_auth_tries }}" }
     - { regexp: "^#?MaxSessions ",
-        line: "MaxSessions {{ hardening_ssh_max_sessions }}" }
+        line: "MaxSessions {{ hardening_ssh.max_sessions }}" }
     - { regexp: "^#?LoginGraceTime ",
-        line: "LoginGraceTime {{ hardening_ssh_login_grace_time }}" }
+        line: "LoginGraceTime {{ hardening_ssh.login_grace_time }}" }
     - { regexp: "^#?ClientAliveInterval ",
-        line: "ClientAliveInterval {{ hardening_ssh_client_alive_interval }}" }
+        line: "ClientAliveInterval {{ hardening_ssh.client_alive_interval }}" }
     - { regexp: "^#?ClientAliveCountMax ",
-        line: "ClientAliveCountMax {{ hardening_ssh_client_alive_count }}" }
+        line: "ClientAliveCountMax {{ hardening_ssh.client_alive_count }}" }
     - { regexp: "^#?PermitRootLogin ",
-        line: "PermitRootLogin {{ hardening_ssh_permit_root_login }}" }
+        line: "PermitRootLogin {{ hardening_ssh.permit_root_login }}" }
     - { regexp: "^#?PermitEmptyPasswords ",
-        line: "PermitEmptyPasswords {{ hardening_ssh_permit_empty_passwords | ternary('yes', 'no') }}" }
+        line: "PermitEmptyPasswords {{ hardening_ssh.permit_empty_passwords | ternary('yes', 'no') }}" }
     - { regexp: "^#?PermitUserEnvironment ",
-        line: "PermitUserEnvironment {{ hardening_ssh_permit_user_environment | ternary('yes', 'no') }}" }
+        line: "PermitUserEnvironment {{ hardening_ssh.permit_user_environment | ternary('yes', 'no') }}" }
     - { regexp: "^#?PermitTunnel ",
-        line: "PermitTunnel {{ hardening_ssh_permit_tunnel | ternary('yes', 'no') }}" }
+        line: "PermitTunnel {{ hardening_ssh.permit_tunnel | ternary('yes', 'no') }}" }
     - { regexp: "^#?AllowAgentForwarding ",
-        line: "AllowAgentForwarding {{ hardening_ssh_allow_agent_forwarding | ternary('yes', 'no') }}" }
+        line: "AllowAgentForwarding {{ hardening_ssh.allow_agent_forwarding | ternary('yes', 'no') }}" }
     - { regexp: "^#?AllowTcpForwarding ",
-        line: "AllowTcpForwarding {{ hardening_ssh_allow_tcp_forwarding }}" }
+        line: "AllowTcpForwarding {{ hardening_ssh.allow_tcp_forwarding }}" }
     - { regexp: "^#?PrintLastLog ",
-        line: "PrintLastLog {{ hardening_ssh_print_last_log | ternary('yes', 'no') }}" }
+        line: "PrintLastLog {{ hardening_ssh.print_last_log | ternary('yes', 'no') }}" }
     - { regexp: "^#?X11DisplayOffset ",
-        line: "X11DisplayOffset {{ hardening_ssh_x11_display_offset }}" }
+        line: "X11DisplayOffset {{ hardening_ssh.x11_display_offset }}" }
     - { regexp: "^#?MaxStartups",
-        line: "MaxStartups {{ hardening_ssh_max_startups_start }}:{{ hardening_ssh_max_startups_rate }}:{{ hardening_ssh_max_startups_full }}" }
-    - { regexp: "^#?LogLevel ", line: "LogLevel {{ hardening_ssh_log_level }}" }
-    - { regexp: "^#?Banner ", line: "Banner {{ hardening_ssh_banner }}" }
+        line: "MaxStartups {{ hardening_ssh.max_startups_start }}:{{ hardening_ssh.max_startups_rate }}:{{ hardening_ssh.max_startups_full }}" }
+    - { regexp: "^#?LogLevel ", line: "LogLevel {{ hardening_ssh.log_level }}" }
+    - { regexp: "^#?Banner ", line: "Banner {{ hardening_ssh.banner }}" }
   notify: Restart sshd
 
 - name: SSH hardening — configure crypto policies
@@ -51,18 +51,18 @@
     state: present
     validate: "sshd -t -f %s"
   loop:
-    - { regexp: "^#?HostKeyAlgorithms ", line: "HostKeyAlgorithms {{ hardening_ssh_host_key_algorithms | join(',') }}" }
-    - { regexp: "^#?KexAlgorithms ", line: "KexAlgorithms {{ hardening_ssh_kex_algorithms | join(',') }}" }
-    - { regexp: "^#?Ciphers ", line: "Ciphers {{ hardening_ssh_ciphers | join(',') }}" }
-    - { regexp: "^#?MACs ", line: "MACs {{ hardening_ssh_macs | join(',') }}" }
+    - { regexp: "^#?HostKeyAlgorithms ", line: "HostKeyAlgorithms {{ hardening_ssh.host_key_algorithms | join(',') }}" }
+    - { regexp: "^#?KexAlgorithms ", line: "KexAlgorithms {{ hardening_ssh.kex_algorithms | join(',') }}" }
+    - { regexp: "^#?Ciphers ", line: "Ciphers {{ hardening_ssh.ciphers | join(',') }}" }
+    - { regexp: "^#?MACs ", line: "MACs {{ hardening_ssh.macs | join(',') }}" }
   notify: Restart sshd
 
 - name: SSH hardening — DenyUsers
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "^#?DenyUsers "
-    line: "DenyUsers {{ hardening_ssh_deny_users | join(' ') }}"
-    state: "{{ 'present' if hardening_ssh_deny_users else 'absent' }}"
+    line: "DenyUsers {{ hardening_ssh.deny_users | join(' ') }}"
+    state: "{{ 'present' if hardening_ssh.deny_users else 'absent' }}"
     validate: "sshd -t -f %s"
   notify: Restart sshd
 
@@ -70,8 +70,8 @@
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "^#?AllowUsers "
-    line: "AllowUsers {{ hardening_ssh_allow_users | join(' ') }}"
-    state: "{{ 'present' if hardening_ssh_allow_users else 'absent' }}"
+    line: "AllowUsers {{ hardening_ssh.allow_users | join(' ') }}"
+    state: "{{ 'present' if hardening_ssh.allow_users else 'absent' }}"
     validate: "sshd -t -f %s"
   notify: Restart sshd
 
@@ -79,8 +79,8 @@
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "^#?DenyGroups "
-    line: "DenyGroups {{ hardening_ssh_deny_groups | join(' ') }}"
-    state: "{{ 'present' if hardening_ssh_deny_groups else 'absent' }}"
+    line: "DenyGroups {{ hardening_ssh.deny_groups | join(' ') }}"
+    state: "{{ 'present' if hardening_ssh.deny_groups else 'absent' }}"
     validate: "sshd -t -f %s"
   notify: Restart sshd
 
@@ -88,7 +88,7 @@
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "^#?AllowGroups "
-    line: "AllowGroups {{ hardening_ssh_allow_groups | join(' ') }}"
-    state: "{{ 'present' if hardening_ssh_allow_groups else 'absent' }}"
+    line: "AllowGroups {{ hardening_ssh.allow_groups | join(' ') }}"
+    state: "{{ 'present' if hardening_ssh.allow_groups else 'absent' }}"
     validate: "sshd -t -f %s"
   notify: Restart sshd

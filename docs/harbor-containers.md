@@ -122,30 +122,6 @@ short:   elasticsearch-exporter
 Harbor:  harbor.local.lan/prometheuscommunity/elasticsearch-exporter:v1.11.0
 ```
 
-### Version Variable Derivation
-
-The `images.yml.j2` template generates a version report file
-(`playbooks/reports/images.yml`) by deriving the variable name from the
-short name using this rule:
-
-```
-short_name | regex_replace('-', '_') + '_version'
-```
-
-Examples:
-
-| `name` | short name | derived variable |
-|--------|------------|------------------|
-| `library/alpine` | `alpine` | `alpine_version` |
-| `prometheus/prometheus` | `prometheus` | `prometheus_version` |
-| `grafana/grafana` | `grafana` | `grafana_version` |
-| `prometheuscommunity/elasticsearch-exporter` | `elasticsearch-exporter` | `elasticsearch_exporter_version` |
-| `goharbor/harbor-exporter` | `harbor-exporter` | `harbor_exporter_version` |
-
-**Rule**: A variable named `<short_name_with_underscores>_version` must
-exist in scope (e.g., in `group_vars/all/main.yml`) for the generated
-`images.yml` to resolve correctly.
-
 ## Sync Pipeline
 
 The role executes this sequence:
@@ -157,14 +133,12 @@ The role executes this sequence:
 5. **Upstream check** — Uses `skopeo list-tags` to find latest version matching
    same naming convention (v-prefix, part count, suffix)
 6. **Report** — Generates YAML report with current vs. latest versions
-7. **Images.yml** — Generates copy-paste-ready version file from sync results
 
 ## Report Output
 
-After sync, reports are saved to `playbooks/reports/`:
+After sync, reports are saved to `reports/`:
 
 - `sync-report-YYYY-MM-DD.yml` — Full sync report with per-image details
-- `images.yml` — Version variables ready to paste into `group_vars/all/main.yml`
 
 ## Configuration
 
@@ -175,7 +149,7 @@ After sync, reports are saved to `playbooks/reports/`:
 | `harbor_containers_report_dir` | `/tmp/harbor-sync` | Temp dir for report files on target |
 | `harbor_containers_sync_user` | `ansible-sync` | Harbor username for image push |
 | `harbor_containers_auth_dir` | `/tmp/harbor-auth` | Temp dir for auth.json on target |
-| `harbor_containers_local_report_dir` | `reports` | Local dir under `playbook_dir/` for fetched reports |
+| `harbor_containers_local_report_dir` | `../reports` | Local dir under `playbook_dir/` for fetched reports |
 
 ## Example: Complete Setup
 

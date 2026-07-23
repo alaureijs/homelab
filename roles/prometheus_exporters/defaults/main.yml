@@ -1,0 +1,30 @@
+---
+# prometheus_exporters role defaults
+# Downloads Prometheus exporter tarballs to files/prometheus/exporters/
+
+prometheus_exporters_arch: linux-amd64
+
+prometheus_exporters:
+  - name: node_exporter
+    version: "{{ node_exporter_version }}"
+    repo: prometheus/node_exporter
+  - name: pushgateway
+    version: "{{ pushgateway_version }}"
+    repo: prometheus/pushgateway
+  - name: elasticsearch_exporter
+    version: "{{ elasticsearch_exporter_version }}"
+    repo: prometheus-community/elasticsearch_exporter
+  - name: mysqld_exporter
+    version: "{{ mysqld_exporter_version }}"
+    repo: prometheus/mysqld_exporter
+  - name: postgres_exporter
+    version: "{{ postgres_exporter_version }}"
+    repo: prometheus-community/postgres_exporter
+  - name: nginx-prometheus-exporter
+    version: "{{ nginx_exporter_version }}"
+    repo: nginx/nginx-prometheus-exporter
+    file: "nginx-prometheus-exporter_{{ nginx_exporter_version | regex_replace('^v', '') }}_{{ prometheus_exporters_arch | replace('-', '_') }}.tar.gz"
+  - name: logstash-exporter
+    version: "{{ logstash_exporter_version }}"
+    repo: kuskoman/logstash-exporter
+    file: "logstash-exporter-linux"

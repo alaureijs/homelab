@@ -10,8 +10,8 @@
 
 - name: Set SSH warning banner
   ansible.builtin.copy:
-    content: "{{ hardening_ssh_warning_banner }}\n"
-    dest: "{{ hardening_ssh_banner }}"
+    content: "{{ hardening_ssh.warning_banner }}\n"
+    dest: "{{ hardening_ssh.banner }}"
     owner: root
     group: root
     mode: "0644"

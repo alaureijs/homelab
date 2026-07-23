@@ -76,6 +76,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Monitoring and ELK container image paths — all had extra path segments
+  that didn't match Harbor's `project/short_name` convention. Fixed
+  `grafana/grafana/grafana` → `grafana/grafana`,
+  `prometheus/prometheus/prometheus` → `prometheus/prometheus`,
+  `prometheus/prometheus/alertmanager` → `prometheus/alertmanager`,
+  `library/library/elasticsearch` → `library/elasticsearch` (and
+  logstash, kibana).
 - Vault regenerated with new password — 13 encrypted variables for all
   services (Harbor admin, sync user, metrics, ELK passwords).
 - `chrony` service name corrected to `chronyd` in `roles/common/tasks/main.yml`

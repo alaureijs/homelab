@@ -9,9 +9,9 @@ monitoring_data_dir: /var/lib/monitoring
 monitoring_config_dir: /etc/monitoring
 
 # Container images (from Harbor, versions from group_vars/all/versions.yml)
-monitoring_grafana_image: "{{ harbor_hostname }}/grafana/grafana/grafana:{{ grafana_version }}"
-monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus/prometheus:{{ prometheus_version }}"
-monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/prometheus/alertmanager:{{ alertmanager_version }}"
+monitoring_grafana_image: "{{ harbor_hostname }}/grafana/grafana:{{ grafana_version }}"
+monitoring_prometheus_image: "{{ harbor_hostname }}/prometheus/prometheus:{{ prometheus_version }}"
+monitoring_alertmanager_image: "{{ harbor_hostname }}/prometheus/alertmanager:{{ alertmanager_version }}"
 
 # Grafana
 monitoring_grafana_admin_password: "{{ vault_monitoring_grafana_password }}"

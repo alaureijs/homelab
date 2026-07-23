@@ -20,9 +20,9 @@ elk_pod_name: elk
 elk_network_name: elk
 
 # Images (pulled from Harbor, versions from group_vars/all/main.yml)
-elk_elasticsearch_image: "{{ harbor_hostname }}/library/elasticsearch:{{ elasticsearch_version }}"
-elk_logstash_image: "{{ harbor_hostname }}/library/logstash:{{ logstash_version }}"
-elk_kibana_image: "{{ harbor_hostname }}/library/kibana:{{ kibana_version }}"
+elk_elasticsearch_image: "{{ harbor_hostname }}/library/library/elasticsearch:{{ elasticsearch_version }}"
+elk_logstash_image: "{{ harbor_hostname }}/library/library/logstash:{{ logstash_version }}"
+elk_kibana_image: "{{ harbor_hostname }}/library/library/kibana:{{ kibana_version }}"
 
 # Elasticsearch
 elasticsearch_heap_size: "4g"
@@ -44,5 +44,4 @@ elk_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
 elk_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
 
 # Elasticsearch exporter
-elk_elasticsearch_exporter_image: "{{ harbor_hostname }}/library/prom/elasticsearch-exporter:{{ elasticsearch_exporter_version }}"
-elk_elasticsearch_exporter_port: 9114
+elk_elasticsearch_exporter_image: "{{ harbor_hostname }}/prometheuscommunity/elasticsearch-exporter:{{ elasticsearch_exporter_version }}"

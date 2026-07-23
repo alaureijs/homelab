@@ -92,6 +92,19 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 2. **YAML**: 2-space indentation, no tabs
 3. **Jinja2**: Use `| default()` filter for optional variables
 4. **Vault**: Use individual `!vault |` tagged strings, not full-file encryption
+```yaml
+# Correct — inline encrypted strings in a readable YAML file:
+vault_harbor_admin_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  616263...
+vault_harbor_sync_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  646566...
+
+# Wrong — entire file encrypted with `ansible-vault encrypt`:
+$ANSIBLE_VAULT;1.1;AES256
+616263...
+```
 5. **Module names**: Always use FQCN (e.g., `ansible.builtin.copy`, not `copy`)
 
 ### Variable Naming
@@ -290,6 +303,24 @@ inventory/
 1. Update version in `inventory/group_vars/all/main.yml`
 2. Run `ansible-playbook playbooks/sync-update-containers.yml` to sync to Harbor
 3. Re-run provisioning playbook for affected hosts (`provision-ansible01.yml`, etc.)
+
+### sync-update-containers.yml Requirements
+**Prerequisites:**
+- Harbor must be deployed and running on ansible01
+- `ansible-sync` user must have developer role in Harbor
+- Podman, skopeo, and python3 must be installed on ansible01
+
+**Required Variables:**
+- `harbor_hostname` — Harbor instance hostname (default: `harbor.local.lan`)
+- `harbor_sync_images` — List of images to sync (defined in `inventory/group_vars/harbor/images.yml`)
+- `vault_harbor_sync_password` — Vault-encrypted password for sync user
+- `harbor_config_proxy_projects` — Registry-to-project mapping (defined in `inventory/group_vars/harbor/images.yml`)
+
+**Project Naming Convention:**
+- Remote image `prom/prometheus:tag` → Harbor project: `prom`
+- Remote image `grafana/grafana:tag` → Harbor project: `grafana`
+- Use the first path component of the remote image name as the Harbor project
+- Project is automatically determined from image name, no need to specify in `harbor_sync_images`
 
 ## Validation
 

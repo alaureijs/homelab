@@ -1,4 +1,9 @@
 ---
+- name: Set image project and short name facts
+  ansible.builtin.set_fact:
+    harbor_containers_project: "{{ item.name | regex_replace('([^/]+)/.*', '\\1') }}"
+    harbor_containers_short: "{{ item.name | regex_replace('.*/', '') }}"
+
 - name: Pull image through proxy cache
   containers.podman.podman_image:
     name: "{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.registry] }}/{{ item.name }}"
@@ -12,10 +17,10 @@
   containers.podman.podman_tag:
     image: "{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.registry] }}/{{ item.name }}:{{ item.tag }}"
     target_names:
-      - "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
+      - "{{ harbor_hostname }}/{{ harbor_containers_project }}/{{ harbor_containers_short }}:{{ item.tag }}"
 
 - name: Push image to Harbor project
   ansible.builtin.shell: |
-    podman push --tls-verify=false --authfile "{{ harbor_containers_auth_dir }}/auth.json" "{{ harbor_hostname }}/{{ item.project }}/{{ item.name }}:{{ item.tag }}"
+    podman push --tls-verify=false --authfile "{{ harbor_containers_auth_dir }}/auth.json" "{{ harbor_hostname }}/{{ harbor_containers_project }}/{{ harbor_containers_short }}:{{ item.tag }}"
   args:
     executable: /bin/bash

@@ -15,9 +15,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   list so the certificates role generates Harbor TLS certs.
 - `harbor_config` role added to `playbooks/provision-ansible01.yml` (after
   harbor role) for Harbor API configuration (users, projects, roles).
-- `elk_elasticsearch_exporter_port: 9114` added to
-  `inventory/group_vars/all/main.yml`.
+- `elk_elasticsearch_exporter_port: 9114` moved from
+  `group_vars/all/main.yml` to `inventory/group_vars/elk/main.yml`.
 - ELK stack versions added to `LIFECYCLE.md` version table.
+- Harbor systemd service (`roles/harbor/templates/harbor.service.j2`) —
+  `oneshot` + `RemainAfterExit=yes` service for autostart. Handles
+  `podman-compose up -d` / `down` lifecycle.
+- `reports/` directory under `playbooks/` for sync report output
+  (`sync-report-*.yml`, `images.yml`).
+- `roles/harbor_containers/templates/images.yml.j2` — Jinja2 template
+  that generates `playbooks/reports/images.yml` from `harbor_sync_images`
+  and sync report, replacing hardcoded image list.
 
 ### Changed
 
@@ -47,6 +55,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `elasticsearch-exporter` image source changed from
   `ghcr.io/prom/elasticsearch-exporter` (returns 403) to
   `docker.io/prometheuscommunity/elasticsearch-exporter:v1.11.0`.
+- `podman-compose` path fixed from `/usr/bin/podman-compose` to
+  `/usr/local/bin/podman-compose` in Harbor handler and tasks.
+- Libvirt storage simplified — removed `sdb` storage pool management
+  (define, start, autostart) from `roles/libvirt/tasks/main.yml`. VMs
+  now use default `/var/lib/libvirt/images` directory. Removed
+  `storage-pool.xml.j2` template.
+- `libvirt_storage_pool_path` renamed to `libvirt_storage_path` (no longer
+  pool-specific). References updated in `roles/libvirt/templates/vm.xml.j2`.
+- Container versions updated to latest: Grafana `13.1.1`, Prometheus
+  `v3.13.1`, Alertmanager `v0.33.1`, Elasticsearch/Logstash/Kibana
+  `9.4.4`, Alpine `3.24`, Busybox `1.38`, Nginx `1.31-alpine`,
+  Redis `8.8-alpine`, MariaDB `12.3`, Python `3.14-slim`,
+  Golang `1.26-alpine`, Pushgateway `v1.11.3`.
+- `node_exporter_version` fixed with `v` prefix: `1.12.1` → `v1.12.1`
+  (matches quay.io tag convention).
+- `AGENTS.md` updated — vault inline encryption documentation with
+  correct/incorrect examples; `sync-update-containers.yml` prerequisites,
+  required variables, and project naming convention added.
 
 ### Fixed
 

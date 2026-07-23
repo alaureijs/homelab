@@ -24,30 +24,29 @@ common_remove_packages:
 harbor_version: "v2.11.0"
 
 # Monitoring stack
-grafana_version: "11.6.0"
-prometheus_version: "v3.3.0"
-alertmanager_version: "v0.28.1"
-node_exporter_version: "1.12.1"
-pushgateway_version: "v1.11.0"
+grafana_version: "13.1.1"
+prometheus_version: "v3.13.1"
+alertmanager_version: "v0.33.1"
+node_exporter_version: "v1.12.1"
+pushgateway_version: "v1.11.3"
 
 # ELK stack
-elasticsearch_version: "8.17.0"
-logstash_version: "8.17.0"
-kibana_version: "8.17.0"
+elasticsearch_version: "9.4.4"
+logstash_version: "9.4.4"
+kibana_version: "9.4.4"
 elasticsearch_exporter_version: "v1.11.0"
-elk_elasticsearch_exporter_port: 9114
 
 # Base images
-alpine_version: "3.21"
+alpine_version: "3.24"
 ubuntu_version: "24.04"
-busybox_version: "1.37"
-nginx_version: "1.27-alpine"
-redis_version: "7.4-alpine"
+busybox_version: "1.38"
+nginx_version: "1.31-alpine"
+redis_version: "8.8-alpine"
 postgres_version: "17-alpine"
-mariadb_version: "11.8"
-python_version: "3.13-slim"
+mariadb_version: "12.3"
+python_version: "3.14-slim"
 node_version: "22-alpine"
-golang_version: "1.24-alpine"
+golang_version: "1.26-alpine"
 
 # mTLS certificate paths (shared between node_exporter and monitoring roles)
 node_exporter_cert_dir: /etc/pki/tls/certs

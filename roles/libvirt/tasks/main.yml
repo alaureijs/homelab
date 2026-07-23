@@ -17,31 +17,6 @@
     state: started
     enabled: true
 
-- name: Ensure storage pool directory exists
-  ansible.builtin.file:
-    path: "{{ libvirt_storage_pool_path }}"
-    state: directory
-    mode: "0711"
-
-- name: Define storage pool
-  community.libvirt.virt_pool:
-    command: define
-    name: "{{ libvirt_storage_pool_name }}"
-    xml: "{{ lookup('template', 'storage-pool.xml.j2') }}"
-    uri: "{{ libvirt_uri }}"
-
-- name: Start storage pool
-  community.libvirt.virt_pool:
-    state: active
-    name: "{{ libvirt_storage_pool_name }}"
-    uri: "{{ libvirt_uri }}"
-
-- name: Enable storage pool autostart
-  community.libvirt.virt_pool:
-    autostart: true
-    name: "{{ libvirt_storage_pool_name }}"
-    uri: "{{ libvirt_uri }}"
-
 - name: Define network
   community.libvirt.virt_net:
     command: define
@@ -106,7 +81,7 @@
 - name: Copy OVMF VARS template
   ansible.builtin.copy:
     src: /usr/share/edk2/x64/OVMF_VARS.4m.fd
-    dest: "{{ libvirt_storage_pool_path }}/{{ vm_name }}_VARS.fd"
+    dest: "{{ libvirt_storage_path }}/{{ vm_name }}_VARS.fd"
     remote_src: true
     mode: "0644"
     force: false
@@ -119,8 +94,8 @@
   ansible.builtin.command:
     cmd: >-
       qemu-img create -f qcow2 -b {{ libvirt_cloud_image_cache }}/{{ libvirt_cloud_image_name }}
-      -F qcow2 {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2
-    creates: "{{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2"
+      -F qcow2 {{ libvirt_storage_path }}/{{ vm_name }}.qcow2
+    creates: "{{ libvirt_storage_path }}/{{ vm_name }}.qcow2"
   loop: "{{ groups['libvirt'] }}"
   vars:
     vm_name: "{{ hostvars[item].vm_name }}"
@@ -128,7 +103,7 @@
 
 - name: Get VM disk sizes
   ansible.builtin.shell:
-    cmd: qemu-img info -U --output=json {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2 | python3 -c "import sys,json; print(json.load(sys.stdin)['virtual-size'])"
+    cmd: qemu-img info -U --output=json {{ libvirt_storage_path }}/{{ vm_name }}.qcow2 | python3 -c "import sys,json; print(json.load(sys.stdin)['virtual-size'])"
   loop: "{{ groups['libvirt'] }}"
   vars:
     vm_name: "{{ hostvars[item].vm_name }}"
@@ -138,7 +113,7 @@
 
 - name: Resize VM disks
   ansible.builtin.command:
-    cmd: qemu-img resize {{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2 {{ vm_disk }}G
+    cmd: qemu-img resize {{ libvirt_storage_path }}/{{ vm_name }}.qcow2 {{ vm_disk }}G
   loop: "{{ groups['libvirt'] }}"
   vars:
     vm_name: "{{ hostvars[item].vm_name }}"
@@ -177,7 +152,7 @@
 - name: Generate cloud-init ISOs
   ansible.builtin.command:
     cmd: >-
-      cloud-localds {{ libvirt_storage_pool_path }}/{{ vm_name }}-cloudinit.iso
+      cloud-localds {{ libvirt_storage_path }}/{{ vm_name }}-cloudinit.iso
       /tmp/{{ vm_name }}-user-data /tmp/{{ vm_name }}-meta-data
   loop: "{{ groups['libvirt'] }}"
   vars:

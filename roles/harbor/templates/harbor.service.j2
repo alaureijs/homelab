@@ -1,0 +1,16 @@
+[Unit]
+Description=Harbor Container Registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ harbor_install_dir }}
+ExecStart=/usr/local/bin/podman-compose up -d
+ExecStop=/usr/local/bin/podman-compose down
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

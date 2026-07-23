@@ -253,15 +253,27 @@
   changed_when: "'localhost/' in harbor_tag.stdout or harbor_tag.rc == 0"
 
 - name: Stop Harbor containers before recreate
-  ansible.builtin.command: podman-compose down
+  ansible.builtin.command: /usr/local/bin/podman-compose down
   args:
     chdir: "{{ harbor_install_dir }}"
   register: harbor_down
   changed_when: "'Removed' in harbor_down.stdout or harbor_down.rc == 0"
 
 - name: Start Harbor containers
-  ansible.builtin.command: podman-compose up -d
+  ansible.builtin.command: /usr/local/bin/podman-compose up -d
   args:
     chdir: "{{ harbor_install_dir }}"
   register: harbor_compose
   changed_when: "'Started' in harbor_compose.stdout or 'Created' in harbor_compose.stdout"
+
+- name: Deploy Harbor systemd service
+  ansible.builtin.template:
+    src: harbor.service.j2
+    dest: /etc/systemd/system/harbor.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd and enable harbor
+
+- name: Flush handlers to activate systemd service
+  ansible.builtin.meta: flush_handlers

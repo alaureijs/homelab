@@ -67,6 +67,12 @@ harbor_config_users:
         role_id: 1
       - project_name: prometheus
         role_id: 1
+      - project_name: grafana
+        role_id: 1
+      - project_name: prometheuscommunity
+        role_id: 1
+      - project_name: goharbor
+        role_id: 1
       - project_name: docker-hub-cache
         role_id: 1
       - project_name: quay-cache
@@ -82,6 +88,12 @@ harbor_config_users:
       - project_name: library
         role_id: 2
       - project_name: prometheus
+        role_id: 2
+      - project_name: grafana
+        role_id: 2
+      - project_name: prometheuscommunity
+        role_id: 2
+      - project_name: goharbor
         role_id: 2
       - project_name: docker-hub-cache
         role_id: 2

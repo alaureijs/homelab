@@ -170,7 +170,7 @@
       public: false
     status_code: [201, 409]
     validate_certs: false
-  loop: "{{ harbor_sync_images | default([]) | map(attribute='project') | unique | list }}"
+  loop: "{{ harbor_sync_images | default([]) | map(attribute='name') | map('regex_replace', '([^/]+)/.*', '\\1') | unique | list }}"
   loop_control:
     label: "{{ item }}"
   when:

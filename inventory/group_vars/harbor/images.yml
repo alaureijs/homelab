@@ -7,107 +7,87 @@ harbor_sync_images:
   - name: library/alpine
     tag: "{{ alpine_version }}"
     registry: docker.io
-    project: library
 
   - name: library/ubuntu
     tag: "{{ ubuntu_version }}"
     registry: docker.io
-    project: library
 
   - name: library/busybox
     tag: "{{ busybox_version }}"
     registry: docker.io
-    project: library
 
   # Application images
   - name: library/nginx
     tag: "{{ nginx_version }}"
     registry: docker.io
-    project: library
 
   - name: library/redis
     tag: "{{ redis_version }}"
     registry: docker.io
-    project: library
 
   - name: library/postgres
     tag: "{{ postgres_version }}"
     registry: docker.io
-    project: library
 
   - name: library/mariadb
     tag: "{{ mariadb_version }}"
     registry: docker.io
-    project: library
 
   - name: library/python
     tag: "{{ python_version }}"
     registry: docker.io
-    project: library
 
   - name: library/node
     tag: "{{ node_version }}"
     registry: docker.io
-    project: library
 
   - name: library/golang
     tag: "{{ golang_version }}"
     registry: docker.io
-    project: library
 
   # Monitoring stack
   - name: prometheus/prometheus
     tag: "{{ prometheus_version }}"
     registry: quay.io
-    project: prometheus
 
   - name: prometheus/alertmanager
     tag: "{{ alertmanager_version }}"
     registry: quay.io
-    project: prometheus
 
   - name: grafana/grafana
     tag: "{{ grafana_version }}"
     registry: docker.io
-    project: library
 
   - name: prometheus/node-exporter
     tag: "{{ node_exporter_version }}"
     registry: quay.io
-    project: prometheus
 
   - name: prometheus/pushgateway
     tag: "{{ pushgateway_version }}"
     registry: quay.io
-    project: prometheus
 
   # ELK stack
   - name: library/elasticsearch
     tag: "{{ elasticsearch_version }}"
     registry: docker.io
-    project: library
 
   - name: library/logstash
     tag: "{{ logstash_version }}"
     registry: docker.io
-    project: library
 
   - name: library/kibana
     tag: "{{ kibana_version }}"
     registry: docker.io
-    project: library
 
   # Exporters
   - name: prometheuscommunity/elasticsearch-exporter
     tag: "{{ elasticsearch_exporter_version }}"
     registry: docker.io
-    project: library
 
   # Harbor exporter
   - name: goharbor/harbor-exporter
     tag: "{{ harbor_version }}"
     registry: docker.io
-    project: library
 
 # Registry URL to proxy-cache project mapping
 harbor_config_proxy_projects:

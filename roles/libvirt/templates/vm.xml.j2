@@ -5,7 +5,7 @@
   <os>
     <type arch='x86_64' machine='pc-q35-11.0'>hvm</type>
     <loader readonly='yes' type='pflash'>/usr/share/edk2/x64/OVMF_CODE.4m.fd</loader>
-    <nvram>{{ libvirt_storage_pool_path }}/{{ vm_name }}_VARS.fd</nvram>
+    <nvram>{{ libvirt_storage_path }}/{{ vm_name }}_VARS.fd</nvram>
     <boot dev='hd'/>
   </os>
   <features>
@@ -21,12 +21,12 @@
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='{{ libvirt_storage_pool_path }}/{{ vm_name }}.qcow2'/>
+      <source file='{{ libvirt_storage_path }}/{{ vm_name }}.qcow2'/>
       <target dev='vda' bus='virtio'/>
     </disk>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='{{ libvirt_storage_pool_path }}/{{ vm_name }}-cloudinit.iso'/>
+      <source file='{{ libvirt_storage_path }}/{{ vm_name }}-cloudinit.iso'/>
       <target dev='sda' bus='sata'/>
       <readonly/>
     </disk>

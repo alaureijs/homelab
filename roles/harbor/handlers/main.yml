@@ -20,7 +20,7 @@
     with open('docker-compose.yml', 'w') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     "
-    podman-compose down && podman-compose up -d
+    /usr/local/bin/podman-compose down && /usr/local/bin/podman-compose up -d
   args:
     chdir: "{{ harbor_install_dir }}"
     executable: /bin/bash
@@ -30,3 +30,10 @@
   ansible.builtin.systemd:
     name: rsyslog
     state: restarted
+
+- name: Reload systemd and enable harbor
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: harbor
+    enabled: true
+    state: started

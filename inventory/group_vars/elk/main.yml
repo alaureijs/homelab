@@ -5,6 +5,7 @@
 elk_elasticsearch_image: "{{ harbor_hostname }}/library/library/elasticsearch:{{ elasticsearch_version }}"
 elk_logstash_image: "{{ harbor_hostname }}/library/library/logstash:{{ logstash_version }}"
 elk_kibana_image: "{{ harbor_hostname }}/library/library/kibana:{{ kibana_version }}"
+elk_elasticsearch_exporter_port: 9114
 
 # Elasticsearch
 elasticsearch_heap_size: "4g"

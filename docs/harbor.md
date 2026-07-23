@@ -40,7 +40,7 @@ All passwords in `inventory/group_vars/all/vault.yml`.
 
 ## Container Images
 
-17 images synced via proxy cache projects. Versions defined in
+20 images synced via proxy cache projects. Versions defined in
 `inventory/group_vars/all/main.yml`, images in `inventory/group_vars/harbor/images.yml`.
 
 ```bash

@@ -4,3 +4,4 @@
 harbor_containers_report_dir: /tmp/harbor-sync
 harbor_containers_sync_user: ansible-sync
 harbor_containers_auth_dir: /tmp/harbor-auth
+harbor_containers_local_report_dir: reports

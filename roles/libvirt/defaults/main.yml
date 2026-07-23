@@ -1,11 +1,8 @@
 ---
 # libvirt role defaults
 
-# Storage pool
-libvirt_storage_pool_name: sdb
-libvirt_storage_pool_device: /dev/sdb
-libvirt_storage_pool_path: /var/lib/libvirt/sdb
-libvirt_storage_pool_type: "{{ 'disk' if libvirt_storage_pool_device is exists else 'dir' }}"
+# Storage
+libvirt_storage_path: /var/lib/libvirt/images
 
 # Network
 libvirt_network_name: ansible-net

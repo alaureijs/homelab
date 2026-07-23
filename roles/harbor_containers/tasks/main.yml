@@ -5,6 +5,14 @@
     state: directory
     mode: "0755"
 
+- name: Ensure local reports directory exists
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+
 - name: Ensure auth directory exists
   ansible.builtin.file:
     path: "{{ harbor_containers_auth_dir }}"
@@ -22,7 +30,7 @@
   ansible.builtin.include_tasks: _sync-image.yml
   loop: "{{ harbor_sync_images }}"
   loop_control:
-    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }} -> {{ item.project }}/{{ item.name }}:{{ item.tag }}"
+    label: "{{ item.registry }}/{{ item.name }}:{{ item.tag }} -> {{ item.name | regex_replace('([^/]+)/.*', '\\1') }}/{{ item.name | regex_replace('.*/', '') }}:{{ item.tag }}"
 
 - name: Check upstream for latest versions
   ansible.builtin.shell: |
@@ -86,7 +94,7 @@
             'full_name': item.item.name,
             'current_tag': item.item.tag,
             'registry': item.item.registry,
-            'project': item.item.project,
+            'project': item.item.name.split('/')[0],
             'synced': true,
             'latest_version': item.stdout | default('NONE'),
             'update_available': (
@@ -106,6 +114,20 @@
     dest: "{{ harbor_containers_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
     mode: "0644"
 
+- name: Fetch sync report to controller
+  ansible.builtin.fetch:
+    src: "{{ harbor_containers_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
+    dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
+    flat: true
+
+- name: Generate images.yml with latest versions
+  ansible.builtin.template:
+    src: images.yml.j2
+    dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/images.yml"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
 - name: Display sync summary
   ansible.builtin.debug:
     msg: |
@@ -117,6 +139,10 @@
         Latest: {{ info.latest_version }}
         Update: {{ 'YES (' + info.latest_version + ')' if info.update_available else 'no' }}
       {% endfor %}
+
+      Reports saved to:
+        reports/sync-report-{{ ansible_date_time.date }}.yml
+        reports/images.yml
 
 - name: Remove Harbor auth file
   ansible.builtin.file:

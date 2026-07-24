@@ -1,0 +1,117 @@
+---
+- name: Ensure mTLS CA exists on controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    ca_dir: "{{ playbook_dir }}/../files/certificates"
+    ca_cert: "{{ ca_dir }}/mtls-ca.crt"
+    ca_key: "{{ ca_dir }}/mtls-ca.key"
+
+  tasks:
+    - name: Ensure files/certificates directory exists
+      ansible.builtin.file:
+        path: "{{ ca_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if CA cert already exists
+      ansible.builtin.stat:
+        path: "{{ ca_cert }}"
+      register: ca_cert_stat
+
+    - name: Check if CA key already exists
+      ansible.builtin.stat:
+        path: "{{ ca_key }}"
+      register: ca_key_stat
+
+    - name: Check if CA key is vault-encrypted
+      ansible.builtin.command: head -1 {{ ca_key }}
+      register: ca_key_header
+      changed_when: false
+      failed_when: false
+      when: ca_key_stat.stat.exists
+
+    - name: Set key needs vault-encryption fact
+      ansible.builtin.set_fact:
+        ca_key_needs_encrypt: >-
+          {{ not ca_key_stat.stat.exists
+             or (ca_key_stat.stat.exists
+                 and ca_key_header.stdout | default('') is not search('ANSIBLE_VAULT')) }}
+
+    - name: Generate mTLS CA private key
+      community.crypto.openssl_privatekey:
+        path: "{{ ca_key }}"
+        size: 4096
+        mode: "0600"
+      register: ca_key_gen
+      when: not ca_cert_stat.stat.exists
+
+    - name: Generate mTLS CA CSR
+      community.crypto.openssl_csr:
+        path: /tmp/mtls-ca.csr
+        privatekey_path: "{{ ca_key }}"
+        common_name: "mTLS CA"
+        organization_name: "Lab"
+        basic_constraints:
+          - "CA:TRUE"
+          - "pathlen:0"
+        key_usage:
+          - keyCertSign
+          - cRLSign
+      when: ca_key_gen is changed
+
+    - name: Generate mTLS CA certificate
+      community.crypto.x509_certificate:
+        path: "{{ ca_cert }}"
+        privatekey_path: "{{ ca_key }}"
+        csr_path: /tmp/mtls-ca.csr
+        provider: selfsigned
+        selfsigned_not_after: "+3650d"
+        mode: "0644"
+      when: ca_key_gen is changed
+
+    - name: Remove CSR
+      ansible.builtin.file:
+        path: /tmp/mtls-ca.csr
+        state: absent
+      when: ca_key_gen is changed
+
+    - name: Vault-encrypt CA key
+      ansible.builtin.command: ansible-vault encrypt {{ ca_key }}
+      changed_when: ca_key_needs_encrypt | bool
+      when: ca_key_needs_encrypt | bool
+
+    - name: Show CA info
+      ansible.builtin.debug:
+        msg: "mTLS CA: {{ ca_cert }}"
+
+- name: Copy mTLS CA to all hosts
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    ca_dir: "{{ playbook_dir }}/../files/certificates"
+    ca_cert: "{{ ca_dir }}/mtls-ca.crt"
+    ca_key: "{{ ca_dir }}/mtls-ca.key"
+
+  tasks:
+    - name: Ensure /etc/mtls directory exists
+      ansible.builtin.file:
+        path: /etc/mtls
+        state: directory
+        mode: "0700"
+
+    - name: Copy mTLS CA certificate
+      ansible.builtin.copy:
+        src: "{{ ca_cert }}"
+        dest: /etc/mtls/ca.crt
+        mode: "0644"
+
+    - name: Copy mTLS CA key
+      ansible.builtin.copy:
+        src: "{{ ca_key }}"
+        dest: /etc/mtls/ca.key
+        mode: "0600"

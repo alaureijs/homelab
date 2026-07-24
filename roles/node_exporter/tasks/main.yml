@@ -96,6 +96,33 @@
         group: "{{ node_exporter_group }}"
         mode: "0750"
 
+    - name: Fix node_exporter TLS file permissions
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: root
+        group: "{{ node_exporter_group }}"
+        mode: "0640"
+      loop:
+        - "{{ mtls_ca_cert }}"
+        - "{{ node_exporter_server_cert }}"
+        - "{{ node_exporter_server_key }}"
+      when: node_exporter_tls_enabled | bool
+
+    - name: Check if node_exporter TLS files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+        checksum_algorithm: sha256
+      loop:
+        - "{{ node_exporter_server_cert }}"
+        - "{{ node_exporter_server_key }}"
+        - "{{ mtls_ca_cert }}"
+      register: node_exporter_tls_stat
+      when: node_exporter_tls_enabled | bool
+
+    - name: Set TLS changed fact
+      ansible.builtin.set_fact:
+        node_exporter_tls_changed: "{{ node_exporter_tls_stat.results | default([]) | selectattr('stat.exists', 'equalto', true) | map(attribute='stat.mtime') | map('int') | max | default(0) > (ansible_date_time.epoch | int - 300) }}"
+
     - name: Template node-exporter web config (TLS)
       ansible.builtin.template:
         src: node-exporter-web-config.yml.j2
@@ -121,6 +148,12 @@
         state: started
         enabled: true
         daemon_reload: true
+
+    - name: Restart node-exporter if TLS files changed
+      ansible.builtin.systemd:
+        name: node-exporter
+        state: restarted
+      when: node_exporter_tls_changed | default(false) | bool
 
 - name: Disable node-exporter
   ansible.builtin.systemd:

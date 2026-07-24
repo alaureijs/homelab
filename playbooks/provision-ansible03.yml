@@ -14,7 +14,11 @@
         state: present
       loop: "{{ controller_hosts_entries }}"
 
-# Play 1: Provision ELK stack host (ansible03)
+# Play 1: Ensure mTLS CA exists
+- name: Ensure mTLS CA exists
+  ansible.builtin.import_playbook: ensure-mtls-ca.yml
+
+# Play 2: Provision ELK stack host (ansible03)
 - name: Provision ELK stack host (ansible03)
   hosts: elk
   become: true
@@ -28,6 +32,10 @@
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
+
+    - name: Merge certificates lists
+      ansible.builtin.set_fact:
+        certificates: "{{ certificates + certificates_extra | default([]) }}"
 
   roles:
     - role: common

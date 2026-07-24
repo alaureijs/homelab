@@ -28,7 +28,6 @@ monitoring_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
 
 # mTLS directory
 monitoring_mtls_dir: /etc/prometheus/mtls
-monitoring_mtls_ca_cert: "{{ monitoring_mtls_dir }}/ca.crt"
 monitoring_mtls_client_cert: "{{ monitoring_mtls_dir }}/client.crt"
 monitoring_mtls_client_key: "{{ monitoring_mtls_dir }}/client.key"
 
@@ -36,38 +35,12 @@ monitoring_mtls_client_key: "{{ monitoring_mtls_dir }}/client.key"
 monitoring_cert_renew_threshold_days: 30
 monitoring_cert_force_renewal: false
 
-# Node-exporter server cert SANs (built from inventory)
-monitoring_ne_dns_sans: "{{ groups['all'] | map('extract', hostvars, 'vm_hostname') | map('regex_replace', '^(.*)$', 'DNS:\\1.' + lab_domain) | list }}"
-monitoring_ne_ip_sans: "{{ groups['all'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', 'IP:\\1') | list }}"
-monitoring_ne_server_sans: >-
-  {{ ['DNS:' + vm_hostname + '.' + lab_domain]
-     + monitoring_ne_dns_sans
-     + monitoring_ne_ip_sans }}
-
-# Certificates to generate on this host (extends group_vars/all)
-certificates:
-  - name: "{{ vm_hostname }}"
-    type: selfsigned
-    extra_sans: "{{ certificates_extra_sans }}"
-  - name: ca
-    type: ca
-    dir: /etc/prometheus/mtls
-    key_dir: /etc/prometheus/mtls
-    subject:
-      CN: "Monitoring CA"
-      O: "Lab"
-    days: 3650
-    force: "{{ monitoring_cert_force_renewal }}"
-  - name: node-exporter
-    type: ownca
-    ca_cert: "{{ monitoring_mtls_ca_cert }}"
-    ca_key: "{{ monitoring_mtls_dir }}/ca.key"
-    extra_sans: "{{ monitoring_ne_server_sans }}"
-    force: "{{ monitoring_cert_force_renewal }}"
+# Certificates to generate on this host (merged with group_vars/all certificates)
+certificates_extra:
   - name: client
     type: ownca
-    ca_cert: "{{ monitoring_mtls_ca_cert }}"
-    ca_key: "{{ monitoring_mtls_dir }}/ca.key"
+    ca_cert: "{{ mtls_ca_cert }}"
+    ca_key: "{{ mtls_ca_key }}"
     client: true
     dir: /etc/prometheus/mtls
     key_dir: /etc/prometheus/mtls

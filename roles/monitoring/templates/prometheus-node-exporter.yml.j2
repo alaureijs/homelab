@@ -1,7 +1,7 @@
   - job_name: node-exporter
     scheme: https
     tls_config:
-      ca_file: {{ monitoring_mtls_ca_cert }}
+      ca_file: {{ monitoring_mtls_dir }}/mtls-ca-combined.crt
       cert_file: {{ monitoring_mtls_client_cert }}
       key_file: {{ monitoring_mtls_client_key }}
     static_configs:

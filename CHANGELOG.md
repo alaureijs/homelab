@@ -45,6 +45,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   or downloaded artifacts to the repository.
 - "Textfile Collectors" section in `AGENTS.md` — documents collector
   scripts, tamper detection, sudoers, and systemd sandboxing constraints.
+- `playbooks/ensure-mtls-ca.yml` — centralized mTLS CA generation on
+  controller with vault-encrypted key. CA cert stored in
+  `files/certificates/mtls-ca.crt` (git-trackable), key vault-encrypted.
+  Copies CA to all hosts before provisioning runs.
 
 ### Changed
 
@@ -119,6 +123,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `.gitignore` updated — added `reports/` and
   `files/prometheus/exporters/` to prevent committing generated files
   and downloaded binaries.
+- mTLS CA architecture redesigned — single shared CA (`mtls-ca`) generated
+  on controller, vault-encrypted key in `files/certificates/mtls-ca.key`
+  (git-trackable), plain cert in `files/certificates/mtls-ca.crt`.
+  Removed `mtls-ca` entry from `certificates` list in `all/main.yml`.
+  Added `mtls_controller_cert` variable for controller path. All
+  provisioning playbooks now import `ensure-mtls-ca.yml` before main
+  provisioning play.
+- Monitoring role no longer distributes mTLS CA to hosts — only builds
+  combined CA from all hosts' local copies for Prometheus scrape config.
+  Removed "Distribute combined mTLS CA to all hosts" task.
+- Node-exporter server cert signed by shared mTLS CA (not separate CA).
+  Certificates role generates `node-exporter.crt` using `ownca` type
+  with `mtls_ca_cert`/`mtls_ca_key` paths.
 
 ### Fixed
 

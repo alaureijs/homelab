@@ -38,11 +38,8 @@ firewall_podman_interfaces:
 certificates_extra_sans:
   - "DNS:{{ harbor_hostname }}"
 
-# Certificates (extends group_vars/all)
-certificates:
-  - name: "{{ vm_hostname }}"
-    type: selfsigned
-    extra_sans: "{{ certificates_extra_sans }}"
+# Certificates (merged with group_vars/all certificates)
+certificates_extra:
   - name: harbor
     type: selfsigned
     extra_sans: "{{ certificates_extra_sans }}"

@@ -106,12 +106,6 @@
     group: root
     mode: "0755"
 
-- name: Check if node-exporter server cert was recently modified
-  ansible.builtin.stat:
-    path: "{{ node_exporter_server_cert }}"
-    checksum_algorithm: sha256
-  register: monitoring_ne_cert_stat
-
 - name: Set mTLS client cert/key permissions for container access
   ansible.builtin.file:
     path: "{{ item.path }}"
@@ -121,87 +115,23 @@
   loop:
     - { path: "{{ monitoring_mtls_client_cert }}", mode: "0644" }
     - { path: "{{ monitoring_mtls_client_key }}", mode: "0644" }
-    - { path: "{{ monitoring_mtls_ca_cert }}", mode: "0644" }
   notify: Restart monitoring pod
 
-- name: Copy monitoring CA to node-exporter cert path on localhost
-  ansible.builtin.copy:
-    src: "{{ monitoring_mtls_ca_cert }}"
-    dest: "{{ node_exporter_ca_cert }}"
-    remote_src: true
-    mode: "0640"
-    owner: root
-    group: node_exporter
-
-- name: Read mTLS CA cert for distribution
+- name: Fetch mTLS CA certs from all hosts
   ansible.builtin.slurp:
-    src: "{{ monitoring_mtls_ca_cert }}"
-  register: monitoring_ca_cert_content
+    src: "{{ mtls_ca_cert }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['all'] }}"
+  register: monitoring_mtls_ca_certs
 
-- name: Read node-exporter server cert for distribution
-  ansible.builtin.slurp:
-    src: "{{ node_exporter_server_cert }}"
-  register: monitoring_ne_server_cert_content
-
-- name: Read node-exporter server key for distribution
-  ansible.builtin.slurp:
-    src: "{{ node_exporter_server_key }}"
-  register: monitoring_ne_server_key_content
-
-- name: Distribute mTLS CA cert to all hosts
+- name: Build combined mTLS CA file for Prometheus
   ansible.builtin.copy:
-    content: "{{ monitoring_ca_cert_content.content | b64decode }}"
-    dest: "{{ node_exporter_ca_cert }}"
+    content: "{{ monitoring_mtls_ca_certs.results | map(attribute='content') | map('b64decode') | join('\n') }}"
+    dest: "{{ monitoring_mtls_dir }}/mtls-ca-combined.crt"
     owner: root
-    group: node_exporter
-    mode: "0640"
-  delegate_to: "{{ item }}"
-  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
-
-- name: Distribute node-exporter server cert to all hosts
-  ansible.builtin.copy:
-    content: "{{ monitoring_ne_server_cert_content.content | b64decode }}"
-    dest: "{{ node_exporter_server_cert }}"
-    owner: root
-    group: node_exporter
-    mode: "0640"
-  delegate_to: "{{ item }}"
-  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
-
-- name: Distribute node-exporter server key to all hosts
-  ansible.builtin.copy:
-    content: "{{ monitoring_ne_server_key_content.content | b64decode }}"
-    dest: "{{ node_exporter_server_key }}"
-    owner: root
-    group: node_exporter
-    mode: "0640"
-  delegate_to: "{{ item }}"
-  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
-
-- name: Set node-exporter cert permissions on localhost
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    owner: root
-    group: node_exporter
-    mode: "{{ item.mode }}"
-  loop:
-    - { path: "{{ node_exporter_ca_cert }}", mode: "0640" }
-    - { path: "{{ node_exporter_server_cert }}", mode: "0640" }
-    - { path: "{{ node_exporter_server_key }}", mode: "0640" }
-
-- name: Restart node-exporter on localhost to pick up cert changes
-  ansible.builtin.systemd:
-    name: node-exporter
-    state: restarted
-  when: monitoring_ne_cert_stat.stat.mtime > (ansible_date_time.epoch | int - 300)
-
-- name: Restart node-exporter on all hosts to pick up cert changes
-  ansible.builtin.systemd:
-    name: node-exporter
-    state: restarted
-  delegate_to: "{{ item }}"
-  loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
-  when: monitoring_ne_cert_stat.stat.mtime > (ansible_date_time.epoch | int - 300)
+    group: root
+    mode: "0644"
+  notify: Restart monitoring pod
 
 - name: Ensure monitoring podman network exists
   containers.podman.podman_network:

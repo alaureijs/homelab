@@ -14,7 +14,11 @@
         state: present
       loop: "{{ controller_hosts_entries }}"
 
-# Play 1: Provision ansible01 for Harbor
+# Play 1: Ensure mTLS CA exists
+- name: Ensure mTLS CA exists
+  ansible.builtin.import_playbook: ensure-mtls-ca.yml
+
+# Play 2: Provision ansible01 for Harbor
 - name: Provision ansible01 for Harbor
   hosts: ansible01
   become: true
@@ -29,11 +33,16 @@
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
 
+    - name: Merge certificates lists
+      ansible.builtin.set_fact:
+        certificates: "{{ certificates + certificates_extra | default([]) }}"
+
   roles:
     - role: common
     - role: firewall
     - role: podman
     - role: certificates
     - role: hardening
+    - role: node_exporter
     - role: harbor
     - role: harbor_config

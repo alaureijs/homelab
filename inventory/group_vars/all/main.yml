@@ -53,20 +53,30 @@ python_version: "3.14-slim"
 node_version: "22-alpine"
 golang_version: "1.26-alpine"
 
-# mTLS certificate paths (shared between node_exporter and monitoring roles)
-node_exporter_cert_dir: /etc/pki/tls/certs
-node_exporter_key_dir: /etc/pki/tls/private
-node_exporter_ca_cert: "{{ node_exporter_cert_dir }}/monitoring-ca.crt"
-node_exporter_server_cert: "{{ node_exporter_cert_dir }}/node-exporter.crt"
-node_exporter_server_key: "{{ node_exporter_key_dir }}/node-exporter.key"
+# mTLS certificate paths
+mtls_ca_cert: /etc/mtls/ca.crt
+mtls_ca_key: /etc/mtls/ca.key
+mtls_controller_cert: "{{ playbook_dir }}/../files/certificates/mtls-ca.crt"
+node_exporter_server_cert: /etc/node-exporter/node-exporter.crt
+node_exporter_server_key: /etc/node-exporter/node-exporter.key
 
 # Certificates to generate on each host (processed by certificates role)
-# Additional certs are appended by group_vars (monitoring, etc.)
+# certificates_extra is merged by pre_tasks in provisioning playbooks
 certificates_extra_sans: []
+certificates_extra: []
 certificates:
   - name: "{{ vm_hostname }}"
     type: selfsigned
     extra_sans: "{{ certificates_extra_sans }}"
+  - name: node-exporter
+    type: ownca
+    dir: /etc/node-exporter
+    key_dir: /etc/node-exporter
+    ca_cert: "{{ mtls_ca_cert }}"
+    ca_key: "{{ mtls_ca_key }}"
+    extra_sans:
+      - "DNS:{{ vm_hostname }}.{{ lab_domain }}"
+      - "IP:{{ vm_ip }}"
 
 # Firewall
 firewall_podman_interfaces:
@@ -75,6 +85,6 @@ firewall_podman_interfaces:
 
 # Controller /etc/hosts entries
 controller_hosts_entries:
-  - "192.168.100.10 ansible01 harbor.local.lan"
-  - "192.168.100.11 ansible02 monitoring.local.lan"
-  - "192.168.100.12 ansible03 observability.local.lan"
+  - "192.168.100.10 ansible01 ansible01.local.lan harbor.local.lan"
+  - "192.168.100.11 ansible02 ansible02.local.lan monitoring.local.lan"
+  - "192.168.100.12 ansible03 ansible03.local.lan observability.local.lan"

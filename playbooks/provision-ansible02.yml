@@ -14,7 +14,11 @@
         state: present
       loop: "{{ controller_hosts_entries }}"
 
-# Play 1: Install node-exporter on all hosts
+# Play 1: Ensure mTLS CA exists
+- name: Ensure mTLS CA exists
+  ansible.builtin.import_playbook: ensure-mtls-ca.yml
+
+# Play 2: Install node-exporter on all hosts
 - name: Provision all hosts
   hosts: all
   become: true
@@ -29,6 +33,10 @@
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
 
+    - name: Merge certificates lists
+      ansible.builtin.set_fact:
+        certificates: "{{ certificates + certificates_extra | default([]) }}"
+
   roles:
     - role: common
     - role: firewall
@@ -37,7 +45,7 @@
     - role: hardening
     - role: node_exporter
 
-# Play 2: Deploy monitoring stack on monitoring host
+# Play 3: Deploy monitoring stack on monitoring host
 - name: Deploy monitoring stack
   hosts: monitoring
   become: true

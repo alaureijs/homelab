@@ -20,6 +20,21 @@
     with open('docker-compose.yml', 'w') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
     "
+    {% if harbor_trivy_db_mirror | default(false) | bool %}
+    python3 -c "
+    import yaml
+    with open('docker-compose.yml') as f:
+        data = yaml.safe_load(f)
+    svc = data.get('services', {}).get('trivy-adapter', {})
+    env = svc.get('environment', [])
+    key = 'SCANNER_TRIVY_DB_REPOSITORY={{ harbor_hostname }}/{{ harbor_trivy_db_mirror_project }}/trivy-db'
+    if not any(e.startswith('SCANNER_TRIVY_DB_REPOSITORY=') for e in env):
+        env.append(key)
+        svc['environment'] = env
+    with open('docker-compose.yml', 'w') as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    "
+    {% endif %}
     /usr/local/bin/podman-compose down && /usr/local/bin/podman-compose up -d
   args:
     chdir: "{{ harbor_install_dir }}"

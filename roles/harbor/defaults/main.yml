@@ -17,6 +17,11 @@ harbor_enable_chartmuseum: false
 harbor_enable_metrics: true
 harbor_metrics_port: 8090
 
+# Trivy DB mirror
+harbor_trivy_db_mirror: true
+harbor_trivy_db_mirror_project: trivy-db
+harbor_trivy_db_upstream: ghcr.io/aquasecurity/trivy-db:2
+
 # TLS
 harbor_tls_enabled: true
 harbor_tls_cert_path: "/etc/pki/tls/certs/harbor.crt"

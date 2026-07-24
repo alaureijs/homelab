@@ -1,0 +1,63 @@
+---
+- name: Mirror Trivy DB OCI artifact
+  when: harbor_trivy_db_mirror | bool
+  block:
+    - name: Check if Trivy DB is already mirrored
+      ansible.builtin.uri:
+        url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ harbor_trivy_db_mirror_project }}/repositories"
+        user: admin
+        password: "{{ harbor_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: [200, 404]
+      register: trivy_db_project_check
+      changed_when: false
+
+    - name: Check if trivy-db repository exists
+      ansible.builtin.set_fact:
+        trivy_db_repo_exists: >-
+          {{ trivy_db_project_check.status == 200 and
+             (trivy_db_project_check.json | selectattr('name', 'equalto', 'trivy-db') | list | length > 0) }}
+
+    - name: Mirror Trivy DB from upstream to Harbor
+      ansible.builtin.command: >-
+        skopeo copy
+        --dest-tls-verify=false
+        --dest-creds admin:{{ harbor_admin_password }}
+        docker://{{ harbor_trivy_db_upstream }}
+        docker://{{ harbor_hostname }}/{{ harbor_trivy_db_mirror_project }}/trivy-db:2
+      register: trivy_db_mirror
+      changed_when: "'Copying blob' in trivy_db_mirror.stdout or trivy_db_mirror.rc == 0"
+      when: not trivy_db_repo_exists | bool
+
+    - name: Ensure Trivy DB project has auto-scan enabled
+      ansible.builtin.uri:
+        url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ harbor_trivy_db_mirror_project }}"
+        method: PUT
+        user: admin
+        password: "{{ harbor_admin_password }}"
+        body_format: json
+        body:
+          metadata:
+            auto_scan: "true"
+        force_basic_auth: true
+        validate_certs: false
+        headers:
+          Content-Type: "application/json"
+      changed_when: false
+
+    - name: Patch Trivy DB repository for OCI artifact storage
+      ansible.builtin.uri:
+        url: "https://{{ harbor_hostname }}/api/v2.0/projects/{{ harbor_trivy_db_mirror_project }}/repositories/trivy-db"
+        method: PUT
+        user: admin
+        password: "{{ harbor_admin_password }}"
+        body_format: json
+        body:
+          mutable: true
+        force_basic_auth: true
+        validate_certs: false
+        headers:
+          Content-Type: "application/json"
+      changed_when: false
+      failed_when: false

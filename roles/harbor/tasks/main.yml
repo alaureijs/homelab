@@ -110,7 +110,7 @@
         path: "{{ harbor_install_dir }}/harbor.yml"
         regexp: '^\s*skip_update: false'
         replace: "  skip_update: true"
-      when: not harbor_installed.stat.exists
+      when: not harbor_installed.stat.exists and not (harbor_trivy_db_mirror | default(false) | bool)
 
 - name: Configure metrics in harbor.yml
   when: harbor_enable_metrics | bool
@@ -239,6 +239,28 @@
     executable: /bin/bash
   register: harbor_patch
   changed_when: harbor_patch.rc == 0
+
+- name: Inject Trivy DB repository env var into docker-compose.yml
+  ansible.builtin.shell: |
+    python3 -c "
+    import yaml
+    with open('docker-compose.yml') as f:
+        data = yaml.safe_load(f)
+    svc = data.get('services', {}).get('trivy-adapter', {})
+    env = svc.get('environment', [])
+    key = 'SCANNER_TRIVY_DB_REPOSITORY={{ harbor_hostname }}/{{ harbor_trivy_db_mirror_project }}/trivy-db'
+    if not any(e.startswith('SCANNER_TRIVY_DB_REPOSITORY=') for e in env):
+        env.append(key)
+        svc['environment'] = env
+    with open('docker-compose.yml', 'w') as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    "
+  args:
+    chdir: "{{ harbor_install_dir }}"
+    executable: /bin/bash
+  when: harbor_trivy_db_mirror | default(false) | bool
+  register: trivy_env_patch
+  changed_when: trivy_env_patch.rc == 0
 
 - name: Tag Harbor images for offline registry
   ansible.builtin.shell: |

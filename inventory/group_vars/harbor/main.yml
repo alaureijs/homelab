@@ -4,6 +4,8 @@
 harbor_tls_enabled: true
 harbor_enable_trivy: true
 harbor_enable_chartmuseum: false
+harbor_trivy_db_mirror: true
+harbor_trivy_db_mirror_project: trivy-db
 
 # Paths
 harbor_install_dir: /opt/harbor
@@ -54,6 +56,22 @@ harbor_config_users:
     roles:
       - project_name: library
         role_id: 3
+      - project_name: prometheus
+        role_id: 3
+      - project_name: grafana
+        role_id: 3
+      - project_name: prometheuscommunity
+        role_id: 3
+      - project_name: goharbor
+        role_id: 3
+      - project_name: docker-hub-cache
+        role_id: 3
+      - project_name: quay-cache
+        role_id: 3
+      - project_name: ghcr-cache
+        role_id: 3
+      - project_name: trivy-db
+        role_id: 3
 
   - username: ansible-config
     password: "{{ vault_harbor_config_password }}"
@@ -75,6 +93,8 @@ harbor_config_users:
       - project_name: quay-cache
         role_id: 1
       - project_name: ghcr-cache
+        role_id: 1
+      - project_name: trivy-db
         role_id: 1
 
   - username: ansible-sync
@@ -98,6 +118,8 @@ harbor_config_users:
         role_id: 2
       - project_name: ghcr-cache
         role_id: 2
+      - project_name: trivy-db
+        role_id: 2
 
   - username: metrics
     password: "{{ vault_harbor_metrics_password }}"
@@ -105,6 +127,22 @@ harbor_config_users:
     email: metrics@local.lan
     roles:
       - project_name: library
+        role_id: 3
+      - project_name: prometheus
+        role_id: 3
+      - project_name: grafana
+        role_id: 3
+      - project_name: prometheuscommunity
+        role_id: 3
+      - project_name: goharbor
+        role_id: 3
+      - project_name: docker-hub-cache
+        role_id: 3
+      - project_name: quay-cache
+        role_id: 3
+      - project_name: ghcr-cache
+        role_id: 3
+      - project_name: trivy-db
         role_id: 3
 
 # Projects

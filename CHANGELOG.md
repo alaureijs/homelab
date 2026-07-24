@@ -8,6 +8,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Trivy DB mirror for offline vulnerability scanning — mirrors
+  `ghcr.io/aquasecurity/trivy-db:2` OCI artifact to Harbor project
+  `trivy-db` via `skopeo copy`. Trivy adapter configured with
+  `SCANNER_TRIVY_DB_REPOSITORY` env var to pull updates from Harbor
+  instead of GitHub. `skip_update` stays `false` so Trivy fetches
+  from the mirror. Controlled by `harbor_trivy_db_mirror` toggle.
 - Node exporter textfile collectors — 5 collectors running as `nobody`
   via systemd timer (every 5m): `chrony.sh` (NTP metrics),
   `fstab-check.sh` (mount status), `reboot-required.sh` (reboot pending),

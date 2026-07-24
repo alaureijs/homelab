@@ -46,9 +46,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - "Textfile Collectors" section in `AGENTS.md` — documents collector
   scripts, tamper detection, sudoers, and systemd sandboxing constraints.
 - `playbooks/ensure-mtls-ca.yml` — centralized mTLS CA generation on
-  controller with vault-encrypted key. CA cert stored in
-  `files/certificates/mtls-ca.crt` (git-trackable), key vault-encrypted.
-  Copies CA to all hosts before provisioning runs.
+  controller. CA key stored as plain text in
+  `files/certificates/mtls-ca.key` (gitignored via `.gitignore`),
+  cert in `files/certificates/mtls-ca.crt` (git-trackable). Copies
+  CA to all hosts at `/etc/mtls/` before provisioning runs.
 
 ### Changed
 
@@ -124,8 +125,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `files/prometheus/exporters/` to prevent committing generated files
   and downloaded binaries.
 - mTLS CA architecture redesigned — single shared CA (`mtls-ca`) generated
-  on controller, vault-encrypted key in `files/certificates/mtls-ca.key`
-  (git-trackable), plain cert in `files/certificates/mtls-ca.crt`.
+  on controller, plain key in `files/certificates/mtls-ca.key`
+  (gitignored), plain cert in `files/certificates/mtls-ca.crt`.
   Removed `mtls-ca` entry from `certificates` list in `all/main.yml`.
   Added `mtls_controller_cert` variable for controller path. All
   provisioning playbooks now import `ensure-mtls-ca.yml` before main
@@ -136,9 +137,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Node-exporter server cert signed by shared mTLS CA (not separate CA).
   Certificates role generates `node-exporter.crt` using `ownca` type
   with `mtls_ca_cert`/`mtls_ca_key` paths.
+- `.gitignore` updated — added `files/certificates/mtls-ca.key` to
+  prevent committing the CA private key.
 
 ### Fixed
 
+- mTLS directory permissions — certificate role was creating cert
+  directories with `0700`, blocking container access. Changed to `0755`
+  in `roles/certificates/tasks/generate.yml`. Added fix tasks in
+  `node_exporter` role (`/etc/node-exporter/` → `0750 root:node_exporter`)
+  and `monitoring` role (`/etc/prometheus/mtls/` → `0755 root:root`).
+  `/etc/mtls/` on all hosts set to `0750 root:node_exporter` for
+  node_exporter CA cert access.
 - Monitoring and ELK container image paths — all had extra path segments
   that didn't match Harbor's `project/short_name` convention. Fixed
   `grafana/grafana/grafana` → `grafana/grafana`,

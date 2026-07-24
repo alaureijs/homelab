@@ -112,6 +112,13 @@
         replace: "  skip_update: true"
       when: not harbor_installed.stat.exists and not (harbor_trivy_db_mirror | default(false) | bool)
 
+    - name: Disable Trivy skip_update when DB mirror is enabled
+      ansible.builtin.replace:
+        path: "{{ harbor_install_dir }}/harbor.yml"
+        regexp: '^\s*skip_update: true'
+        replace: "  skip_update: false"
+      when: harbor_trivy_db_mirror | default(false) | bool
+
 - name: Configure metrics in harbor.yml
   when: harbor_enable_metrics | bool
   block:

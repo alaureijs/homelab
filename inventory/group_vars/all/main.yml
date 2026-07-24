@@ -15,6 +15,10 @@ timezone: Europe/Amsterdam
 # Packages to remove across all hosts
 common_remove_packages:
   - cockpit
+  - cockpit-bridge
+  - cockpit-system
+  - cockpit-ws
+  - cockpit-ws-selinux
 
 # Centralized version management
 # Single source of truth for all component versions.

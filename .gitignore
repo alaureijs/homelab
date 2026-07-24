@@ -10,3 +10,4 @@ __pycache__/
 collections/
 reports/
 files/prometheus/exporters/
+files/certificates/mtls-ca.key

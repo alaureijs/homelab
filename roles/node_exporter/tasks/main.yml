@@ -93,6 +93,13 @@
         path: /etc/node-exporter
         state: directory
         owner: root
+        group: root
+        mode: "0755"
+
+    - name: Fix node_exporter TLS directory permissions
+      ansible.builtin.file:
+        path: /etc/node-exporter
+        owner: root
         group: "{{ node_exporter_group }}"
         mode: "0750"
 

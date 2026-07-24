@@ -146,7 +146,9 @@ harbor_config_users:
         role_id: 3
 
 # Projects
-harbor_config_projects: []
+harbor_config_projects:
+  - name: trivy-db
+    public: false
 harbor_config_sync_projects: true
 
 # Upstream container registries (proxy cache sources)

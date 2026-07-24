@@ -9,6 +9,10 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
 
+    location / {
+        return 308 https://$host/kibana/;
+    }
+
     # Kibana
     location /kibana/ {
         proxy_pass http://127.0.0.1:{{ kibana_port }}/;

@@ -31,6 +31,8 @@ firewall_ports:
   - 80/tcp
   - 443/tcp
   - 22/tcp
+  - 8090/tcp
+  - 9100/tcp
 
 # Podman network interfaces to trust
 firewall_podman_interfaces:

@@ -83,6 +83,11 @@ certificates:
       - "IP:{{ vm_ip }}"
 
 # Firewall
+firewall_ports:
+  - 80/tcp
+  - 443/tcp
+  - 9100/tcp
+
 firewall_podman_interfaces:
   - podman1
   - cni-podman0

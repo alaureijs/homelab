@@ -134,13 +134,6 @@
       register: harbor_metrics_config
       notify: Restart harbor
 
-    - name: Open metrics port in firewall
-      ansible.posix.firewalld:
-        port: "{{ harbor_metrics_port }}/tcp"
-        permanent: true
-        state: enabled
-        immediate: true
-
 - name: Create docker symlink for podman
   ansible.builtin.file:
     src: /usr/bin/podman

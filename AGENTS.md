@@ -76,7 +76,7 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `harbor` | Harbor v2.11.0 container registry (offline installer + prepare) | ansible01 |
 | `monitoring` | Grafana/Prometheus/Alertmanager via ConfigMaps | ansible02 |
 | `elk` | Elasticsearch/Logstash/Kibana via ConfigMaps + PVCs | ansible03 |
-| `node_exporter` | Binary install, systemd service, mTLS web config | all hosts (sidecar on ELK) |
+| `node_exporter` | Binary install, systemd service, mTLS web config, textfile collectors | all hosts (sidecar on ELK) |
 | `prometheus_exporters` | Download exporter tarballs from GitHub releases | localhost (controller) |
 | `certificates` | Selfsigned/CA certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
 | `common` | Package management, protected package safety, chrony | all VMs |
@@ -271,6 +271,23 @@ spec:
 - **Passwords**: Vault-encrypted, never plaintext (Harbor admin: `vault_harbor_admin_password`, sync user: `vault_harbor_sync_password`, metrics: `vault_harbor_metrics_password`)
 - **Hardening**: STIG/CIS Benchmark with 10 toggleable modules via `hardening_*` defaults
 - **Trivy**: Harbor vulnerability scanner enabled, auto-scan on all projects (skip_update: true in offline mode)
+
+## Textfile Collectors
+
+Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m). Scripts live in `files/prometheus/textfile_collectors/` and are deployed to `/usr/local/lib/node-exporter-textfile-scripts/`. Output goes to `/var/lib/node-exporter/textfiles_metrics/`.
+
+**Collectors:**
+- `chrony.sh` — NTP offset, frequency, stratum, leap status (via `sudo chronyc`)
+- `fstab-check.sh` — filesystem mount status from `findmnt`
+- `reboot-required.sh` — reboot pending status (via `sudo needs-restarting`)
+- `authorized-keys.sh` — count of non-comment lines in each user's `authorized_keys` (via `sudo`)
+- `container-health.sh` — container state, health, CPU, memory, network I/O, block I/O (via `sudo podman ps/stats`)
+
+**Tamper detection:** SHA256 checksums in `.checksums` file. Runner verifies before execution.
+
+**Sudoers:** `/etc/sudoers.d/node-exporter-textfile` grants `nobody` passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`, `podman ps`, `podman stats`.
+
+**Systemd sandboxing:** The service uses `ProtectSystem=full` + `PrivateTmp=true` + kernel protection hardening. Do **NOT** add `RestrictNamespaces=true` — it prevents `podman stats` from accessing container cgroup namespaces, causing it to produce empty output. `ProtectSystem=strict` must also be avoided as it makes the entire filesystem read-only, breaking Podman runtime access even with `ReadWritePaths`.
 
 ## Playbook Development
 1. **Test changes**: Run `ansible-playbook playbooks/provision-ansibleXX.yml` on appropriate host

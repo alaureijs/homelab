@@ -17,6 +17,9 @@
         create_home: false
         state: present
 
+    - name: Include textfile collector tasks
+      ansible.builtin.include_tasks: textfile.yml
+
     - name: Check if node_exporter is already installed
       ansible.builtin.stat:
         path: "{{ node_exporter_bin }}"
@@ -29,39 +32,33 @@
       failed_when: false
       when: node_exporter_installed.stat.exists
 
-    - name: Set node_exporter download URL
+    - name: Set node_exporter version fact
       ansible.builtin.set_fact:
-        node_exporter_download_url: "{{ node_exporter_github_url }}/{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
-      vars:
-        node_exporter_github_url: https://github.com/prometheus/node_exporter/releases/download
-      when: >-
-        not node_exporter_installed.stat.exists or
-        (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
+        node_exporter_version_stripped: "{{ node_exporter_version | regex_replace('^v', '') }}"
 
-    - name: Download node_exporter
-      ansible.builtin.get_url:
-        url: "{{ node_exporter_download_url }}"
-        dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+    - name: Copy node_exporter tarball to target
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../files/prometheus/exporters/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.tar.gz"
         mode: "0644"
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
+         node_exporter_current_version.stdout | trim != node_exporter_version_stripped)
 
     - name: Extract node_exporter binary
       ansible.builtin.unarchive:
-        src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        src: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.tar.gz"
         dest: /tmp/
         remote_src: true
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
+         node_exporter_current_version.stdout | trim != node_exporter_version_stripped)
 
     - name: Copy node_exporter binary
       ansible.builtin.copy:
-        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        src: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64/node_exporter"
         dest: "{{ node_exporter_bin }}"
         owner: root
         group: root
@@ -70,17 +67,17 @@
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and
-         node_exporter_current_version.stdout | trim != (node_exporter_version | regex_replace('^v', '')))
+         node_exporter_current_version.stdout | trim != node_exporter_version_stripped)
       notify: Restart node-exporter
 
     - name: Cleanup tarball
       ansible.builtin.file:
-        path: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        path: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.tar.gz"
         state: absent
 
     - name: Cleanup extracted directory
       ansible.builtin.file:
-        path: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64"
+        path: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64"
         state: absent
 
     - name: Open node_exporter port in firewalld

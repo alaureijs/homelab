@@ -14,7 +14,8 @@ ExecStart={{ node_exporter_bin }} \
 {% endif %}
   --web.listen-address={{ node_exporter_listen_address }}:{{ node_exporter_port }} \
   --collector.systemd \
-  --collector.processes
+  --collector.processes \
+  --collector.textfile.directory={{ node_exporter_textfile_dir }}
 Restart=always
 RestartSec=5
 

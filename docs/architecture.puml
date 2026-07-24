@@ -1,0 +1,49 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-Environment/master/PlantUML/c4-environment.json
+left to right direction
+relate_2d
+
+' === Layer 1: Host ===
+rectangle CachyOS_Host as host ["CachyOS (Arch)\nlibvirt 12.5.0, Podman 5.8.2"] {
+    rectangle ansible01 as vm01 ["Rocky Linux 10.2\nansible01\n192.168.100.10"] {
+        container harbor_container as hc ["Harbor v2.11\npodman-compose"]
+        note right of hc : offline installer + prepare
+    }
+    rectangle ansible02 as vm02 ["Rocky Linux 10.2\nansible02\n192.168.100.11"] {
+        container grafana_container as gc ["Grafana 3000\npodman kube play"]
+        container prometheus_container as pc ["Prometheus 9090\npodman kube play"]
+        container alertmanager_container as ac ["Alertmanager 9103\npodman kube play"]
+        container node_exporter_02 as nec ["node-exporter (mTLS:9100)"]
+    }
+    rectangle ansible03 as vm03 ["Rocky Linux 10.2\nansible03\n192.168.100.12"] {
+        container elasticsearch_container as ec ["Elasticsearch 9200/9300\npodman kube play"]
+        container logstash_container as lc ["Logstash 9600\npodman kube play"]
+        container kibana_container as kc ["Kibana 5601\npodman kube play"]
+        container node_exporter_03 as nec3 ["node-exporter (mTLS:9114)"]
+    }
+}
+
+' === Layer 2: Reverse Proxy ===
+rectangle nginx_proxy as ngx ["nginx reverse proxy\nport 443/80"] {
+    note right of ngx : Routes:\n/grafana/, /prometheus/\n/alertmanager/
+}
+
+' === External Access ===
+technology_actors [
+    actor admin as adm ["Admin"]
+]
+'
+
+' === Relationships ===
+rel adm -> ngx : HTTPS (443)
+rel ngx -> gc : /grafana/ -> port 3000
+rel ngx -> pc : /prometheus/ -> port 9090
+rel ngx -> ac : /alertmanager/ -> port 9103
+rel adm -> hc : direct HTTP (80)
+rel vm02 -- nec : mTLS scraping\n(CA distributed by certificates role)
+rel vm03 -- nec3 : mTLS scraping\n(CA distributed by certificates role)
+
+' === Annotations ===
+note right of ec : Persistent storage:\nPVC (50Gi) on /var/lib/elk/elasticsearch
+note left of lc : ConfigMaps for all services\n(PV/PVC pattern, K8s-compatible)
+@enduml

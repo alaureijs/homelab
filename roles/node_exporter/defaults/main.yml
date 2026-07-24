@@ -20,3 +20,15 @@ node_exporter_ca_cert: "{{ node_exporter_cert_dir }}/monitoring-ca.crt"
 node_exporter_server_cert: "{{ node_exporter_cert_dir }}/node-exporter.crt"
 node_exporter_server_key: "{{ node_exporter_key_dir }}/node-exporter.key"
 node_exporter_web_config: /etc/node-exporter/web-config.yml
+
+# Textfile collector
+node_exporter_textfile_dir: /var/lib/node-exporter/textfiles_metrics
+node_exporter_textfile_scripts_dir: /usr/local/lib/node-exporter-textfile-scripts
+node_exporter_textfile_timer_interval: 5m
+
+node_exporter_textfile_scripts:
+  - name: chrony.sh
+  - name: fstab-check.sh
+  - name: reboot-required.sh
+  - name: authorized-keys.sh
+  - name: container-health.sh

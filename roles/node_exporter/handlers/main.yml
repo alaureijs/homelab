@@ -5,3 +5,29 @@
     state: restarted
     daemon_reload: true
   listen: Restart node-exporter
+
+- name: Restart node-exporter-textfile
+  ansible.builtin.systemd:
+    name: node-exporter-textfile.timer
+    state: restarted
+    daemon_reload: true
+  listen: Restart node-exporter-textfile
+
+- name: Regenerate textfile checksums
+  ansible.builtin.stat:
+    path: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
+    checksum_algorithm: sha256
+  loop: "{{ node_exporter_textfile_scripts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _textfile_checksums
+  listen: Regenerate textfile checksums
+
+- name: Write textfile checksums
+  ansible.builtin.copy:
+    content: "{{ _textfile_checksums.results | map(attribute='stat.checksum') | zip(_textfile_checksums.results | map(attribute='item.name')) | map('join', '  ') | join('\n') }}\n"
+    dest: "{{ node_exporter_textfile_scripts_dir }}/.checksums"
+    owner: root
+    group: nobody
+    mode: "0640"
+  listen: Regenerate textfile checksums

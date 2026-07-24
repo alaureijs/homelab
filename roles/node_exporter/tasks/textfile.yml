@@ -1,0 +1,157 @@
+---
+- name: Ensure node_exporter textfile directory exists
+  ansible.builtin.file:
+    path: "{{ node_exporter_textfile_dir }}"
+    state: directory
+    owner: nobody
+    group: nobody
+    mode: "0755"
+
+- name: Ensure textfile scripts directory exists
+  ansible.builtin.file:
+    path: "{{ node_exporter_textfile_scripts_dir }}"
+    state: directory
+    owner: root
+    group: nobody
+    mode: "0750"
+
+- name: Deploy textfile collector scripts
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../files/prometheus/textfile_collectors/{{ item.name }}"
+    dest: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
+    owner: root
+    group: nobody
+    mode: "0750"
+  loop: "{{ node_exporter_textfile_scripts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Regenerate textfile checksums
+
+- name: Deploy textfile collector runner script
+  ansible.builtin.copy:
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      SCRIPTS_DIR="{{ node_exporter_textfile_scripts_dir }}"
+      OUTPUT_DIR="{{ node_exporter_textfile_dir }}"
+      CHECKSUM_FILE="$SCRIPTS_DIR/.checksums"
+
+      if [ -f "$CHECKSUM_FILE" ]; then
+        while IFS='  ' read -r expected_hash script_name; do
+          script_path="$SCRIPTS_DIR/$script_name"
+          [ -f "$script_path" ] || continue
+          actual_hash=$(sha256sum "$script_path" | awk '{print $1}')
+          if [ "$actual_hash" != "$expected_hash" ]; then
+            echo "TAMPER DETECTED: $script_name checksum mismatch" >&2
+            exit 1
+          fi
+        done < "$CHECKSUM_FILE"
+      fi
+
+      for script in "$SCRIPTS_DIR"/*; do
+        [ -f "$script" ] || continue
+        [[ "$script" == *".checksums" ]] && continue
+        name=$(basename "$script")
+        tmp=$(mktemp)
+
+        if bash "$script" > "$tmp" 2>/dev/null; then
+          mv "$tmp" "$OUTPUT_DIR/${name%.*}.prom"
+        else
+          rm -f "$tmp"
+          echo "ERROR: $script failed" >&2
+        fi
+      done
+    dest: /usr/local/bin/node-exporter-textfile-runner
+    owner: root
+    group: nobody
+    mode: "0750"
+
+- name: Calculate textfile collector script checksums
+  ansible.builtin.stat:
+    path: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
+    checksum_algorithm: sha256
+  loop: "{{ node_exporter_textfile_scripts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _textfile_checksums
+
+- name: Write textfile collector checksums
+  ansible.builtin.copy:
+    content: "{{ _textfile_checksums.results | map(attribute='stat.checksum') | zip(_textfile_checksums.results | map(attribute='item.name')) | map('join', '  ') | join('\n') }}\n"
+    dest: "{{ node_exporter_textfile_scripts_dir }}/.checksums"
+    owner: root
+    group: nobody
+    mode: "0640"
+
+- name: Deploy sudoers configuration for textfile collectors
+  ansible.builtin.copy:
+    content: |
+      Defaults:nobody !requiretty
+      nobody ALL=(root) NOPASSWD: /usr/bin/chronyc -c tracking
+      nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -r
+      nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -s
+      nobody ALL=(root) NOPASSWD: /usr/bin/test -f *
+      nobody ALL=(root) NOPASSWD: /usr/bin/grep *
+      nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *
+      nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *
+    dest: /etc/sudoers.d/node-exporter-textfile
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Deploy textfile collector systemd service
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Node Exporter Textfile Collector
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      User=nobody
+      Group=nobody
+      ExecStart=/usr/local/bin/node-exporter-textfile-runner
+
+      ProtectSystem=full
+      PrivateTmp=true
+      ProtectKernelTunables=true
+      ProtectKernelModules=true
+      ProtectControlGroups=true
+      RestrictSUIDSGID=true
+      RestrictRealtime=true
+      LockPersonality=true
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/node-exporter-textfile.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node-exporter-textfile
+
+- name: Deploy textfile collector systemd timer
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Run Node Exporter Textfile Collector
+
+      [Timer]
+      OnBootSec=1m
+      OnUnitActiveSec={{ node_exporter_textfile_timer_interval }}
+
+      [Install]
+      WantedBy=timers.target
+    dest: /etc/systemd/system/node-exporter-textfile.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node-exporter-textfile
+
+- name: Enable and start textfile collector timer
+  ansible.builtin.systemd:
+    name: node-exporter-textfile.timer
+    state: started
+    enabled: true
+    daemon_reload: true

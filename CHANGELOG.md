@@ -8,6 +8,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Node exporter textfile collectors — 5 collectors running as `nobody`
+  via systemd timer (every 5m): `chrony.sh` (NTP metrics),
+  `fstab-check.sh` (mount status), `reboot-required.sh` (reboot pending),
+  `authorized-keys.sh` (SSH key audit), `container-health.sh` (Podman
+  container state, CPU, memory, network I/O, block I/O). Scripts live in
+  `files/prometheus/textfile_collectors/`, deployed with SHA256 tamper
+  detection. Runner verifies checksums before execution. Sudoers grants
+  passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`,
+  `podman ps`, `podman stats`.
+- Textfile collector systemd service and timer (`roles/node_exporter/tasks/textfile.yml`)
+  — sandboxed service with `ProtectSystem=full`, `PrivateTmp=true`, and
+  kernel protection hardening. **Do not** add `RestrictNamespaces=true`
+  (breaks `podman stats` cgroup access). `ProtectSystem=strict` also
+  avoided (breaks Podman runtime).
 - `firewall_podman_interfaces` variable in `group_vars/all/main.yml` —
   list of Podman bridge interfaces to add to firewalld trusted zone
   (defaults to `podman1`, `cni-podman0`).
@@ -15,8 +29,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   list so the certificates role generates Harbor TLS certs.
 - `harbor_config` role added to `playbooks/provision-ansible01.yml` (after
   harbor role) for Harbor API configuration (users, projects, roles).
-- `elk_elasticsearch_exporter_port: 9114` moved from
-  `group_vars/all/main.yml` to `inventory/group_vars/elk/main.yml`.
 - ELK stack versions added to `LIFECYCLE.md` version table.
 - Harbor systemd service (`roles/harbor/templates/harbor.service.j2`) —
   `oneshot` + `RemainAfterExit=yes` service for autostart. Handles
@@ -31,9 +43,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `nginx_exporter_version`, `logstash_exporter_version`.
 - "Binaries in Git" rule in `AGENTS.md` — never commit binaries, tarballs,
   or downloaded artifacts to the repository.
+- "Textfile Collectors" section in `AGENTS.md` — documents collector
+  scripts, tamper detection, sudoers, and systemd sandboxing constraints.
 
 ### Changed
 
+- Node exporter now uses local tarballs (`files/prometheus/exporters/`)
+  via `ansible.builtin.copy` instead of downloading from GitHub via
+  `get_url`. Added `node_exporter_version_stripped` fact to strip `v`
+  prefix for file path matching (e.g., `v1.12.1` → `1.12.1`).
+- `elk_elasticsearch_exporter_port: 9114` moved from
+  `inventory/group_vars/elk/main.yml` to `inventory/group_vars/all/main.yml`
+  (used by both ELK and monitoring roles).
+- Grafana env vars in monitoring pod manifest — `GF_SERVER_ROOT_URL`
+  changed from `https://{{ monitoring_hostname }}/grafana/` to
+  `https://{{ monitoring_hostname }}/`; `GF_SERVER_SERVE_FROM_SUB_PATH`
+  changed from `true` to `false` (Grafana now serves from root).
+- nginx reverse proxy (`roles/monitoring/templates/nginx-reverse-proxy.conf.j2`)
+  — Grafana location changed from `/grafana/` to `/`; added
+  `/alertmanager/` location for Alertmanager UI.
 - Harbor handler (`roles/harbor/handlers/main.yml`) — ensures
   `common/config` subdirectories exist before `prepare`, strips
   unsupported syslog logging driver from generated `docker-compose.yml`,

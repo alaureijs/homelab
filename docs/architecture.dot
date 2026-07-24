@@ -1,0 +1,58 @@
+digraph architecture {
+    rankdir=TB;
+    node [style=filled, fontname="Helvetica"];
+    
+    // Host layer
+    subgraph cluster_host {
+        label="CachyOS Host (libvirt 12.5.0, Podman 5.8.2)";
+        style=dashed;
+        color=blue;
+        
+        subgraph cluster_vm01 {
+            label="ansible01\n(192.168.100.10)";
+            style=filled;
+            fillcolor=lightyellow;
+            
+            harbor [label="Harbor v2.11\npodman-compose", shape=box, fillcolor=palegreen];
+        }
+        
+        subgraph cluster_vm02 {
+            label="ansible02\n(192.168.100.11)";
+            style=filled;
+            fillcolor=lightyellow;
+            
+            grafana [label="Grafana 3000", shape=box, fillcolor=paleblue];
+            prometheus [label="Prometheus 9090", shape=box, fillcolor=palegreen];
+            alertmanager [label="Alertmanager 9103", shape=box, fillcolor=paleyellow];
+            node_exporter_02 [label="node-exporter (mTLS:9100)", shape=box, fillcolor=paleblue];
+        }
+        
+        subgraph cluster_vm03 {
+            label="ansible03\n(192.168.100.12)";
+            style=filled;
+            fillcolor=lightyellow;
+            
+            elasticsearch [label="Elasticsearch 9200/9300", shape=box, fillcolor=palegreen];
+            logstash [label="Logstash 9600", shape=box, fillcolor=paleyellow];
+            kibana [label="Kibana 5601", shape=box, fillcolor=paleblue];
+            node_exporter_03 [label="node-exporter (mTLS:9114)", shape=box, fillcolor=paleblue];
+        }
+    }
+    
+    // Reverse proxy
+    nginx [label="nginx reverse proxy\nport 443/80", shape=octagon, fillcolor=orange];
+    
+    // External access
+    admin [shape=house, label="Admin", fillcolor=lightgray];
+    
+    // Relationships
+    admin -> nginx [label="HTTPS (443)"];
+    nginx -> grafana [label="/grafana/\n-> port 3000"];
+    nginx -> prometheus [label="/prometheus/\n-> port 9090"];
+    nginx -> alertmanager [label="/alertmanager/\n-> port 9103"];
+    admin -> harbor [label="direct HTTP (80)"];
+    
+    // mTLS connections
+    vm02 -- node_exporter_02 [label="mTLS scraping\n(CA: certificates role)", style=bold];
+    vm03 -- node_exporter_03 [label="mTLS scraping\n(CA: certificates role)", style=bold];
+}

@@ -25,7 +25,7 @@
       community.crypto.openssl_privatekey:
         path: "{{ ca_key }}"
         size: 4096
-        mode: "0644"
+        mode: "0600"
       register: ca_key_gen
       when: not ca_cert_stat.stat.exists
 
@@ -59,6 +59,11 @@
         state: absent
       when: ca_key_gen is changed
 
+    - name: Encrypt CA key with ansible-vault
+      ansible.builtin.command: ansible-vault encrypt "{{ ca_key }}"
+      changed_when: true
+      when: ca_key_gen is changed
+
     - name: Show CA info
       ansible.builtin.debug:
         msg: "mTLS CA: {{ ca_cert }}"
@@ -72,6 +77,7 @@
     ca_dir: "{{ playbook_dir }}/../files/certificates"
     ca_cert: "{{ ca_dir }}/mtls-ca.crt"
     ca_key: "{{ ca_dir }}/mtls-ca.key"
+    vault_password_local: "{{ playbook_dir }}/../.vault_password"
 
   tasks:
     - name: Ensure /etc/mtls directory exists
@@ -87,8 +93,43 @@
         dest: /etc/mtls/ca.crt
         mode: "0644"
 
-    - name: Copy mTLS CA key
+    - name: Read vault password from controller
+      ansible.builtin.slurp:
+        src: "{{ vault_password_local }}"
+      delegate_to: localhost
+      connection: local
+      register: vault_password_content
+      no_log: true
+
+    - name: Write vault password to temp file
       ansible.builtin.copy:
-        src: "{{ ca_key }}"
+        content: "{{ vault_password_content.content | b64decode }}"
+        dest: /tmp/.vault_pw
+        mode: "0600"
+      delegate_to: localhost
+      connection: local
+      no_log: true
+
+    - name: Decrypt mTLS CA key on controller
+      ansible.builtin.command: >-
+        ansible-vault view --vault-password-file /tmp/.vault_pw "{{ ca_key }}"
+      delegate_to: localhost
+      connection: local
+      register: ca_key_plaintext
+      changed_when: false
+      no_log: true
+
+    - name: Remove vault password temp file
+      ansible.builtin.file:
+        path: /tmp/.vault_pw
+        state: absent
+      delegate_to: localhost
+      connection: local
+      no_log: true
+
+    - name: Write mTLS CA key to host
+      ansible.builtin.copy:
+        content: "{{ ca_key_plaintext.stdout }}"
         dest: /etc/mtls/ca.key
         mode: "0600"
+      no_log: true

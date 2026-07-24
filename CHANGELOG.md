@@ -46,10 +46,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - "Textfile Collectors" section in `AGENTS.md` — documents collector
   scripts, tamper detection, sudoers, and systemd sandboxing constraints.
 - `playbooks/ensure-mtls-ca.yml` — centralized mTLS CA generation on
-  controller. CA key stored as plain text in
-  `files/certificates/mtls-ca.key` (gitignored via `.gitignore`),
-  cert in `files/certificates/mtls-ca.crt` (git-trackable). Copies
-  CA to all hosts at `/etc/mtls/` before provisioning runs.
+  controller. CA key vault-encrypted with `ansible-vault` in
+  `files/certificates/mtls-ca.key` (git-trackable), cert in
+  `files/certificates/mtls-ca.crt`. Key decrypted on controller and
+  written as plaintext to all hosts at `/etc/mtls/`. Copies
+  CA to all hosts before provisioning runs.
 
 ### Changed
 
@@ -125,8 +126,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `files/prometheus/exporters/` to prevent committing generated files
   and downloaded binaries.
 - mTLS CA architecture redesigned — single shared CA (`mtls-ca`) generated
-  on controller, plain key in `files/certificates/mtls-ca.key`
-  (gitignored), plain cert in `files/certificates/mtls-ca.crt`.
+  on controller, vault-encrypted key in `files/certificates/mtls-ca.key`
+  (git-trackable), plain cert in `files/certificates/mtls-ca.crt`.
   Removed `mtls-ca` entry from `certificates` list in `all/main.yml`.
   Added `mtls_controller_cert` variable for controller path. All
   provisioning playbooks now import `ensure-mtls-ca.yml` before main
@@ -137,8 +138,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Node-exporter server cert signed by shared mTLS CA (not separate CA).
   Certificates role generates `node-exporter.crt` using `ownca` type
   with `mtls_ca_cert`/`mtls_ca_key` paths.
-- `.gitignore` updated — added `files/certificates/mtls-ca.key` to
-  prevent committing the CA private key.
 
 ### Fixed
 

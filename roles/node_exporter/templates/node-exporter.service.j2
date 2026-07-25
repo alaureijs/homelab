@@ -18,8 +18,10 @@ ExecStart={{ node_exporter_bin }} \
   --collector.textfile.directory={{ node_exporter_textfile_dir }}
 Restart=always
 RestartSec=5
-
 SyslogIdentifier=node_exporter
+{% for param, value in node_exporter_service_hardening.items() %}
+{{ param }}={{ value }}
+{% endfor %}
 
 [Install]
 WantedBy=multi-user.target

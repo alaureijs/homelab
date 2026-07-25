@@ -60,3 +60,18 @@ node_exporter_textfile_service_hardening:
   RestrictSUIDSGID: "true"
   RestrictRealtime: "true"
   LockPersonality: "true"
+
+# node-exporter systemd service security
+node_exporter_service_hardening:
+  ProtectSystem: full
+  ProtectHome: "true"
+  PrivateTmp: "true"
+  PrivateDevices: "true"
+  ProtectKernelTunables: "true"
+  ProtectKernelModules: "true"
+  ProtectControlGroups: "true"
+  NoNewPrivileges: "true"
+  RestrictNamespaces: "true"
+  LockPersonality: "true"
+  RestrictRealtime: "true"
+  RestrictSUIDSGID: "true"

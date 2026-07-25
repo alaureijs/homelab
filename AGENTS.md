@@ -291,7 +291,7 @@ Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m)
 - `reboot-required.sh` — reboot pending status (via `sudo needs-restarting`)
 - `authorized-keys.sh` — count of non-comment lines in each user's `authorized_keys` (via `sudo`)
 - `container-health.sh` — container state, health, CPU, memory, network I/O, block I/O (via `sudo podman ps/stats`)
-- `logstash.sh` — Logstash pipeline metrics via API (`/_node/stats`): events, JVM, process, queue, pipeline plugins (only on `elk` group hosts)
+- `logstash.sh` — queries `logstash-exporter` sidecar on port 9198 (`/metrics`), outputs Prometheus-format metrics (only on `elk` group hosts)
 
 **Conditional deployment:** Scripts with a `groups` field only deploy to hosts in those inventory groups. Scripts without `groups` deploy to all hosts. The `node_exporter_textfile_scripts` variable is defined in `inventory/group_vars/all/main.yml` with documented fields (`name`, `src`, `sudoers`, `groups`).
 

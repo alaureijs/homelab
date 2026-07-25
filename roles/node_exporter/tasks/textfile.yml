@@ -70,6 +70,7 @@
 
         if bash "$script" > "$tmp" 2>/dev/null; then
           mv "$tmp" "$OUTPUT_DIR/${name%.*}.prom"
+          chmod 0644 "$OUTPUT_DIR/${name%.*}.prom"
         else
           rm -f "$tmp"
           echo "ERROR: $script failed" >&2

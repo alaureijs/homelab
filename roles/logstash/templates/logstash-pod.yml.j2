@@ -60,6 +60,29 @@ spec:
         timeoutSeconds: 10
         failureThreshold: 3
 
+    - name: logstash-exporter
+      image: {{ logstash_exporter_image }}
+      env:
+        - name: LOGSTASH_URL
+          value: "http://127.0.0.1:{{ logstash_http_port }}"
+      ports:
+        - containerPort: {{ logstash_exporter_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ logstash_exporter_port }}
+      resources:
+        limits:
+          memory: 128M
+        requests:
+          memory: 64M
+      livenessProbe:
+        httpGet:
+          path: /metrics
+          port: {{ logstash_exporter_port }}
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+
   volumes:
     - name: logstash-config
       configMap:

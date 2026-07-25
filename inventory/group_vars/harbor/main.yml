@@ -74,6 +74,8 @@ harbor_config_users:
         role_id: 3
       - project_name: trivy-db
         role_id: 3
+      - project_name: kuskoman
+        role_id: 3
 
   - username: ansible-config
     password: "{{ vault_harbor_config_password }}"
@@ -97,6 +99,8 @@ harbor_config_users:
       - project_name: ghcr-cache
         role_id: 1
       - project_name: trivy-db
+        role_id: 1
+      - project_name: kuskoman
         role_id: 1
 
   - username: ansible-sync
@@ -122,6 +126,8 @@ harbor_config_users:
         role_id: 2
       - project_name: trivy-db
         role_id: 2
+      - project_name: kuskoman
+        role_id: 2
 
   - username: metrics
     password: "{{ vault_harbor_metrics_password }}"
@@ -146,10 +152,14 @@ harbor_config_users:
         role_id: 3
       - project_name: trivy-db
         role_id: 3
+      - project_name: kuskoman
+        role_id: 3
 
 # Projects
 harbor_config_projects:
   - name: trivy-db
+    public: false
+  - name: kuskoman
     public: false
 harbor_config_sync_projects: true
 

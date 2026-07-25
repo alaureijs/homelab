@@ -16,3 +16,6 @@ elk_hostname: observability.local.lan
 # Access URLs
 elk_kibana_url: "https://observability.local.lan/kibana/"
 elk_elasticsearch_url: "https://observability.local.lan/elasticsearch/"
+
+# Elasticsearch HTTP port (used by logstash pipeline output and kibana connection)
+elasticsearch_http_port: 9200

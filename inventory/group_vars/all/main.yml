@@ -44,6 +44,7 @@ elasticsearch_version: "9.4.4"
 logstash_version: "9.4.4"
 kibana_version: "9.4.4"
 elk_elasticsearch_exporter_port: 9114
+logstash_exporter_port: 9198
 
 # Base images
 alpine_version: "3.24"

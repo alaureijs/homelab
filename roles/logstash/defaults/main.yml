@@ -7,3 +7,5 @@ logstash_http_port: 9600
 logstash_beats_port: 5044
 logstash_config_template: "{{ role_path }}/templates/logstash.yml.j2"
 logstash_pipeline_template: "{{ role_path }}/templates/pipeline.conf.j2"
+
+logstash_exporter_image: "{{ harbor_hostname }}/kuskoman/logstash-exporter:{{ logstash_exporter_version }}"

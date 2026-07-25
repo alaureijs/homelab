@@ -103,6 +103,11 @@ harbor_sync_images:
       - "{{ elasticsearch_exporter_version }}"
     registry: docker.io
 
+  - name: kuskoman/logstash-exporter
+    tags:
+      - "{{ logstash_exporter_version }}"
+    registry: docker.io
+
   # Harbor exporter
   - name: goharbor/harbor-exporter
     tags:

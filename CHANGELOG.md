@@ -8,12 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Logstash textfile collector (`logstash.sh`) — queries Logstash
-  `/_node/stats` API and outputs 40+ Prometheus-format metrics with
-  HELP/TYPE annotations. Covers events, JVM (heap/non-heap/threads/GC),
-  process (CPU/fds/memory), queue, pipeline events/batch/reloads, and
-  per-plugin metrics (inputs, filters, outputs) with worker utilization.
-  Deployed only on `elk` group hosts via conditional `groups` field.
+- Logstash exporter sidecar (`kuskoman/logstash-exporter:v1.9.1`)
+  deployed in the Logstash pod — exposes 90+ Prometheus-format metrics
+  on port 9198 (`/metrics`). Textfile collector (`logstash.sh`) now
+  a one-liner `curl -sf http://localhost:9198/metrics` with fallback
+  to `logstash_up 0` on failure. Env var `LOGSTASH_URL` used (not CLI
+  args — v1.9.1 does not accept `--logstash.url`). Deployed only on
+  `elk` group hosts via conditional `groups` field.
 - Conditional textfile collector deployment — new `groups` field on
   `node_exporter_textfile_scripts` entries filters scripts by inventory
   group membership using `rejectattr`/`selectattr` with `subset` test.
@@ -76,6 +77,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `files/certificates/mtls-ca.crt`. Key decrypted on controller and
   written as plaintext to all hosts at `/etc/mtls/`. Copies
   CA to all hosts before provisioning runs.
+- Harbor project `kuskoman` for logstash-exporter images — created in
+  `harbor_config_projects` with user roles for all Harbor users (guest
+  for viewer/metrics, developer for ansible-sync, projectAdmin for
+  ansible-config).
 
 ### Changed
 
@@ -170,6 +175,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Node-exporter server cert signed by shared mTLS CA (not separate CA).
   Certificates role generates `node-exporter.crt` using `ownca` type
   with `mtls_ca_cert`/`mtls_ca_key` paths.
+- `elasticsearch_http_port: 9200` moved from role defaults to shared
+  `inventory/group_vars/elk/main.yml` — used by both logstash pipeline
+  output and kibana connection (single source of truth for ELK).
 
 ### Fixed
 
@@ -217,6 +225,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   switched to exec-based `wget` probe.
 - ELK log directory documentation — corrected path from `/var/log/harbor/`
   to `/var/log/elk/` in `docs/elasticsearch.md`.
+- Textfile runner `.prom` file permissions — `mktemp` creates files with
+  `0600`, but `node_exporter` (running as user `node_exporter`) needs
+  read access. Added `chmod 0644` after `mv` in the runner script.
 
 ## [0.1.0] - 2026-07-13
 

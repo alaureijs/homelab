@@ -31,11 +31,7 @@ spec:
       image: {{ logstash_image }}
       ports:
         - containerPort: {{ logstash_beats_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ logstash_beats_port }}
         - containerPort: {{ logstash_http_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ logstash_http_port }}
       env:
         - name: LS_JAVA_OPTS
           value: "-Xms{{ logstash_heap_size }} -Xmx{{ logstash_heap_size }}"
@@ -67,8 +63,6 @@ spec:
           value: "http://127.0.0.1:{{ logstash_http_port }}"
       ports:
         - containerPort: {{ logstash_exporter_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ logstash_exporter_port }}
       resources:
         limits:
           memory: 128M

@@ -50,11 +50,7 @@ spec:
       image: {{ elasticsearch_image }}
       ports:
         - containerPort: {{ elasticsearch_http_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ elasticsearch_http_port }}
         - containerPort: {{ elasticsearch_transport_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ elasticsearch_transport_port }}
       env:
         - name: discovery.type
           value: single-node
@@ -94,8 +90,6 @@ spec:
         - "--es.indices"
       ports:
         - containerPort: {{ elk_elasticsearch_exporter_port }}
-          hostPort: {{ elk_elasticsearch_exporter_port }}
-          hostIP: "0.0.0.0"
       resources:
         limits:
           memory: 128M

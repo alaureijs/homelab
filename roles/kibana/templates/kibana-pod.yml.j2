@@ -21,8 +21,6 @@ spec:
       image: {{ kibana_image }}
       ports:
         - containerPort: {{ kibana_port }}
-          hostIP: 127.0.0.1
-          hostPort: {{ kibana_port }}
       env:
         - name: ELASTICSEARCH_HOSTS
           value: "http://127.0.0.1:{{ elasticsearch_http_port }}"

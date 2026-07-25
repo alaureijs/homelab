@@ -140,7 +140,7 @@
 - name: Deploy Logstash pod
   ansible.builtin.shell: |
     podman kube play --down {{ elk_config_dir }}/logstash-pod.yml 2>/dev/null || true
-    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/logstash-pod.yml
+    podman kube play --network host {{ elk_config_dir }}/logstash-pod.yml
   args:
     executable: /bin/bash
   register: logstash_kube

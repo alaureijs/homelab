@@ -140,7 +140,7 @@
 - name: Deploy Elasticsearch pod
   ansible.builtin.shell: |
     podman kube play --down {{ elk_config_dir }}/elasticsearch-pod.yml 2>/dev/null || true
-    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elasticsearch-pod.yml
+    podman kube play --network host {{ elk_config_dir }}/elasticsearch-pod.yml
     chown -R 1000:1000 {{ elasticsearch_data_dir }}
     podman restart elasticsearch-elasticsearch
   args:

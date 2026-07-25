@@ -129,7 +129,7 @@
 - name: Deploy Kibana pod
   ansible.builtin.shell: |
     podman kube play --down {{ elk_config_dir }}/kibana-pod.yml 2>/dev/null || true
-    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/kibana-pod.yml
+    podman kube play --network host {{ elk_config_dir }}/kibana-pod.yml
   args:
     executable: /bin/bash
   register: kibana_kube

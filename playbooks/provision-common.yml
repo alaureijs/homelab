@@ -1,0 +1,27 @@
+---
+# Common roles applied to all hosts
+- name: Provision common roles on all hosts
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vm_hostname }}"
+
+    - name: Merge certificates lists
+      ansible.builtin.set_fact:
+        certificates: "{{ certificates + certificates_extra | default([]) }}"
+
+  roles:
+    - role: common
+    - role: firewall
+    - role: certificates
+    - role: podman
+    - role: hardening
+    - role: node_exporter

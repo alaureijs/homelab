@@ -18,32 +18,17 @@
 - name: Ensure mTLS CA exists
   ansible.builtin.import_playbook: ensure-mtls-ca.yml
 
-# Play 2: Provision ansible01 for Harbor
+# Play 2: Common roles on all hosts
+- name: Common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml
+
+# Play 3: Provision ansible01 for Harbor
 - name: Provision ansible01 for Harbor
   hosts: ansible01
   become: true
   gather_facts: true
 
-  pre_tasks:
-    - name: Set timezone
-      community.general.timezone:
-        name: "{{ timezone }}"
-
-    - name: Set hostname
-      ansible.builtin.hostname:
-        name: "{{ vm_hostname }}"
-
-    - name: Merge certificates lists
-      ansible.builtin.set_fact:
-        certificates: "{{ certificates + certificates_extra | default([]) }}"
-
   roles:
-    - role: common
-    - role: firewall
-    - role: podman
-    - role: certificates
-    - role: hardening
-    - role: node_exporter
     - role: harbor
     - role: harbor_config
 

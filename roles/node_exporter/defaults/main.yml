@@ -28,7 +28,12 @@ node_exporter_textfile_timer_interval: 5m
 
 node_exporter_textfile_scripts:
   - name: chrony.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/chrony.sh"
   - name: fstab-check.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/fstab-check.sh"
   - name: reboot-required.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/reboot-required.sh"
   - name: authorized-keys.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/authorized-keys.sh"
   - name: container-health.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/container-health.sh"

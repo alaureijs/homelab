@@ -279,7 +279,7 @@ spec:
 
 ## Textfile Collectors
 
-Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m). Scripts live in `files/prometheus/textfile_collectors/` and are deployed to `/usr/local/lib/node-exporter-textfile-scripts/`. Output goes to `/var/lib/node-exporter/textfiles_metrics/`.
+Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m). Scripts live in `files/node-exporter/textfile_scripts/` and are deployed to `/usr/local/lib/node-exporter-textfile-scripts/`. Output goes to `/var/lib/node-exporter/textfiles_metrics/`.
 
 **Collectors:**
 - `chrony.sh` — NTP offset, frequency, stratum, leap status (via `sudo chronyc`)

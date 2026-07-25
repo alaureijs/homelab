@@ -19,7 +19,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `fstab-check.sh` (mount status), `reboot-required.sh` (reboot pending),
   `authorized-keys.sh` (SSH key audit), `container-health.sh` (Podman
   container state, CPU, memory, network I/O, block I/O). Scripts live in
-  `files/prometheus/textfile_collectors/`, deployed with SHA256 tamper
+  `files/node-exporter/textfile_scripts/`, deployed with SHA256 tamper
   detection. Runner verifies checksums before execution. Sudoers grants
   passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`,
   `podman ps`, `podman stats`.

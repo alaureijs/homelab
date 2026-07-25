@@ -1,5 +1,8 @@
 # {{ ansible_managed }}
 # Sudoers rules for node_exporter textfile collectors
-{% for rule in node_exporter_sudoers %}
+Defaults:nobody !requiretty
+{% for script in node_exporter_textfile_scripts %}
+{% for rule in script.sudoers | default([]) %}
 {{ rule }}
+{% endfor %}
 {% endfor %}

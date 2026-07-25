@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  labels:
+    app: logstash
+data:
+  logstash.yml: |
+{{ elk_cm_logstash_config.content | b64decode | indent(4, first=True) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  labels:
+    app: logstash
+data:
+  pipeline.conf: |
+{{ elk_cm_logstash_pipeline.content | b64decode | indent(4, first=True) }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logstash
+  labels:
+    app: logstash
+spec:
+  containers:
+    - name: logstash
+      image: {{ logstash_image }}
+      ports:
+        - containerPort: {{ logstash_beats_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ logstash_beats_port }}
+        - containerPort: {{ logstash_http_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ logstash_http_port }}
+      env:
+        - name: LS_JAVA_OPTS
+          value: "-Xms{{ logstash_heap_size }} -Xmx{{ logstash_heap_size }}"
+      volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+        - name: logstash-pipeline
+          mountPath: /usr/share/logstash/pipeline/pipeline.conf
+          subPath: pipeline.conf
+      resources:
+        limits:
+          memory: 3Gi
+        requests:
+          memory: 2Gi
+      livenessProbe:
+        httpGet:
+          path: /
+          port: {{ logstash_http_port }}
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+
+  volumes:
+    - name: logstash-config
+      configMap:
+        name: logstash-config
+    - name: logstash-pipeline
+      configMap:
+        name: logstash-pipeline

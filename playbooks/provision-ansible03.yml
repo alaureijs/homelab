@@ -7,11 +7,29 @@
 - name: Ensure mTLS CA exists
   ansible.builtin.import_playbook: ensure-mtls-ca.yml
 
-# Play 2: Deploy ELK stack on ansible03
-- name: Deploy ELK stack
+# Play 2: Deploy Elasticsearch
+- name: Deploy Elasticsearch
   hosts: elk
   become: true
   gather_facts: true
 
   roles:
-    - role: elk
+    - role: elasticsearch
+
+# Play 3: Deploy Logstash
+- name: Deploy Logstash
+  hosts: elk
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: logstash
+
+# Play 4: Deploy Kibana
+- name: Deploy Kibana
+  hosts: elk
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: kibana

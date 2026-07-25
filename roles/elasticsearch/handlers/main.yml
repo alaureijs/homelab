@@ -1,0 +1,14 @@
+---
+- name: Restart Elasticsearch
+  ansible.builtin.shell: |
+    podman kube play --down {{ elk_config_dir }}/elasticsearch-pod.yml 2>/dev/null || true
+    chown -R 1000:1000 {{ elasticsearch_data_dir }}
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elasticsearch-pod.yml
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Restart rsyslog
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted

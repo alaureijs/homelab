@@ -75,7 +75,9 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 |------|-------------|---------------|
 | `harbor` | Harbor v2.11.0 container registry (offline installer + prepare) | ansible01 |
 | `monitoring` | Grafana/Prometheus/Alertmanager via ConfigMaps | ansible02 |
-| `elk` | Elasticsearch/Logstash/Kibana via ConfigMaps + PVCs | ansible03 |
+| `elasticsearch` | Elasticsearch + exporter via pod manifest + PVC | ansible03 |
+| `logstash` | Logstash via pod manifest (beats input, grok filters, ES output) | ansible03 |
+| `kibana` | Kibana via pod manifest + nginx reverse proxy | ansible03 |
 | `node_exporter` | Binary install, systemd service, mTLS web config, textfile collectors | all hosts (sidecar on ELK) |
 | `prometheus_exporters` | Download exporter tarballs from GitHub releases | localhost (controller) |
 | `certificates` | Selfsigned/CA certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
@@ -197,15 +199,17 @@ Harbor is deployed using the offline installer + prepare approach, managed by `p
 
 ### Monitoring & ELK — `podman kube play`
 
-Both monitoring and ELK stacks deploy via K8s YAML manifests using `podman kube play`:
+Monitoring, Elasticsearch, Logstash, and Kibana each deploy via separate K8s YAML manifests using `podman kube play`:
 
 1. Render Jinja2 templates to generate configs
 2. Slurp static files for ConfigMap content
 3. Write pod manifest with inline ConfigMaps + PersistentVolumes/PVCs
 4. Run `podman kube play --down` then `podman kube play --network <name>`
-5. Fix data directory ownership: grafana=472, prometheus/alertmanager=65534
+5. Fix data directory ownership: grafana=472, prometheus/alertmanager=65534, elasticsearch=1000
 
 **Configuration pattern**: All config as ConfigMaps (not hostPath mounts). PV/PVC with `ReadWriteOnce`, reclaim policy Retain.
+
+**Inter-service communication**: All pods use `hostIP: 127.0.0.1` + `hostPort` for port mappings. Services communicate via `127.0.0.1` on the host loopback (not pod-internal DNS). Each role deploys its own independent pod.
 
 ### nginx Reverse Proxy
 

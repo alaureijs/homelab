@@ -5,6 +5,14 @@
 # auto = prefer firewalld > nftables > iptables
 firewall_backend: auto
 
+firewall_valid_backends:
+  - auto
+  - firewalld
+  - iptables
+  - nftables
+  - ufw
+  - none
+
 # firewalld-specific
 firewalld_zone: public
 

@@ -79,6 +79,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- ELK stack split into three independent roles — `elasticsearch`,
+  `logstash`, `kibana`. Each deploys its own pod via `podman kube play`
+  with `hostIP: 127.0.0.1` + `hostPort` for inter-service communication.
+  Logstash/Kibana connect to Elasticsearch via `127.0.0.1:9200` instead
+  of pod-internal DNS. `group_vars/elk/main.yml` reduced to shared vars
+  (paths, network, hostname). `provision-ansible03.yml` uses three
+  separate plays. Old monolithic `elk` role removed.
 - Node exporter now uses local tarballs (`files/prometheus/exporters/`)
   via `ansible.builtin.copy` instead of downloading from GitHub via
   `get_url`. Added `node_exporter_version_stripped` fact to strip `v`

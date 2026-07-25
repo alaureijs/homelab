@@ -2,7 +2,7 @@
 
 ## Overview
 
-Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12) for centralized log management.
+Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12) for centralized log management. Each component runs as an independent pod via `podman kube play`.
 
 ## Architecture
 
@@ -12,10 +12,10 @@ Client (Filebeat) → Logstash (5044) → Elasticsearch (9200)
 Kibana (5601) ← nginx (443) → Elasticsearch (9200)
 ```
 
-- **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elk/elasticsearch/`
-- **Logstash**: Beats input (5044), grok filters for syslog/nginx, ES output, 2g heap
-- **Kibana**: HTTP UI on 5601, connected to Elasticsearch
-- **Elasticsearch Exporter**: Sidecar on port 9114, scrapes Elasticsearch metrics
+- **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elk/elasticsearch/` (own pod)
+- **Logstash**: Beats input (5044), grok filters for syslog/nginx, ES output, 2g heap (own pod)
+- **Kibana**: HTTP UI on 5601, connected to Elasticsearch (own pod + nginx reverse proxy)
+- **Elasticsearch Exporter**: Sidecar in Elasticsearch pod on port 9114
 - **Nginx**: HTTPS reverse proxy on 443, routes `/kibana/` and `/elasticsearch/`
 
 ## Access URLs
@@ -58,7 +58,8 @@ Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
 
 ## Container Configuration
 
-- **Podman CNI network**: `elk`
+- **Podman CNI network**: `elk` (shared across all three pods)
+- **Inter-service communication**: All pods use `hostIP: 127.0.0.1` + `hostPort`. Logstash/Kibana connect to Elasticsearch via `127.0.0.1:9200`.
 - **Volume mounts**: Separate host directories for configs (Logstash config/pipeline split)
 - **Image pulls**: Auth via Harbor credentials, TLS trust via CA cert
 - **Deploy fix**: `chown -R 1000:1000` on Elasticsearch data dir after `kube play`
@@ -70,8 +71,8 @@ Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
 Elasticsearch runs as uid 1000. After `kube play`, the data directory may be owned by root:
 
 ```bash
-chown -R 1000:1000 /var/lib/elasticsearch/
-podman restart elk-elasticsearch
+chown -R 1000:1000 /var/lib/elk/elasticsearch/
+podman restart elasticsearch-elasticsearch
 ```
 
 ### Kibana Fails to Start
@@ -92,9 +93,9 @@ Container logs are managed via rsyslog (journald → `/var/log/elk/`). To view E
 
 ```bash
 ssh root@192.168.100.12
-podman logs elk-elasticsearch
-podman logs elk-logstash
-podman logs elk-kibana
+podman logs elasticsearch-elasticsearch
+podman logs logstash-logstash
+podman logs kibana-kibana
 ```
 
 ## Management Commands
@@ -103,8 +104,13 @@ podman logs elk-kibana
 # Deploy/redeploy ELK stack
 ansible-playbook playbooks/provision-ansible03.yml
 
-# Restart ELK containers
-ansible-playbook playbooks/provision-ansible03.yml --tags restart-elk
+# Deploy individual components
+ansible-playbook playbooks/provision-ansible03.yml --limit ansible03 -e "elk_component=elasticsearch"
+
+# Restart individual containers
+podman restart elasticsearch-elasticsearch
+podman restart logstash-logstash
+podman restart kibana-kibana
 
 # Check Elasticsearch cluster health
 curl -s http://192.168.100.12:9200/_cluster/health?pretty

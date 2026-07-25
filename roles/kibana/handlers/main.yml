@@ -1,9 +1,8 @@
 ---
-- name: Restart ELK stack
+- name: Restart Kibana
   ansible.builtin.shell: |
-    podman kube play --down {{ elk_config_dir }}/elk-pod.yml 2>/dev/null || true
-    chown -R 1000:1000 {{ elasticsearch_data_dir }}
-    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elk-pod.yml
+    podman kube play --down {{ elk_config_dir }}/kibana-pod.yml 2>/dev/null || true
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/kibana-pod.yml
   args:
     executable: /bin/bash
   changed_when: true

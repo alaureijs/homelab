@@ -31,6 +31,11 @@
     name: "{{ common_remove_packages }}"
     state: absent
   when: common_remove_packages | length > 0
+  register: _common_remove_result
+  failed_when: >-
+    _common_remove_result is failed and
+    'No packages to remove' not in _common_remove_result.msg | default('') and
+    'nothing to do' not in _common_remove_result.msg | default('')
 
 - name: Ensure chrony is running
   ansible.builtin.systemd:

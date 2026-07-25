@@ -1,0 +1,150 @@
+---
+- name: Create Kibana directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ elk_config_dir }}"
+    - "{{ elk_data_dir }}"
+
+- name: Render Kibana configuration
+  ansible.builtin.template:
+    src: "{{ kibana_config_template }}"
+    dest: /tmp/kibana.yml
+  notify: Restart Kibana
+
+- name: Read Kibana configuration
+  ansible.builtin.slurp:
+    src: /tmp/kibana.yml
+  register: elk_cm_kibana
+
+- name: Create Kibana log directory
+  ansible.builtin.file:
+    path: /var/log/elk
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy rsyslog config for Kibana
+  ansible.builtin.copy:
+    content: |
+      template(name="ElkLogFile" type="string" string="/var/log/elk/%programname%.log")
+      if $programname == "kibana" then {
+          action(type="omfile" dynaFile="ElkLogFile"
+                 fileCreateMode="0644" dirCreateMode="0755")
+          stop
+      }
+    dest: /etc/rsyslog.d/33-kibana.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart rsyslog
+
+- name: Deploy logrotate config for ELK logs
+  ansible.builtin.copy:
+    content: |
+      /var/log/elk/*.log {
+          daily
+          rotate 14
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+          dateext
+          dateformat -%Y%m%d
+      }
+    dest: /etc/logrotate.d/elk
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure Podman auth directory exists
+  ansible.builtin.file:
+    path: /root/.config/containers
+    state: directory
+    mode: "0700"
+
+- name: Write Podman auth for Harbor
+  ansible.builtin.copy:
+    content: |
+      {
+        "auths": {
+          "{{ harbor_hostname }}": {
+            "auth": "{{ ('ansible-sync:' + vault_harbor_sync_password) | b64encode }}"
+          }
+        }
+      }
+    dest: /root/.config/containers/auth.json
+    mode: "0600"
+  no_log: true
+
+- name: Fetch Harbor certificate from ansible01
+  ansible.builtin.slurp:
+    src: /etc/pki/tls/certs/harbor.crt
+  delegate_to: ansible01
+  register: kibana_harbor_cert
+
+- name: Write Harbor certificate for system trust
+  ansible.builtin.copy:
+    content: "{{ kibana_harbor_cert.content | b64decode }}"
+    dest: /etc/pki/ca-trust/source/anchors/harbor.crt
+    mode: "0644"
+  register: kibana_harbor_cert_trust
+
+- name: Update CA trust
+  ansible.builtin.command: update-ca-trust
+  changed_when: kibana_harbor_cert_trust.changed
+
+- name: Create containers certs directory for Harbor
+  ansible.builtin.file:
+    path: "/etc/containers/certs.d/{{ harbor_hostname }}"
+    state: directory
+    mode: "0755"
+
+- name: Write Harbor certificate for containers
+  ansible.builtin.copy:
+    content: "{{ kibana_harbor_cert.content | b64decode }}"
+    dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
+    mode: "0644"
+
+- name: Create Podman network for ELK
+  containers.podman.podman_network:
+    name: "{{ elk_network_name }}"
+    state: present
+
+- name: Template Kibana pod manifest
+  ansible.builtin.template:
+    src: kibana-pod.yml.j2
+    dest: "{{ elk_config_dir }}/kibana-pod.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Kibana
+
+- name: Deploy Kibana pod
+  ansible.builtin.shell: |
+    podman kube play --down {{ elk_config_dir }}/kibana-pod.yml 2>/dev/null || true
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/kibana-pod.yml
+  args:
+    executable: /bin/bash
+  register: kibana_kube
+  changed_when: "'Pod' in kibana_kube.stdout or 'Container' in kibana_kube.stdout"
+
+- name: Install nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Deploy nginx reverse proxy for Kibana
+  ansible.builtin.template:
+    src: nginx-kibana.conf.j2
+    dest: /etc/nginx/conf.d/kibana.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx

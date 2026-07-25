@@ -1,0 +1,147 @@
+---
+- name: Create Logstash directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ elk_config_dir }}"
+    - "{{ elk_data_dir }}"
+
+- name: Render Logstash settings
+  ansible.builtin.template:
+    src: "{{ logstash_config_template }}"
+    dest: /tmp/logstash.yml
+  notify: Restart Logstash
+
+- name: Read Logstash settings
+  ansible.builtin.slurp:
+    src: /tmp/logstash.yml
+  register: elk_cm_logstash_config
+
+- name: Render Logstash pipeline configuration
+  ansible.builtin.template:
+    src: "{{ logstash_pipeline_template }}"
+    dest: /tmp/logstash-pipeline.conf
+  notify: Restart Logstash
+
+- name: Read Logstash pipeline configuration
+  ansible.builtin.slurp:
+    src: /tmp/logstash-pipeline.conf
+  register: elk_cm_logstash_pipeline
+
+- name: Create Logstash log directory
+  ansible.builtin.file:
+    path: /var/log/elk
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy rsyslog config for Logstash
+  ansible.builtin.copy:
+    content: |
+      template(name="ElkLogFile" type="string" string="/var/log/elk/%programname%.log")
+      if $programname == "logstash" then {
+          action(type="omfile" dynaFile="ElkLogFile"
+                 fileCreateMode="0644" dirCreateMode="0755")
+          stop
+      }
+    dest: /etc/rsyslog.d/32-logstash.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart rsyslog
+
+- name: Deploy logrotate config for ELK logs
+  ansible.builtin.copy:
+    content: |
+      /var/log/elk/*.log {
+          daily
+          rotate 14
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+          dateext
+          dateformat -%Y%m%d
+      }
+    dest: /etc/logrotate.d/elk
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure Podman auth directory exists
+  ansible.builtin.file:
+    path: /root/.config/containers
+    state: directory
+    mode: "0700"
+
+- name: Write Podman auth for Harbor
+  ansible.builtin.copy:
+    content: |
+      {
+        "auths": {
+          "{{ harbor_hostname }}": {
+            "auth": "{{ ('ansible-sync:' + vault_harbor_sync_password) | b64encode }}"
+          }
+        }
+      }
+    dest: /root/.config/containers/auth.json
+    mode: "0600"
+  no_log: true
+
+- name: Fetch Harbor certificate from ansible01
+  ansible.builtin.slurp:
+    src: /etc/pki/tls/certs/harbor.crt
+  delegate_to: ansible01
+  register: logstash_harbor_cert
+
+- name: Write Harbor certificate for system trust
+  ansible.builtin.copy:
+    content: "{{ logstash_harbor_cert.content | b64decode }}"
+    dest: /etc/pki/ca-trust/source/anchors/harbor.crt
+    mode: "0644"
+  register: logstash_harbor_cert_trust
+
+- name: Update CA trust
+  ansible.builtin.command: update-ca-trust
+  changed_when: logstash_harbor_cert_trust.changed
+
+- name: Create containers certs directory for Harbor
+  ansible.builtin.file:
+    path: "/etc/containers/certs.d/{{ harbor_hostname }}"
+    state: directory
+    mode: "0755"
+
+- name: Write Harbor certificate for containers
+  ansible.builtin.copy:
+    content: "{{ logstash_harbor_cert.content | b64decode }}"
+    dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
+    mode: "0644"
+
+- name: Create Podman network for ELK
+  containers.podman.podman_network:
+    name: "{{ elk_network_name }}"
+    state: present
+
+- name: Template Logstash pod manifest
+  ansible.builtin.template:
+    src: logstash-pod.yml.j2
+    dest: "{{ elk_config_dir }}/logstash-pod.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Logstash
+
+- name: Deploy Logstash pod
+  ansible.builtin.shell: |
+    podman kube play --down {{ elk_config_dir }}/logstash-pod.yml 2>/dev/null || true
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/logstash-pod.yml
+  args:
+    executable: /bin/bash
+  register: logstash_kube
+  changed_when: "'Pod' in logstash_kube.stdout or 'Container' in logstash_kube.stdout"

@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+  labels:
+    app: kibana
+data:
+  kibana.yml: |
+{{ elk_cm_kibana.content | b64decode | indent(4, first=True) }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kibana
+  labels:
+    app: kibana
+spec:
+  containers:
+    - name: kibana
+      image: {{ kibana_image }}
+      ports:
+        - containerPort: {{ kibana_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ kibana_port }}
+      env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://127.0.0.1:{{ elasticsearch_http_port }}"
+        - name: XPACK_SECURITY_ENABLED
+          value: "false"
+      volumeMounts:
+        - name: kibana-config
+          mountPath: /usr/share/kibana/config/kibana.yml
+          subPath: kibana.yml
+      resources:
+        limits:
+          memory: 1Gi
+        requests:
+          memory: 512Mi
+      livenessProbe:
+        httpGet:
+          path: /api/status
+          port: {{ kibana_port }}
+        initialDelaySeconds: 120
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 10
+
+  volumes:
+    - name: kibana-config
+      configMap:
+        name: kibana-config

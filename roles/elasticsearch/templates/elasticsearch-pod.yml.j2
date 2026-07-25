@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+  labels:
+    app: elasticsearch
+data:
+  elasticsearch.yml: |
+{{ elk_cm_elasticsearch.content | b64decode | indent(4, first=True) }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elasticsearch-data
+  labels:
+    app: elasticsearch
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ elasticsearch_data_dir }}
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-data
+  labels:
+    app: elasticsearch
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  containers:
+    - name: elasticsearch
+      image: {{ elasticsearch_image }}
+      ports:
+        - containerPort: {{ elasticsearch_http_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ elasticsearch_http_port }}
+        - containerPort: {{ elasticsearch_transport_port }}
+          hostIP: 127.0.0.1
+          hostPort: {{ elasticsearch_transport_port }}
+      env:
+        - name: discovery.type
+          value: single-node
+        - name: ES_JAVA_OPTS
+          value: "-Xms{{ elasticsearch_heap_size }} -Xmx{{ elasticsearch_heap_size }}"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: xpack.security.enrollment.enabled
+          value: "false"
+        - name: ingest.geoip.downloader.enabled
+          value: "false"
+      volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+        - name: elasticsearch-config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+      resources:
+        limits:
+          memory: 5Gi
+        requests:
+          memory: 4Gi
+      livenessProbe:
+        httpGet:
+          path: /_cluster/health
+          port: {{ elasticsearch_http_port }}
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 10
+
+    - name: elasticsearch-exporter
+      image: {{ elasticsearch_exporter_image }}
+      args:
+        - "--es.uri=http://127.0.0.1:{{ elasticsearch_http_port }}"
+        - "--es.all"
+        - "--es.indices"
+      ports:
+        - containerPort: {{ elk_elasticsearch_exporter_port }}
+          hostPort: {{ elk_elasticsearch_exporter_port }}
+          hostIP: "0.0.0.0"
+      resources:
+        limits:
+          memory: 128M
+        requests:
+          memory: 64M
+      livenessProbe:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - wget -qO- --timeout=5 http://localhost:{{ elk_elasticsearch_exporter_port }}/metrics || exit 1
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+
+  volumes:
+    - name: elasticsearch-data
+      persistentVolumeClaim:
+        claimName: elasticsearch-data
+    - name: elasticsearch-config
+      configMap:
+        name: elasticsearch-config

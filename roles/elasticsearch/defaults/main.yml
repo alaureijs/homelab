@@ -1,0 +1,12 @@
+---
+# Elasticsearch role defaults
+
+elasticsearch_image: "{{ harbor_hostname }}/library/elasticsearch:{{ elasticsearch_version }}"
+elasticsearch_heap_size: "4g"
+elasticsearch_cluster_name: "elk-cluster"
+elasticsearch_http_port: 9200
+elasticsearch_transport_port: 9300
+elasticsearch_data_dir: "{{ elk_data_dir }}/elasticsearch"
+elasticsearch_config_template: "{{ role_path }}/templates/elasticsearch.yml.j2"
+
+elasticsearch_exporter_image: "{{ harbor_hostname }}/prometheuscommunity/elasticsearch-exporter:{{ elasticsearch_exporter_version }}"

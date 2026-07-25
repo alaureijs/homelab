@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  role_name: elk
-  description: ELK stack (Elasticsearch, Logstash, Kibana) deployment
+  role_name: logstash
+  description: Logstash deployment
   author: alaureijs
   license: MIT
   min_ansible_version: "2.17"
@@ -10,6 +10,4 @@ galaxy_info:
       versions:
         - "10"
 
-dependencies:
-  - role: podman
-  - role: certificates
+dependencies: []

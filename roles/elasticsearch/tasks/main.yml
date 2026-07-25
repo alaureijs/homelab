@@ -1,5 +1,5 @@
 ---
-- name: Create ELK directories
+- name: Create Elasticsearch directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -9,54 +9,20 @@
   loop:
     - "{{ elk_config_dir }}"
     - "{{ elk_data_dir }}"
-    - "{{ elk_data_dir }}/elasticsearch"
-    - "{{ elk_data_dir }}/logstash"
+    - "{{ elasticsearch_data_dir }}"
 
 - name: Render Elasticsearch configuration
   ansible.builtin.template:
-    src: "{{ elk_elasticsearch_config_template }}"
-    dest: /tmp/elk-elasticsearch.yml
-  notify: Restart ELK stack
+    src: "{{ elasticsearch_config_template }}"
+    dest: /tmp/elasticsearch.yml
+  notify: Restart Elasticsearch
 
 - name: Read Elasticsearch configuration
   ansible.builtin.slurp:
-    src: /tmp/elk-elasticsearch.yml
+    src: /tmp/elasticsearch.yml
   register: elk_cm_elasticsearch
 
-- name: Render Logstash pipeline configuration
-  ansible.builtin.template:
-    src: "{{ elk_logstash_pipeline_template }}"
-    dest: /tmp/elk-logstash-pipeline.conf
-  notify: Restart ELK stack
-
-- name: Read Logstash pipeline configuration
-  ansible.builtin.slurp:
-    src: /tmp/elk-logstash-pipeline.conf
-  register: elk_cm_logstash_pipeline
-
-- name: Render Logstash settings
-  ansible.builtin.template:
-    src: "{{ elk_logstash_config_template }}"
-    dest: /tmp/elk-logstash.yml
-  notify: Restart ELK stack
-
-- name: Read Logstash settings
-  ansible.builtin.slurp:
-    src: /tmp/elk-logstash.yml
-  register: elk_cm_logstash_config
-
-- name: Render Kibana configuration
-  ansible.builtin.template:
-    src: "{{ elk_kibana_config_template }}"
-    dest: /tmp/elk-kibana.yml
-  notify: Restart ELK stack
-
-- name: Read Kibana configuration
-  ansible.builtin.slurp:
-    src: /tmp/elk-kibana.yml
-  register: elk_cm_kibana
-
-- name: Create ELK log directory
+- name: Create Elasticsearch log directory
   ansible.builtin.file:
     path: /var/log/elk
     state: directory
@@ -64,20 +30,16 @@
     group: root
     mode: "0755"
 
-- name: Deploy rsyslog config for ELK container logs
+- name: Deploy rsyslog config for Elasticsearch
   ansible.builtin.copy:
     content: |
-      # ELK container logs — route stdout/stderr from conmon to per-container files
       template(name="ElkLogFile" type="string" string="/var/log/elk/%programname%.log")
-
-      if $programname == "elasticsearch" or
-         $programname == "logstash" or
-         $programname == "kibana" then {
+      if $programname == "elasticsearch" then {
           action(type="omfile" dynaFile="ElkLogFile"
                  fileCreateMode="0644" dirCreateMode="0755")
           stop
       }
-    dest: /etc/rsyslog.d/31-elk.conf
+    dest: /etc/rsyslog.d/31-elasticsearch.conf
     owner: root
     group: root
     mode: "0644"
@@ -126,18 +88,18 @@
   ansible.builtin.slurp:
     src: /etc/pki/tls/certs/harbor.crt
   delegate_to: ansible01
-  register: elk_harbor_cert
+  register: elasticsearch_harbor_cert
 
 - name: Write Harbor certificate for system trust
   ansible.builtin.copy:
-    content: "{{ elk_harbor_cert.content | b64decode }}"
+    content: "{{ elasticsearch_harbor_cert.content | b64decode }}"
     dest: /etc/pki/ca-trust/source/anchors/harbor.crt
     mode: "0644"
-  register: elk_harbor_cert_trust
+  register: elasticsearch_harbor_cert_trust
 
 - name: Update CA trust
   ansible.builtin.command: update-ca-trust
-  changed_when: elk_harbor_cert_trust.changed
+  changed_when: elasticsearch_harbor_cert_trust.changed
 
 - name: Create containers certs directory for Harbor
   ansible.builtin.file:
@@ -147,7 +109,7 @@
 
 - name: Write Harbor certificate for containers
   ansible.builtin.copy:
-    content: "{{ elk_harbor_cert.content | b64decode }}"
+    content: "{{ elasticsearch_harbor_cert.content | b64decode }}"
     dest: "/etc/containers/certs.d/{{ harbor_hostname }}/ca.crt"
     mode: "0644"
 
@@ -155,7 +117,7 @@
   containers.podman.podman_network:
     name: "{{ elk_network_name }}"
     state: present
-  register: elk_network
+  register: elasticsearch_network
 
 - name: Set data directory permissions for Elasticsearch
   ansible.builtin.file:
@@ -164,38 +126,24 @@
     owner: "1000"
     group: "1000"
     mode: "0755"
-  when: elk_network is changed
+  when: elasticsearch_network is changed
 
-- name: Template ELK pod manifest
+- name: Template Elasticsearch pod manifest
   ansible.builtin.template:
-    src: elk-pod.yml.j2
-    dest: "{{ elk_config_dir }}/elk-pod.yml"
+    src: elasticsearch-pod.yml.j2
+    dest: "{{ elk_config_dir }}/elasticsearch-pod.yml"
     owner: root
     group: root
     mode: "0644"
-  notify: Restart ELK stack
+  notify: Restart Elasticsearch
 
-- name: Deploy ELK stack pod
+- name: Deploy Elasticsearch pod
   ansible.builtin.shell: |
-    podman kube play --down {{ elk_config_dir }}/elk-pod.yml 2>/dev/null || true
-    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elk-pod.yml
+    podman kube play --down {{ elk_config_dir }}/elasticsearch-pod.yml 2>/dev/null || true
+    podman kube play --network {{ elk_network_name }} {{ elk_config_dir }}/elasticsearch-pod.yml
     chown -R 1000:1000 {{ elasticsearch_data_dir }}
-    podman restart elk-elasticsearch
+    podman restart elasticsearch-elasticsearch
   args:
     executable: /bin/bash
-  register: elk_kube
-  changed_when: "'Pod' in elk_kube.stdout or 'Container' in elk_kube.stdout"
-
-- name: Install nginx
-  ansible.builtin.dnf:
-    name: nginx
-    state: present
-
-- name: Deploy nginx reverse proxy for Kibana
-  ansible.builtin.template:
-    src: nginx-kibana.conf.j2
-    dest: /etc/nginx/conf.d/kibana.conf
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Reload nginx
+  register: elasticsearch_kube
+  changed_when: "'Pod' in elasticsearch_kube.stdout or 'Container' in elasticsearch_kube.stdout"

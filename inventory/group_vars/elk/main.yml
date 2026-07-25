@@ -1,30 +1,18 @@
 ---
-# ELK stack group variables
+# ELK stack group variables (shared across elasticsearch, logstash, kibana roles)
 
-# Images (pulled from Harbor)
-elk_elasticsearch_image: "{{ harbor_hostname }}/library/elasticsearch:{{ elasticsearch_version }}"
-elk_logstash_image: "{{ harbor_hostname }}/library/logstash:{{ logstash_version }}"
-elk_kibana_image: "{{ harbor_hostname }}/library/kibana:{{ kibana_version }}"
+# Shared paths
+elk_config_dir: /etc/elk
+elk_data_dir: /var/lib/elk
+elk_cert_dir: /etc/pki/tls/certs
+elk_key_dir: /etc/pki/tls/private
 
-# Elasticsearch
-elasticsearch_heap_size: "4g"
-elasticsearch_cluster_name: "elk-cluster"
-elasticsearch_http_port: 9200
-elasticsearch_transport_port: 9300
-elasticsearch_data_dir: /var/lib/elk/elasticsearch
+# Podman network
+elk_network_name: elk
 
-# Logstash
-logstash_heap_size: "2g"
-logstash_http_port: 9600
-logstash_beats_port: 5044
+# Hostname
+elk_hostname: observability.local.lan
 
-# Kibana
-kibana_port: 5601
-
-# Reverse proxy (nginx)
-elk_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
-elk_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
-
-# Access
+# Access URLs
 elk_kibana_url: "https://observability.local.lan/kibana/"
 elk_elasticsearch_url: "https://observability.local.lan/elasticsearch/"

@@ -3,8 +3,8 @@ server {
     http2 on;
     server_name observability.local.lan;
 
-    ssl_certificate {{ elk_nginx_cert_path }};
-    ssl_certificate_key {{ elk_nginx_key_path }};
+    ssl_certificate {{ kibana_nginx_cert_path }};
+    ssl_certificate_key {{ kibana_nginx_key_path }};
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;

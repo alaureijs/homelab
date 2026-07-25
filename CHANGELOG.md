@@ -28,6 +28,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   kernel protection hardening. **Do not** add `RestrictNamespaces=true`
   (breaks `podman stats` cgroup access). `ProtectSystem=strict` also
   avoided (breaks Podman runtime).
+- Node exporter systemd hardening (`node_exporter_service_hardening`)
+  — configurable dict with `ProtectSystem=full`, `ProtectHome`,
+  `PrivateTmp`, `PrivateDevices`, `ProtectKernel*`, `NoNewPrivileges`,
+  `RestrictNamespaces`, `LockPersonality`, `RestrictRealtime`,
+  `RestrictSUIDSGID`. `MemoryDenyWriteExecute` excluded (breaks Go mmap).
 - `firewall_podman_interfaces` variable in `group_vars/all/main.yml` —
   list of Podman bridge interfaces to add to firewalld trusted zone
   (defaults to `podman1`, `cni-podman0`).

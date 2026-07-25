@@ -290,9 +290,29 @@ Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m)
 
 **Tamper detection:** SHA256 checksums in `.checksums` file. Runner verifies before execution.
 
-**Sudoers:** `/etc/sudoers.d/node-exporter-textfile` grants `nobody` passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`, `podman ps`, `podman stats`.
+**Sudoers:** `/etc/sudoers.d/node-exporter-textfile` grants `nobody` passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`, `podman ps`, `podman stats`. Rules are embedded in each `node_exporter_textfile_scripts` entry as `sudoers` lists.
 
-**Systemd sandboxing:** The service uses `ProtectSystem=full` + `PrivateTmp=true` + kernel protection hardening. Do **NOT** add `RestrictNamespaces=true` — it prevents `podman stats` from accessing container cgroup namespaces, causing it to produce empty output. `ProtectSystem=strict` must also be avoided as it makes the entire filesystem read-only, breaking Podman runtime access even with `ReadWritePaths`.
+**Systemd sandboxing:**
+
+- **node-exporter** service (`node_exporter_service_hardening`):
+  `ProtectSystem=full`, `ProtectHome=true`, `PrivateTmp=true`,
+  `PrivateDevices=true`, `ProtectKernelTunables=true`,
+  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
+  `NoNewPrivileges=true`, `RestrictNamespaces=true`,
+  `LockPersonality=true`, `RestrictRealtime=true`,
+  `RestrictSUIDSGID=true`.
+  Do **NOT** add `MemoryDenyWriteExecute=true` — Go binaries use mmap with execute, which will crash node_exporter.
+
+- **node-exporter-textfile** service (`node_exporter_textfile_service_hardening`):
+  `ProtectSystem=full`, `PrivateTmp=true`, `ProtectKernelTunables=true`,
+  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
+  `RestrictSUIDSGID=true`, `RestrictRealtime=true`,
+  `LockPersonality=true`.
+  Do **NOT** add `RestrictNamespaces=true` — it prevents `podman stats`
+  from accessing container cgroup namespaces, causing empty output.
+  `ProtectSystem=strict` must also be avoided as it makes the entire
+  filesystem read-only, breaking Podman runtime access even with
+  `ReadWritePaths`.
 
 ## Playbook Development
 1. **Test changes**: Run `ansible-playbook playbooks/provision-ansibleXX.yml` on appropriate host

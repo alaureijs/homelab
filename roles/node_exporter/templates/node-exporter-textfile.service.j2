@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Node Exporter Textfile Collector
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=nobody
+Group=nobody
+ExecStart=/usr/local/bin/node-exporter-textfile-runner
+{% for param, value in node_exporter_textfile_service_hardening.items() %}
+{{ param }}={{ value }}
+{% endfor %}
+
+[Install]
+WantedBy=multi-user.target

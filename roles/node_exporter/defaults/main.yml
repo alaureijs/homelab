@@ -49,3 +49,14 @@ node_exporter_textfile_scripts:
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *"
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *"
+
+# Textfile collector systemd service security
+node_exporter_textfile_service_hardening:
+  ProtectSystem: full
+  PrivateTmp: "true"
+  ProtectKernelTunables: "true"
+  ProtectKernelModules: "true"
+  ProtectControlGroups: "true"
+  RestrictSUIDSGID: "true"
+  RestrictRealtime: "true"
+  LockPersonality: "true"

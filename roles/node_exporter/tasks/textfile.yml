@@ -94,29 +94,8 @@
     validate: /usr/sbin/visudo -cf %s
 
 - name: Deploy textfile collector systemd service
-  ansible.builtin.copy:
-    content: |
-      [Unit]
-      Description=Node Exporter Textfile Collector
-      After=network-online.target
-
-      [Service]
-      Type=oneshot
-      User=nobody
-      Group=nobody
-      ExecStart=/usr/local/bin/node-exporter-textfile-runner
-
-      ProtectSystem=full
-      PrivateTmp=true
-      ProtectKernelTunables=true
-      ProtectKernelModules=true
-      ProtectControlGroups=true
-      RestrictSUIDSGID=true
-      RestrictRealtime=true
-      LockPersonality=true
-
-      [Install]
-      WantedBy=multi-user.target
+  ansible.builtin.template:
+    src: node-exporter-textfile.service.j2
     dest: /etc/systemd/system/node-exporter-textfile.service
     owner: root
     group: root

@@ -3,3 +3,13 @@
   ansible.builtin.systemd:
     name: firewalld
     state: reloaded
+
+- name: Reload nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: reloaded
+
+- name: Reload iptables
+  ansible.builtin.systemd:
+    name: iptables
+    state: reloaded

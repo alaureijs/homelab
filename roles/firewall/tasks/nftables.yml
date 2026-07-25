@@ -1,0 +1,35 @@
+---
+- name: Install nftables
+  ansible.builtin.dnf:
+    name: nftables
+    state: present
+
+- name: Build nftables port lists
+  ansible.builtin.set_fact:
+    firewall_nft_tcp_ports: >-
+      {{ firewall_ports
+         | select('match', '.*/tcp$')
+         | map('regex_replace', '^(.*)/tcp$', '\1')
+         | list
+         + firewall_services
+            | map('extract', firewall_service_port_map)
+            | select('match', '.*')
+            | list }}
+    firewall_nft_udp_ports: >-
+      {{ firewall_ports
+         | select('match', '.*/udp$')
+         | map('regex_replace', '^(.*)/udp$', '\1')
+         | list }}
+
+- name: Deploy nftables configuration
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables/nftables.conf
+    mode: "0640"
+  notify: Reload nftables
+
+- name: Ensure nftables is running
+  ansible.builtin.systemd:
+    name: nftables
+    state: started
+    enabled: true

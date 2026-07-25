@@ -1,41 +1,47 @@
 ---
-- name: Install firewalld
-  ansible.builtin.dnf:
-    name: firewalld
-    state: present
+- name: Validate firewall_backend value
+  ansible.builtin.assert:
+    that: firewall_backend in firewall_valid_backends
+    fail_msg: "firewall_backend '{{ firewall_backend }}' is not valid. Must be one of: {{ firewall_valid_backends | join(', ') }}"
 
-- name: Ensure firewalld is running
-  ansible.builtin.systemd:
-    name: firewalld
-    state: started
-    enabled: true
+- name: Detect firewall backend
+  when: firewall_backend == "auto"
+  block:
+    - name: Check for firewalld
+      ansible.builtin.command: command -v firewall-cmd
+      register: _fw_firewalld
+      changed_when: false
+      failed_when: false
 
-- name: Open required ports
-  ansible.posix.firewalld:
-    port: "{{ item }}"
-    permanent: true
-    state: enabled
-    immediate: false
-  loop: "{{ firewall_ports }}"
+    - name: Check for nftables
+      ansible.builtin.command: command -v nft
+      register: _fw_nftables
+      changed_when: false
+      failed_when: false
 
-- name: Allow required services
-  ansible.posix.firewalld:
-    service: "{{ item }}"
-    permanent: true
-    state: enabled
-    immediate: false
-  loop: "{{ firewall_services }}"
+    - name: Check for iptables
+      ansible.builtin.command: command -v iptables
+      register: _fw_iptables
+      changed_when: false
+      failed_when: false
 
-- name: Trust Podman bridge interface
-  ansible.posix.firewalld:
-    interface: "{{ item }}"
-    zone: trusted
-    permanent: true
-    state: enabled
-    immediate: false
-  loop: "{{ firewall_podman_interfaces | default([]) }}"
+    - name: Set detected backend
+      ansible.builtin.set_fact:
+        firewall_detected_backend: >-
+          {{ 'firewalld' if _fw_firewalld.rc == 0
+             else 'nftables' if _fw_nftables.rc == 0
+             else 'iptables' if _fw_iptables.rc == 0
+             else 'none' }}
 
-- name: Reload firewalld
-  ansible.builtin.systemd:
-    name: firewalld
-    state: reloaded
+- name: Set explicit backend
+  ansible.builtin.set_fact:
+    firewall_detected_backend: "{{ firewall_backend }}"
+  when: firewall_backend != "auto"
+
+- name: Fail if no firewall backend found
+  ansible.builtin.fail:
+    msg: "No supported firewall backend found (firewalld, nftables, iptables)"
+  when: firewall_detected_backend == "none"
+
+- name: Configure firewall ({{ firewall_detected_backend }})
+  ansible.builtin.include_tasks: "{{ firewall_detected_backend }}.yml"

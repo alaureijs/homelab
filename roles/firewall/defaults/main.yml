@@ -1,12 +1,23 @@
 ---
 # firewall role defaults
+#
+# Backend: firewalld | nftables | iptables | auto
+# auto = prefer firewalld > nftables > iptables
+firewall_backend: auto
 
-firewall_service: firewalld
-firewall_zone: public
+# firewalld-specific
+firewalld_zone: public
 
+# Common
 firewall_ports:
   - 80/tcp
   - 443/tcp
 
 firewall_services:
   - ssh
+
+# Service-to-port mapping for nftables/iptables backends
+firewall_service_port_map:
+  ssh: "22"
+  http: "80"
+  https: "443"

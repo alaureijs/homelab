@@ -1,0 +1,32 @@
+#!/usr/sbin/nft -f
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        ct state established,related accept
+        ct state invalid drop
+
+        iif lo accept
+
+        ip protocol icmp accept
+        ip6 nexthdr icmpv6 accept
+
+        tcp dport { {{ firewall_nft_tcp_ports | join(', ') }} } accept
+{% if firewall_nft_udp_ports is defined and firewall_nft_udp_ports | length > 0 %}
+        udp dport { {{ firewall_nft_udp_ports | join(', ') }} } accept
+{% endif %}
+{% for iface in (firewall_podman_interfaces | default([])) %}
+        iifname "{{ iface }}" accept
+{% endfor %}
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy accept;
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}

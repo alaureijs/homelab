@@ -1,28 +1,13 @@
 ---
-# Play 0: Manage controller /etc/hosts
-- name: Update controller hosts file
-  hosts: localhost
-  connection: local
-  become: true
-  gather_facts: false
-
-  tasks:
-    - name: Ensure /etc/hosts entries for all hosts
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        line: "{{ item }}"
-        state: present
-      loop: "{{ controller_hosts_entries }}"
+# Play 0: Common roles on all hosts
+- name: Common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml
 
 # Play 1: Ensure mTLS CA exists
 - name: Ensure mTLS CA exists
   ansible.builtin.import_playbook: ensure-mtls-ca.yml
 
-# Play 2: Common roles on all hosts
-- name: Common roles on all hosts
-  ansible.builtin.import_playbook: provision-common.yml
-
-# Play 3: Provision ansible01 for Harbor
+# Play 2: Provision ansible01 for Harbor
 - name: Provision ansible01 for Harbor
   hosts: ansible01
   become: true

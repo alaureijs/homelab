@@ -1,5 +1,20 @@
 ---
-# Common roles applied to all hosts
+# Play 0: Manage controller /etc/hosts
+- name: Update controller hosts file
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure /etc/hosts entries for all hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+      loop: "{{ controller_hosts_entries }}"
+
+# Play 1: Common roles applied to all hosts
 - name: Provision common roles on all hosts
   hosts: all
   become: true

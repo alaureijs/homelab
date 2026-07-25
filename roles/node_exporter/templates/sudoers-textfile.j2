@@ -2,7 +2,9 @@
 # Sudoers rules for node_exporter textfile collectors
 Defaults:nobody !requiretty
 {% for script in node_exporter_textfile_scripts %}
+{% if script.groups is not defined or script.groups is subset(group_names) %}
 {% for rule in script.sudoers | default([]) %}
 {{ rule }}
 {% endfor %}
+{% endif %}
 {% endfor %}

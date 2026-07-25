@@ -49,6 +49,10 @@ node_exporter_textfile_scripts:
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *"
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *"
+  - name: logstash.sh
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/logstash.sh"
+    sudoers: []
+    groups: ["elk"]
 
 # Textfile collector systemd service security
 node_exporter_textfile_service_hardening:

@@ -15,6 +15,17 @@
     group: nobody
     mode: "0750"
 
+- name: Set active textfile scripts based on group membership
+  ansible.builtin.set_fact:
+    _active_textfile_scripts: >-
+      {{ node_exporter_textfile_scripts
+         | rejectattr('groups', 'defined')
+         | list
+         + node_exporter_textfile_scripts
+         | selectattr('groups', 'defined')
+         | selectattr('groups', 'subset', group_names)
+         | list }}
+
 - name: Deploy textfile collector scripts
   ansible.builtin.copy:
     src: "{{ item.src }}"
@@ -22,7 +33,7 @@
     owner: root
     group: nobody
     mode: "0750"
-  loop: "{{ node_exporter_textfile_scripts }}"
+  loop: "{{ _active_textfile_scripts }}"
   loop_control:
     label: "{{ item.name }}"
   notify: Regenerate textfile checksums
@@ -32,6 +43,8 @@
     content: |
       #!/usr/bin/env bash
       set -euo pipefail
+
+      umask 022
 
       SCRIPTS_DIR="{{ node_exporter_textfile_scripts_dir }}"
       OUTPUT_DIR="{{ node_exporter_textfile_dir }}"
@@ -71,7 +84,7 @@
   ansible.builtin.stat:
     path: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
     checksum_algorithm: sha256
-  loop: "{{ node_exporter_textfile_scripts }}"
+  loop: "{{ _active_textfile_scripts }}"
   loop_control:
     label: "{{ item.name }}"
   register: _textfile_checksums

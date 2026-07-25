@@ -37,3 +37,14 @@ node_exporter_textfile_scripts:
     src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/authorized-keys.sh"
   - name: container-health.sh
     src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/container-health.sh"
+
+# Sudoers rules for textfile collectors (nobody user)
+node_exporter_sudoers:
+  - "Defaults:nobody !requiretty"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/chronyc -c tracking"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -r"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -s"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/test -f *"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/grep *"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *"
+  - "nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *"

@@ -85,16 +85,8 @@
     mode: "0640"
 
 - name: Deploy sudoers configuration for textfile collectors
-  ansible.builtin.copy:
-    content: |
-      Defaults:nobody !requiretty
-      nobody ALL=(root) NOPASSWD: /usr/bin/chronyc -c tracking
-      nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -r
-      nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -s
-      nobody ALL=(root) NOPASSWD: /usr/bin/test -f *
-      nobody ALL=(root) NOPASSWD: /usr/bin/grep *
-      nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *
-      nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *
+  ansible.builtin.template:
+    src: sudoers-textfile.j2
     dest: /etc/sudoers.d/node-exporter-textfile
     owner: root
     group: root

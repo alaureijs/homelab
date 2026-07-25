@@ -8,6 +8,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Logstash textfile collector (`logstash.sh`) — queries Logstash
+  `/_node/stats` API and outputs 40+ Prometheus-format metrics with
+  HELP/TYPE annotations. Covers events, JVM (heap/non-heap/threads/GC),
+  process (CPU/fds/memory), queue, pipeline events/batch/reloads, and
+  per-plugin metrics (inputs, filters, outputs) with worker utilization.
+  Deployed only on `elk` group hosts via conditional `groups` field.
+- Conditional textfile collector deployment — new `groups` field on
+  `node_exporter_textfile_scripts` entries filters scripts by inventory
+  group membership using `rejectattr`/`selectattr` with `subset` test.
+  Scripts without `groups` deploy everywhere (backward compatible).
+  Sudoers template and checksum tasks also filter by group.
+- `node_exporter_textfile_scripts` moved from role defaults to
+  `inventory/group_vars/all/main.yml`. Role defaults retains empty
+  list with documented fields for reference.
 - Trivy DB mirror for offline vulnerability scanning — mirrors
   `ghcr.io/aquasecurity/trivy-db:2` OCI artifact to Harbor project
   `trivy-db` via `skopeo copy`. Trivy adapter configured with

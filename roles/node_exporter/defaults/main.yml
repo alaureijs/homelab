@@ -26,33 +26,13 @@ node_exporter_textfile_dir: /var/lib/node-exporter/textfiles_metrics
 node_exporter_textfile_scripts_dir: /usr/local/lib/node-exporter-textfile-scripts
 node_exporter_textfile_timer_interval: 5m
 
-node_exporter_textfile_scripts:
-  - name: chrony.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/chrony.sh"
-    sudoers:
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/chronyc -c tracking"
-  - name: fstab-check.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/fstab-check.sh"
-    sudoers:
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/test -f *"
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/grep *"
-  - name: reboot-required.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/reboot-required.sh"
-    sudoers:
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -r"
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -s"
-  - name: authorized-keys.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/authorized-keys.sh"
-    sudoers: []
-  - name: container-health.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/container-health.sh"
-    sudoers:
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *"
-      - "nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *"
-  - name: logstash.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/logstash.sh"
-    sudoers: []
-    groups: ["elk"]
+# Textfile collector scripts (defined in inventory/group_vars/all/main.yml)
+# Fields:
+#   name     - script filename (e.g. chrony.sh)
+#   src      - local path to script
+#   sudoers  - list of sudoers rules needed by the script
+#   groups   - (optional) only deploy to hosts in these inventory groups
+node_exporter_textfile_scripts: []
 
 # Textfile collector systemd service security
 node_exporter_textfile_service_hardening:

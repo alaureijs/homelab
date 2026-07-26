@@ -81,6 +81,7 @@ certificates:
     ca_key: "{{ mtls_ca_key }}"
     extra_sans:
       - "DNS:{{ vm_hostname }}.{{ lab_domain }}"
+      - "DNS:{{ vm_hostname }}.homelab.internal"
       - "IP:{{ vm_ip }}"
 
 # Firewall

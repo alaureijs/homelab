@@ -29,6 +29,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Documentation restructured: monitoring and ELK docs expanded with
   ConfigMap structure, resource tuning, network configuration, and
   troubleshooting sections.
+- **Step 0.0 completed**: All certificates renewed with dual-domain
+  SANs (`local.lan` + `homelab.internal`). Verified Harbor (200),
+  Monitoring (302), ELK (302) on both domains. Fixed mTLS client cert
+  on ansible02 to include FQDN SANs for Prometheus mTLS. Updated
+  `certificates_extra_sans` in harbor, monitoring, elk group_vars.
+  Added `extra_sans` to node-exporter cert in `all/main.yml`.
 
 - Logstash exporter sidecar (`kuskoman/logstash-exporter:v1.9.1`)
   deployed in the Logstash pod — exposes 90+ Prometheus-format metrics

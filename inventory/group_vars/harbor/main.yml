@@ -41,6 +41,7 @@ firewall_podman_interfaces:
 # Certificate SANs
 certificates_extra_sans:
   - "DNS:{{ harbor_hostname }}"
+  - "DNS:harbor.homelab.internal"
 
 # Certificates (merged with group_vars/all certificates)
 certificates_extra:

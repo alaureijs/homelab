@@ -77,25 +77,30 @@ no cert renewal needed until Step 0.9 (cleanup).
 
 #### 0a: Update dual-domain SANs in inventory
 
-- [ ] `inventory/group_vars/harbor/main.yml:42-43` — update (currently has `DNS:{{ harbor_hostname }}`):
+- [x] `inventory/group_vars/harbor/main.yml:42-43` — update (currently has `DNS:{{ harbor_hostname }}`):
   ```yaml
   certificates_extra_sans:
     - "DNS:harbor.local.lan"
     - "DNS:harbor.homelab.internal"
     - "IP:192.168.100.10"
   ```
-- [ ] `inventory/group_vars/monitoring/main.yml:3-4` — update (currently has `DNS:monitoring.local.lan`):
+- [x] `inventory/group_vars/monitoring/main.yml:3-4` — update (currently has `DNS:monitoring.local.lan`):
   ```yaml
   certificates_extra_sans:
     - "DNS:monitoring.local.lan"
     - "DNS:monitoring.homelab.internal"
   ```
-- [ ] `inventory/group_vars/elk/main.yml` — add new `certificates_extra_sans`:
+- [x] `inventory/group_vars/elk/main.yml` — add new `certificates_extra_sans`:
   ```yaml
   certificates_extra_sans:
     - "DNS:observability.local.lan"
     - "DNS:observability.homelab.internal"
   ```
+
+> **Note**: The mTLS client cert on ansible02 also needs `extra_sans` with
+> FQDNs for Prometheus mTLS to work. Updated `certificates_extra` in
+> `monitoring/main.yml` to include `DNS:{{ vm_hostname }}`,
+> `DNS:{{ vm_hostname }}.{{ lab_domain }}`, `DNS:{{ vm_hostname }}.homelab.internal`.
 
 #### 0b: Force-renew all certs on all hosts
 
@@ -147,10 +152,10 @@ Expected: Every cert shows BOTH `local.lan` AND `homelab.internal` SANs.
 #### Gate criteria
 
 All of the following must be true before proceeding to Step 0.1:
-- [ ] All services return expected HTTP status codes on BOTH domains
-- [ ] All Prometheus targets show `up`
-- [ ] All cert SANs show both `local.lan` AND `homelab.internal`
-- [ ] No cert expiry warnings within 30 days
+- [x] All services return expected HTTP status codes on BOTH domains
+- [x] All Prometheus targets show `up`
+- [x] All cert SANs show both `local.lan` AND `homelab.internal`
+- [x] No cert expiry warnings within 30 days
 
 ### Step 0.1: Update global inventory
 

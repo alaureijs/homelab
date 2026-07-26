@@ -19,3 +19,8 @@ elk_elasticsearch_url: "https://observability.local.lan/elasticsearch/"
 
 # Elasticsearch HTTP port (used by logstash pipeline output and kibana connection)
 elasticsearch_http_port: 9200
+
+# Certificate SANs
+certificates_extra_sans:
+  - "DNS:observability.local.lan"
+  - "DNS:observability.homelab.internal"

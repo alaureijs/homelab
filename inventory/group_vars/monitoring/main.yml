@@ -2,6 +2,7 @@
 # Certificate SANs
 certificates_extra_sans:
   - "DNS:monitoring.local.lan"
+  - "DNS:monitoring.homelab.internal"
 
 # Monitoring stack
 monitoring_hostname: monitoring.local.lan
@@ -45,3 +46,7 @@ certificates_extra:
     dir: /etc/prometheus/mtls
     key_dir: /etc/prometheus/mtls
     force: "{{ monitoring_cert_force_renewal }}"
+    extra_sans:
+      - "DNS:{{ vm_hostname }}"
+      - "DNS:{{ vm_hostname }}.{{ lab_domain }}"
+      - "DNS:{{ vm_hostname }}.homelab.internal"

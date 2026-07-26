@@ -104,11 +104,11 @@ podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
    ssh root@192.168.100.11 'podman ps'
 
    # Check Prometheus targets are up
-   curl -sk -u admin:Harbor12345 https://monitoring.local.lan/prometheus/api/v1/targets | \
+   curl -sk -u admin:Harbor12345 https://monitoring.homelab.internal/prometheus/api/v1/targets | \
      python3 -c "import sys,json; [print(f\"{t['labels'].get('job','?')}: {t['health']}\") for t in json.load(sys.stdin)['data']['activeTargets']]"
 
    # Check Grafana is accessible
-   curl -sk -o /dev/null -w '%{http_code}' https://monitoring.local.lan/grafana/
+   curl -sk -o /dev/null -w '%{http_code}' https://monitoring.homelab.internal/grafana/
    ```
 
 5. **Update CHANGELOG.md** and commit.
@@ -159,7 +159,7 @@ Update Harbor itself (v2.11.0 → v2.12.0, etc.).
 3. **Verify Harbor health**:
 
    ```bash
-   curl -sk -u admin:Harbor12345 https://harbor.local.lan/api/v2.0/health
+   curl -sk -u admin:Harbor12345 https://harbor.homelab.internal/api/v2.0/health
    ```
 
 4. **Re-sync images** (some updates change image compatibility):
@@ -214,7 +214,7 @@ Update the node_exporter binary installed on all hosts.
    ssh root@192.168.100.11 'systemctl status node-exporter --no-pager | head -5'
 
    # Check Prometheus shows targets as up (wait ~30s for scrape)
-   curl -sk -u admin:Harbor12345 https://monitoring.local.lan/prometheus/api/v1/targets | \
+   curl -sk -u admin:Harbor12345 https://monitoring.homelab.internal/prometheus/api/v1/targets | \
      python3 -c "import sys,json; [print(f\"{t['labels'].get('job','?')}: {t['health']}\") for t in json.load(sys.stdin)['data']['activeTargets']]"
    ```
 
@@ -358,7 +358,7 @@ harbor_config_users:
   - username: new-user
     password: "{{ vault_new_user_password }}"
     realname: "New User"
-    email: new-user@local.lan
+    email: new-user@homelab.internal
     roles:
       - project_name: library
         role_id: 3   # guest
@@ -415,7 +415,7 @@ ssh root@192.168.100.11 'podman images | grep grafana'
 
 ```bash
 # Check target status and errors
-curl -sk -u admin:Harbor12345 https://monitoring.local.lan/prometheus/api/v1/targets | \
+curl -sk -u admin:Harbor12345 https://monitoring.homelab.internal/prometheus/api/v1/targets | \
   python3 -c "import sys,json; [print(f\"{t['labels'].get('job','?')}: {t['health']} err={t.get('lastError','')}\") for t in json.load(sys.stdin)['data']['activeTargets']]"
 ```
 
@@ -436,8 +436,8 @@ ssh root@192.168.100.11 'curl -s --cacert /etc/pki/tls/certs/monitoring-ca.crt \
 
 ```bash
 # Check Harbor health
-curl -sk -u admin:Harbor12345 https://harbor.local.lan/api/v2.0/health
+curl -sk -u admin:Harbor12345 https://harbor.homelab.internal/api/v2.0/health
 
 # Check Trivy scanner status
-curl -sk -u admin:Harbor12345 https://harbor.local.lan/api/v2.0/systeminfo/vulnerabilities
+curl -sk -u admin:Harbor12345 https://harbor.homelab.internal/api/v2.0/systeminfo/vulnerabilities
 ```

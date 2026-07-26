@@ -1,6 +1,6 @@
 # Monitoring Stack
 
-Monitoring stack on ansible02 (192.168.100.11), accessed via `monitoring.local.lan`.
+Monitoring stack on ansible02 (192.168.100.11), accessed via `monitoring.homelab.internal`.
 
 ## Architecture
 
@@ -25,11 +25,11 @@ All ports bound to `127.0.0.1` via `hostPort` for nginx access only.
 
 ```bash
 # Grafana
-https://monitoring.local.lan/grafana/
+https://monitoring.homelab.internal/grafana/
 # admin / \$GRAFANA_PASSWORD
 
 # Prometheus
-https://monitoring.local.lan/prometheus/
+https://monitoring.homelab.internal/prometheus/
 ```
 
 ## Grafana Dashboards
@@ -111,10 +111,10 @@ Node-exporter scraping uses mutual TLS:
 - **Client cert/key**: `/etc/prometheus/mtls/client.{crt,key}` (Prometheus)
 
 Prometheus scrapes:
-- `ansible01.local.lan:9100` (Harbor host)
-- `ansible02.local.lan:9100` (monitoring host)
-- `harbor.local.lan:8090` (Harbor metrics, basic auth)
-- `ansible03.local.lan:9114` (Elasticsearch exporter)
+- `ansible01.homelab.internal:9100` (Harbor host)
+- `ansible02.homelab.internal:9100` (monitoring host)
+- `harbor.homelab.internal:8090` (Harbor metrics, basic auth)
+- `ansible03.homelab.internal:9114` (Elasticsearch exporter)
 
 ## Certificate Renewal
 
@@ -128,6 +128,10 @@ ansible-playbook playbooks/provision-ansible02.yml -e monitoring_cert_force_rene
 openssl x509 -in /etc/prometheus/mtls/ca.crt -noout -enddate
 openssl x509 -in /etc/prometheus/mtls/client.crt -noout -enddate
 ```
+
+### mTLS directory access
+
+Containers run as non-root (uid 65534/nobody); mTLS directories must be `0755` and files `0644` for read access. SELinux label `container_file_t` required. Run `chcon -R -t container_file_t /etc/prometheus/mtls/` after permission changes.
 
 ## SELinux Booleans
 
@@ -150,9 +154,49 @@ podman kube play --down /opt/monitoring/monitoring-pod.yml && \
 podman kube play /opt/monitoring/monitoring-pod.yml
 
 # View Prometheus targets
-curl -sk https://monitoring.local.lan/prometheus/api/v1/targets | \
+curl -sk https://monitoring.homelab.internal/prometheus/api/v1/targets | \
   python3 -c "import sys,json; [print(f\"{t['labels'].get('job','?')}: {t['health']}\") for t in json.load(sys.stdin)['data']['activeTargets']]"
 ```
+
+## Textfile Collectors
+
+Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m). Scripts live in `files/node-exporter/textfile_scripts/` and are deployed to `/usr/local/lib/node-exporter-textfile-scripts/`. Output goes to `/var/lib/node-exporter/textfiles_metrics/`.
+
+**Collectors:**
+- `chrony.sh` — NTP offset, frequency, stratum, leap status (via `sudo chronyc`)
+- `fstab-check.sh` — filesystem mount status from `findmnt`
+- `reboot-required.sh` — reboot pending status (via `sudo needs-restarting`)
+- `authorized-keys.sh` — count of non-comment lines in each user's `authorized_keys` (via `sudo`)
+- `container-health.sh` — container state, health, CPU, memory, network I/O, block I/O (via `sudo podman ps/stats`)
+- `logstash.sh` — queries `logstash-exporter` sidecar on port 9198 (`/metrics`), outputs Prometheus-format metrics (only on `elk` group hosts)
+
+**Conditional deployment:** Scripts with a `groups` field only deploy to hosts in those inventory groups. Scripts without `groups` deploy to all hosts. The `node_exporter_textfile_scripts` variable is defined in `inventory/group_vars/all/main.yml` with documented fields (`name`, `src`, `sudoers`, `groups`).
+
+**Tamper detection:** SHA256 checksums in `.checksums` file. Runner verifies before execution.
+
+**Sudoers:** `/etc/sudoers.d/node-exporter-textfile` grants `nobody` passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`, `podman ps`, `podman stats`. Rules are embedded in each `node_exporter_textfile_scripts` entry as `sudoers` lists.
+
+**Systemd sandboxing:**
+
+- **node-exporter** service (`node_exporter_service_hardening`):
+  `ProtectSystem=full`, `ProtectHome=true`, `PrivateTmp=true`,
+  `PrivateDevices=true`, `ProtectKernelTunables=true`,
+  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
+  `NoNewPrivileges=true`, `RestrictNamespaces=true`,
+  `LockPersonality=true`, `RestrictRealtime=true`,
+  `RestrictSUIDSGID=true`.
+  Do **NOT** add `MemoryDenyWriteExecute=true` — Go binaries use mmap with execute, which will crash node_exporter.
+
+- **node-exporter-textfile** service (`node_exporter_textfile_service_hardening`):
+  `ProtectSystem=full`, `PrivateTmp=true`, `ProtectKernelTunables=true`,
+  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
+  `RestrictSUIDSGID=true`, `RestrictRealtime=true`,
+  `LockPersonality=true`.
+  Do **NOT** add `RestrictNamespaces=true` — it prevents `podman stats`
+  from accessing container cgroup namespaces, causing empty output.
+  `ProtectSystem=strict` must also be avoided as it makes the entire
+  filesystem read-only, breaking Podman runtime access even with
+  `ReadWritePaths`.
 
 ## Troubleshooting
 
@@ -182,5 +226,5 @@ ss -tlnp | grep 9100
 curl -s --cacert /etc/pki/tls/certs/monitoring-ca.crt \
   --cert /etc/prometheus/mtls/client.crt \
   --key /etc/prometheus/mtls/client.key \
-  https://ansible01.local.lan:9100/metrics | head -2
+  https://ansible01.homelab.internal:9100/metrics | head -2
 ```

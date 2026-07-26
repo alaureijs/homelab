@@ -291,8 +291,8 @@ packages:
   - device-mapper-persistent-data
 
 runcmd:
-  - nmcli connection modify "System eth0" ipv4.dns-search "{{ vm_hostname }}.local.lan"
-  - nmcli connection modify "System eth0" ipv4.dns-search "local.lan"
+  - nmcli connection modify "System eth0" ipv4.dns-search "{{ vm_hostname }}.homelab.internal"
+  - nmcli connection modify "System eth0" ipv4.dns-search "homelab.internal"
   - sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
   - systemctl restart sshd
 ```
@@ -319,7 +319,7 @@ vm_vcpus: 2
 vm_memory: 2048
 vm_disk: 60
 vm_dns_entries:
-  - name: harbor.local.lan
+  - name: harbor.homelab.internal
     ip: "192.168.100.10"
 ```
 

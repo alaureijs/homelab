@@ -20,8 +20,8 @@ Kibana (5601) ← nginx (443) → Elasticsearch (9200)
 
 ## Access URLs
 
-- Kibana: `https://observability.local.lan/kibana/`
-- Elasticsearch: `https://observability.local.lan/elasticsearch/`
+- Kibana: `https://observability.homelab.internal/kibana/`
+- Elasticsearch: `https://observability.homelab.internal/elasticsearch/`
 
 ## Usage
 
@@ -51,7 +51,7 @@ Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
 
 ### Kibana Usage
 
-1. Open `https://observability.local.lan/kibana/`
+1. Open `https://observability.homelab.internal/kibana/`
 2. Go to **Management → Stack Management → Index Patterns**
 3. Create index pattern: `filebeat-*` or `system-*`
 4. Go to **Discover** to view logs
@@ -84,7 +84,7 @@ Kibana 8.x doesn't accept `xpack.security.enabled` in `kibana.yml`. Use the `XPA
 `podman kube play` doesn't support `--authfile`. Write auth to `/root/.config/containers/auth.json`:
 
 ```bash
-podman login harbor.local.lan --authfile /root/.config/containers/auth.json
+podman login harbor.homelab.internal --authfile /root/.config/containers/auth.json
 ```
 
 ## Logs

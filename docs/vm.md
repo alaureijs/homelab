@@ -38,7 +38,7 @@ vm_mac: "52:54:00:aa:00:13"
 vm_ip: "192.168.100.13"
 vm_hostname: myhost
 vm_dns_entries:
-  - name: myhost.local.lan
+  - name: myhost.homelab.internal
     ip: "192.168.100.13"
 ```
 
@@ -58,7 +58,7 @@ For each VM, the role creates:
 - **Forward interface**: `wlan0` (configurable via `libvirt_network_forward_interface`)
 - **Subnet**: 192.168.100.0/24
 - **DHCP range**: 192.168.100.200–254 (static MAC→IP mappings for VMs)
-- **DNS**: `harbor.local.lan` → 192.168.100.10, `monitoring.local.lan` → 192.168.100.11, `observability.local.lan` → 192.168.100.12
+- **DNS**: `harbor.homelab.internal` → 192.168.100.10, `monitoring.homelab.internal` → 192.168.100.11, `observability.homelab.internal` → 192.168.100.12
 
 ## Storage
 

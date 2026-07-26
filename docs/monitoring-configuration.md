@@ -48,7 +48,7 @@ These variables point to config files. Override them to use custom files:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `monitoring_hostname` | `monitoring.local.lan` | Reverse proxy hostname |
+| `monitoring_hostname` | `monitoring.homelab.internal` | Reverse proxy hostname |
 | `monitoring_config_dir` | `/etc/monitoring` | Configuration directory |
 | `monitoring_data_dir` | `/var/lib/monitoring` | Data directory |
 | `monitoring_network_name` | `monitoring` | Podman network name |
@@ -174,8 +174,8 @@ scrape_configs:
       key_file: /etc/prometheus/mtls/client.key
     static_configs:
       - targets:
-          - ansible01.local.lan:9100
-          - ansible02.local.lan:9100
+          - ansible01.homelab.internal:9100
+          - ansible02.homelab.internal:9100
         labels:
           cluster: local
 
@@ -183,8 +183,8 @@ scrape_configs:
   - job_name: custom-app
     static_configs:
       - targets:
-          - app1.local.lan:8080
-          - app2.local.lan:8080
+          - app1.homelab.internal:8080
+          - app2.homelab.internal:8080
 ```
 
 4. Apply config:

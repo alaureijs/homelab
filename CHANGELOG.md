@@ -8,6 +8,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `docs/pki-step-ca.md` — PKI infrastructure requirements and architecture
+  for step-ca (private CA), ca-portal (nginx cert distribution), and
+  Unbound DNS. Covers domain migration strategy (`local.lan` →
+  `homelab.internal`), certificate lifecycle, and bootstrap flow.
+- `Plans/Plan_step-ca.md` — 12-phase implementation plan for step-ca,
+  ca-portal, DNS roles + full PKI migration + domain migration.
+  Includes dual-domain cert strategy (both domains during transition),
+  per-host migration steps, rollback procedures, and file inventory.
+- `opencode.json` — opencode configuration with `ansible-dev-tools` MCP
+  server, project-specific instructions for all doc files.
+- Low-token rules and MCP tool utilization guidelines in `AGENTS.md`.
+
+### Changed
+
+- Domain migration: `local.lan` → `homelab.internal` (IANA-reserved
+  RFC 6761). All documentation files updated — FQDNs, URLs, hosts
+  entries, DNS search domains, email addresses. Affected files:
+  `AGENTS.md`, `LIFECYCLE.md`, `README.md`, `docs/*.md` (10 files).
+- Documentation restructured: monitoring and ELK docs expanded with
+  ConfigMap structure, resource tuning, network configuration, and
+  troubleshooting sections.
+
 - Logstash exporter sidecar (`kuskoman/logstash-exporter:v1.9.1`)
   deployed in the Logstash pod — exposes 90+ Prometheus-format metrics
   on port 9198 (`/metrics`). Textfile collector (`logstash.sh`) now

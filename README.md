@@ -21,7 +21,7 @@ ansible-galaxy collection install ansible.posix community.crypto community.libvi
 | elk          | ansible03 | 192.168.100.12  | Elasticsearch/Logstash/Kibana stack     |
 | libvirt      | all three |                 | Rocky Linux 10 VMs on `ansible-net`     |
 
-DNS: `harbor.local.lan` (192.168.100.10), `monitoring.local.lan` (192.168.100.11), `observability.local.lan` (192.168.100.12)
+DNS: `harbor.homelab.internal` (192.168.100.10), `monitoring.homelab.internal` (192.168.100.11), `observability.homelab.internal` (192.168.100.12)
 
 ## Quick Start
 

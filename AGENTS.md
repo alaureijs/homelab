@@ -1,6 +1,37 @@
-# AGENTS.md
-
 Instructions for AI agents working on this Ansible infrastructure project.
+
+#  Low-Token, MCP & Sandbox Rules
+
+## 1. Output Style: Caveman Mode (STRICT)
+- Drop preambles, fluff, politeness ("Sure, I can help").
+- Drop articles (a, an, the) and auxiliary verbs when possible.
+- State facts directly. Keep execution logs and comments brief.
+- Preserve exact YAML syntax, Jinja2 filters, and file path names.
+
+## 2. Input Token Conservation
+- Do NOT read full files >40 lines. Use line bounds, grep, or header targets.
+- Read only relevant section headers in Obsidian notes (`[[Spec#Section]]`).
+- Do NOT echo full written files back into chat if already saved to disk.
+
+## 3. Sandbox Execution Rules
+- ALL playbook testing MUST run inside isolated Podman/Docker containers (`molecule test`).
+- NEVER execute host-modifying CLI commands directly outside the container sandbox.
+
+## 4. Ansible MCP Tool Utilization
+- Prefer Ansible MCP tools (`check_syntax`, `run_playbook`, `list_inventory`) over standard shell execution where applicable.
+- Pass `check_mode: true` (dry-run) via MCP when testing playbooks before applying changes.
+
+## 5. Micro-Task Planning & State Tracking
+- Breakdown tasks into the smallest atomic steps possible (`- [ ]`).
+- Save execution plans to: `Plans/Plan_<Name>.md`.
+- Follow every modification with a syntax check (`check_syntax`).
+- If linting or syntax fails:
+  - Mark task as `[FAILED]`.
+  - Refactor the plan note with numbered remediation sub-tasks (e.g., 3a, 3b).
+  - Fix the issue and re-test.
+- On success: update checkbox to `- [x]`.
+
+# project
 
 ## Project Overview
 
@@ -181,86 +212,6 @@ cd roles/harbor && molecule idempotence
 - Container images pull successfully
 - PV/PVC mounts work as expected
 
-## Container Deployment Patterns
-
-### Harbor (ansible01) — `podman-compose`
-
-Harbor is deployed using the offline installer + prepare approach, managed by `podman-compose`:
-
-1. Download Harbor v2.11.0 offline installer (`harbor-offline-installer-*.tgz`)
-2. Extract to `/opt/harbor`, copy files to install directory
-3. Load images from `harbor.{version}.tar.gz` into Podman
-4. Create data directories: database, redis, registry, storage, job_logs, ca_download, config
-5. Configure `harbor.yml`: hostname, admin password, TLS cert paths, Trivy (skip_update: true in offline mode), metrics port
-6. Patch `docker-compose.yml` — rewrite `goharbor/*` image references to Harbor library copies, remove Podman-incompatible logging driver
-7. Run `prepare --with-trivy`, then `podman-compose up -d`
-
-**Key difference from other services**: Harbor does NOT use `podman kube play`. It uses the offline installer + prepare + podman-compose workflow.
-
-### Monitoring & ELK — `podman kube play`
-
-Monitoring, Elasticsearch, Logstash, and Kibana each deploy via separate K8s YAML manifests using `podman kube play`:
-
-1. Render Jinja2 templates to generate configs
-2. Slurp static files for ConfigMap content
-3. Write pod manifest with inline ConfigMaps + PersistentVolumes/PVCs
-4. Run `podman kube play --down` then `podman kube play --network <name>`
-5. Fix data directory ownership: grafana=472, prometheus/alertmanager=65534, elasticsearch=1000
-
-**Configuration pattern**: All config as ConfigMaps (not hostPath mounts). PV/PVC with `ReadWriteOnce`, reclaim policy Retain.
-
-**Inter-service communication**: All pods use `hostIP: 127.0.0.1` + `hostPort` for port mappings. Services communicate via `127.0.0.1` on the host loopback (not pod-internal DNS). Each role deploys its own independent pod.
-
-### nginx Reverse Proxy
-
-- Deployed on ansible01 and ansible02
-- HTTPS on port 443, routes to services via sub-paths:
-  - `/` → Grafana (3000)
-  - `/prometheus/` → Prometheus (9090)
-  - `/alertmanager/` → Alertmanager (9093)
-- Bind to `127.0.0.1` via `hostIP` for internal service access
-
-### PersistentVolumes with podman kube play
-
-Use PV/PVC instead of hostPath for data volumes — this is the K8s-compatible pattern:
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: my-app-data
-spec:
-  capacity:
-    storage: 50Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: /var/lib/elk/elasticsearch
-    type: DirectoryOrCreate
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: my-app-data
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-```
-
-### podman kube play — K8s Compatibility Reference
-
-**Supported K8s kinds:** Pod, Deployment (replicas always 1), DaemonSet, Job, PersistentVolumeClaim, ConfigMap, Secret
-
-**Supported volume types:** hostPath, emptyDir, configMap, persistentVolumeClaim, image
-
-**Container fields supported:** name, image, ports (containerPort/hostIP/hostPort/protocol), env (value/valueFrom.*), envFrom, volumeMounts (mountPath/name/readOnly/subPath), resources (limits/requests), livenessProbe, securityContext (runAsUser/runAsGroup/readOnlyRootFilesystem/privileged/capabilities/seLinuxOptions), lifecycle.stopSignal
-
-**Container fields NOT supported:** readinessProbe, startupProbe, tty, stdin
-
 ## Networking
 - All monitoring + ELK services behind nginx reverse proxy on port 443 (HTTPS)
 - Harbor directly exposed on HTTP/HTTPS (port 80/443) and metrics (port 8090)
@@ -272,54 +223,6 @@ spec:
   decrypted on controller and written as plaintext to hosts. Server/client
   certs signed by this CA.
 - DNS entries in `ansible-net` libvirt network
-
-## Security
-- **SELinux**: Enforcing mode on all hosts
-- **TLS**: 1.3 minimum — TLS 1.2 and earlier disabled (ECDHE-only key exchange, AES-256-GCM-SHA384)
-- **Certificates**: Generated by `certificates` role with auto-renewal within 30 days; single shared mTLS CA (`mtls-ca`) generated on controller, vault-encrypted key in `files/certificates/mtls-ca.key` (git-trackable), plain cert in `files/certificates/mtls-ca.crt` (git-trackable); Harbor TLS trust configured via CA bundle (`/etc/pki/ca-trust/source/anchors/harbor.crt`); nginx enforces OCSP stapling
-- **Passwords**: Vault-encrypted, never plaintext (Harbor admin: `vault_harbor_admin_password`, sync user: `vault_harbor_sync_password`, metrics: `vault_harbor_metrics_password`)
-- **Hardening**: STIG/CIS Benchmark with 10 toggleable modules via `hardening_*` defaults
-- **Trivy**: Harbor vulnerability scanner enabled, auto-scan on all projects. Trivy DB mirrored from `ghcr.io/aquasecurity/trivy-db:2` to Harbor project `trivy-db` via `skopeo copy`. Adapter configured with `SCANNER_TRIVY_DB_REPOSITORY` env var. Refreshed via `harbor_trivy_db_mirror` toggle.
-
-## Textfile Collectors
-
-Node exporter textfile collectors run as `nobody` via a systemd timer (every 5m). Scripts live in `files/node-exporter/textfile_scripts/` and are deployed to `/usr/local/lib/node-exporter-textfile-scripts/`. Output goes to `/var/lib/node-exporter/textfiles_metrics/`.
-
-**Collectors:**
-- `chrony.sh` — NTP offset, frequency, stratum, leap status (via `sudo chronyc`)
-- `fstab-check.sh` — filesystem mount status from `findmnt`
-- `reboot-required.sh` — reboot pending status (via `sudo needs-restarting`)
-- `authorized-keys.sh` — count of non-comment lines in each user's `authorized_keys` (via `sudo`)
-- `container-health.sh` — container state, health, CPU, memory, network I/O, block I/O (via `sudo podman ps/stats`)
-- `logstash.sh` — queries `logstash-exporter` sidecar on port 9198 (`/metrics`), outputs Prometheus-format metrics (only on `elk` group hosts)
-
-**Conditional deployment:** Scripts with a `groups` field only deploy to hosts in those inventory groups. Scripts without `groups` deploy to all hosts. The `node_exporter_textfile_scripts` variable is defined in `inventory/group_vars/all/main.yml` with documented fields (`name`, `src`, `sudoers`, `groups`).
-
-**Tamper detection:** SHA256 checksums in `.checksums` file. Runner verifies before execution.
-
-**Sudoers:** `/etc/sudoers.d/node-exporter-textfile` grants `nobody` passwordless sudo for `chronyc`, `needs-restarting`, `test`, `grep`, `podman ps`, `podman stats`. Rules are embedded in each `node_exporter_textfile_scripts` entry as `sudoers` lists.
-
-**Systemd sandboxing:**
-
-- **node-exporter** service (`node_exporter_service_hardening`):
-  `ProtectSystem=full`, `ProtectHome=true`, `PrivateTmp=true`,
-  `PrivateDevices=true`, `ProtectKernelTunables=true`,
-  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
-  `NoNewPrivileges=true`, `RestrictNamespaces=true`,
-  `LockPersonality=true`, `RestrictRealtime=true`,
-  `RestrictSUIDSGID=true`.
-  Do **NOT** add `MemoryDenyWriteExecute=true` — Go binaries use mmap with execute, which will crash node_exporter.
-
-- **node-exporter-textfile** service (`node_exporter_textfile_service_hardening`):
-  `ProtectSystem=full`, `PrivateTmp=true`, `ProtectKernelTunables=true`,
-  `ProtectKernelModules=true`, `ProtectControlGroups=true`,
-  `RestrictSUIDSGID=true`, `RestrictRealtime=true`,
-  `LockPersonality=true`.
-  Do **NOT** add `RestrictNamespaces=true` — it prevents `podman stats`
-  from accessing container cgroup namespaces, causing empty output.
-  `ProtectSystem=strict` must also be avoided as it makes the entire
-  filesystem read-only, breaking Podman runtime access even with
-  `ReadWritePaths`.
 
 ## Playbook Development
 1. **Test changes**: Run `ansible-playbook playbooks/provision-ansibleXX.yml` on appropriate host
@@ -340,44 +243,6 @@ inventory/
   host_vars/<hostname>/provision.yml # Playbook-specific variables (optional)
 ```
 
-## Common Patterns
-
-### Adding a New Dashboard
-1. Export JSON from Grafana UI
-2. Place in `roles/monitoring/files/dashboards/`
-3. Add to `monitoring_grafana_dashboards` list in defaults/main.yml
-4. Re-run provisioning playbook
-
-### Adding a New Host
-1. Add to `inventory/hosts.yml` under appropriate group (ansible01, ansible02, or ansible03)
-2. Create `inventory/host_vars/<hostname>/main.yml` with connection, VM specs, DNS
-3. Add host entry to `controller_hosts_entries` in `group_vars/all/main.yml`
-4. Add DNS entries for all services on that host
-5. Update `ansible.cfg` or use appropriate inventory group
-
-### Updating Container Images
-1. Update version in `inventory/group_vars/all/main.yml`
-2. Run `ansible-playbook playbooks/sync-update-containers.yml` to sync to Harbor
-3. Re-run provisioning playbook for affected hosts (`provision-ansible01.yml`, etc.)
-
-### sync-update-containers.yml Requirements
-**Prerequisites:**
-- Harbor must be deployed and running on ansible01
-- `ansible-sync` user must have developer role in Harbor
-- Podman, skopeo, and python3 must be installed on ansible01
-
-**Required Variables:**
-- `harbor_hostname` — Harbor instance hostname (default: `harbor.local.lan`)
-- `harbor_sync_images` — List of images to sync (defined in `inventory/group_vars/harbor/images.yml`)
-- `vault_harbor_sync_password` — Vault-encrypted password for sync user
-- `harbor_config_proxy_projects` — Registry-to-project mapping (defined in `inventory/group_vars/harbor/images.yml`)
-
-**Project Naming Convention:**
-- Remote image `prom/prometheus:tag` → Harbor project: `prom`
-- Remote image `grafana/grafana:tag` → Harbor project: `grafana`
-- Use the first path component of the remote image name as the Harbor project
-- Project is automatically determined from image name, no need to specify in `harbor_sync_images`
-
 ## Validation
 
 After making changes, run:
@@ -390,35 +255,6 @@ ansible-playbook playbooks/provision-ansibleXX.yml --check
 
 # Full deployment
 ansible-playbook playbooks/provision-ansibleXX.yml
-```
-
-## Troubleshooting
-
-### Common Issues
-- **SELinux blocking**: Check `audit.log`, set booleans with `ansible.posix.seboolean`
-- **Certificate errors**: Verify SANs, check expiry with `openssl x509 -noout -enddate`
-- **Container permissions**: Run `chown -R UID:GID /path` for data directories
-- **mTLS directory access**: Containers run as non-root (uid 65534/nobody); mTLS directories must be `0755` and files `0644` for read access. SELinux label `container_file_t` required. Run `chcon -R -t container_file_t /etc/prometheus/mtls/` after permission changes.
-- **Podman kube play fails**: Check auth.json exists at `/root/.config/containers/auth.json`
-- **Harbor push fails**: Ensure `ansible-sync` user has developer role (not maintainer)
-- **Harbor compose issues**: Harbor uses podman-compose, not plain podman. Docker logging driver removed by patching.
-
-### Debug Commands
-```bash
-# Check container status
-podman ps -a
-
-# View logs (monitoring stack)
-podman logs <container-name> --tail 50
-
-# Test connectivity
-curl -sk https://hostname/service/health
-
-# Harbor compose status
-cd /opt/harbor && podman-compose ps
-
-# View Harbor logs (rsyslog routed to files)
-ls /var/log/harbor/
 ```
 
 ## References
@@ -434,3 +270,4 @@ ls /var/log/harbor/
 - [docs/hardening.md](docs/hardening.md) — Hardening modules
 - [docs/vm.md](docs/vm.md) — VM lifecycle
 - [docs/cloud-kvm.md](docs/cloud-kvm.md) — Cloud KVM setup
+- [docs/container-deployment.md](docs/container-deployment.md) — Container deployment patterns

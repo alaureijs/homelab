@@ -13,10 +13,10 @@ Harbor v2.11.0 container registry running on ansible01 (192.168.100.10).
 
 ```bash
 # Web UI
-https://harbor.local.lan/
+https://harbor.homelab.internal/
 
 # API
-curl -sk -u admin:\$HARBOR_PASSWORD https://harbor.local.lan/api/v2.0/health
+curl -sk -u admin:\$HARBOR_PASSWORD https://harbor.homelab.internal/api/v2.0/health
 ```
 
 ## Users
@@ -57,7 +57,7 @@ Harbor exposes Prometheus metrics on port 8090:
 
 ```bash
 # Test metrics endpoint
-curl -sk -u "metrics:$VAULT_HARBOR_METRICS_PASSWORD" http://harbor.local.lan:8090/metrics
+curl -sk -u "metrics:$VAULT_HARBOR_METRICS_PASSWORD" http://harbor.homelab.internal:8090/metrics
 ```
 
 - **harbor-exporter** image: `goharbor/harbor-exporter:v2.11.0` (synced from Docker Hub)
@@ -113,8 +113,33 @@ tail -f /var/log/harbor/harbor-core.log
 cd /opt/harbor && podman-compose down && podman-compose up -d
 
 # Harbor health
-curl -sk https://harbor.local.lan/api/v2.0/health
+curl -sk https://harbor.homelab.internal/api/v2.0/health
 ```
+
+## Updating Container Images
+
+1. Update version in `inventory/group_vars/all/main.yml`
+2. Run `ansible-playbook playbooks/sync-update-containers.yml` to sync to Harbor
+3. Re-run provisioning playbook for affected hosts (`provision-ansible01.yml`, etc.)
+
+### sync-update-containers.yml Requirements
+
+**Prerequisites:**
+- Harbor must be deployed and running on ansible01
+- `ansible-sync` user must have developer role in Harbor
+- Podman, skopeo, and python3 must be installed on ansible01
+
+**Required Variables:**
+- `harbor_hostname` — Harbor instance hostname (default: `harbor.homelab.internal`)
+- `harbor_sync_images` — List of images to sync (defined in `inventory/group_vars/harbor/images.yml`)
+- `vault_harbor_sync_password` — Vault-encrypted password for sync user
+- `harbor_config_proxy_projects` — Registry-to-project mapping (defined in `inventory/group_vars/harbor/images.yml`)
+
+**Project Naming Convention:**
+- Remote image `prom/prometheus:tag` → Harbor project: `prom`
+- Remote image `grafana/grafana:tag` → Harbor project: `grafana`
+- Use the first path component of the remote image name as the Harbor project
+- Project is automatically determined from image name, no need to specify in `harbor_sync_images`
 
 ## Troubleshooting
 
@@ -137,3 +162,11 @@ rsyslogd -N1 -f /etc/rsyslog.conf
 systemctl status rsyslog
 ls -la /var/log/harbor/
 ```
+
+### Harbor push fails
+
+Ensure `ansible-sync` user has developer role (not maintainer).
+
+### Harbor compose issues
+
+Harbor uses podman-compose, not plain podman. Docker logging driver removed by patching.

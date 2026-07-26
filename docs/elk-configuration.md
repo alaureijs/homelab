@@ -36,7 +36,7 @@ The ELK role uses variables defined in `inventory/group_vars/elk/main.yml` and `
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `elk_hostname` | `observability.local.lan` | Reverse proxy hostname |
+| `elk_hostname` | `observability.homelab.internal` | Reverse proxy hostname |
 | `elk_config_dir` | `/etc/elk` | Configuration directory |
 | `elk_data_dir` | `/var/lib/elk` | Data directory |
 | `elk_network_name` | `elk` | Podman network name |
@@ -62,8 +62,8 @@ logstash_heap_size: "4g"  # Increase heap for high throughput
 kibana_port: 5601
 
 # Access
-elk_kibana_url: "https://observability.local.lan/kibana/"
-elk_elasticsearch_url: "https://observability.local.lan/elasticsearch/"
+elk_kibana_url: "https://observability.homelab.internal/kibana/"
+elk_elasticsearch_url: "https://observability.homelab.internal/elasticsearch/"
 ```
 
 ### Step 2: Run Provisioning

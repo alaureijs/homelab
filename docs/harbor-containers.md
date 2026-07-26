@@ -16,7 +16,7 @@ upstream version updates, and generates reports.
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `harbor_hostname` | string | Harbor instance FQDN (e.g., `harbor.local.lan`) |
+| `harbor_hostname` | string | Harbor instance FQDN (e.g., `harbor.homelab.internal`) |
 | `harbor_sync_images` | list | Images to sync (see [Naming Convention](#naming-convention)) |
 | `harbor_config_proxy_projects` | dict | Upstream registry → proxy project mapping |
 | `vault_harbor_sync_password` | string | Vault-encrypted password for sync user |
@@ -89,9 +89,9 @@ The value must follow the format `<project>/<image>` where:
 - **image** = last path component → becomes the Harbor image name
 
 ```
-prometheus/prometheus  →  Harbor path: harbor.local.lan/prometheus/prometheus:tag
-library/alpine         →  Harbor path: harbor.local.lan/library/alpine:tag
-grafana/grafana        →  Harbor path: harbor.local.lan/grafana/grafana:tag
+prometheus/prometheus  →  Harbor path: harbor.homelab.internal/prometheus/prometheus:tag
+library/alpine         →  Harbor path: harbor.homelab.internal/library/alpine:tag
+grafana/grafana        →  Harbor path: harbor.homelab.internal/grafana/grafana:tag
 ```
 
 ### Project Derivation
@@ -119,7 +119,7 @@ So for `prometheuscommunity/elasticsearch-exporter`:
 ```
 project: prometheuscommunity
 short:   elasticsearch-exporter
-Harbor:  harbor.local.lan/prometheuscommunity/elasticsearch-exporter:v1.11.0
+Harbor:  harbor.homelab.internal/prometheuscommunity/elasticsearch-exporter:v1.11.0
 ```
 
 ## Sync Pipeline
@@ -157,7 +157,7 @@ After sync, reports are saved to `reports/`:
 
 ```yaml
 # Harbor
-harbor_hostname: harbor.local.lan
+harbor_hostname: harbor.homelab.internal
 harbor_version: v2.11.0
 
 # Versions (single source of truth)

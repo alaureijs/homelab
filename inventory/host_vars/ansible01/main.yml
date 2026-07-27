@@ -10,7 +10,7 @@ vm_ip: 192.168.100.10
 # DNS host-specific
 vm_hostname: ansible01
 vm_dns_entries:
-  - name: harbor.local.lan
+  - name: harbor.homelab.internal
     ip: 192.168.100.10
 
 # Hardening — Podman requires IP forwarding

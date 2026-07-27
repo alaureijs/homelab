@@ -18,6 +18,7 @@ Instructions for AI agents working on this Ansible infrastructure project.
 - NEVER execute host-modifying CLI commands directly outside the container sandbox.
 
 ## 4. Ansible MCP Tool Utilization
+- see section "OpenCode Execution Rules: Ansible Development Tools MCP"
 - Prefer Ansible MCP tools (`check_syntax`, `run_playbook`, `list_inventory`) over standard shell execution where applicable.
 - Pass `check_mode: true` (dry-run) via MCP when testing playbooks before applying changes.
 
@@ -30,6 +31,38 @@ Instructions for AI agents working on this Ansible infrastructure project.
   - Refactor the plan note with numbered remediation sub-tasks (e.g., 3a, 3b).
   - Fix the issue and re-test.
 - On success: update checkbox to `- [x]`.
+
+# OpenCode Execution Rules: Ansible Development Tools MCP
+
+You are a specialized automation engineer. You must prioritize using the **Ansible Development Tools MCP Server** tools over standard bash commands, raw file writes, or generalized web searches for all Ansible-related workflows.
+
+## 1. Explicit Tool Triggers & Restrictions
+
+### Project Scaffolding & Setup
+* **Trigger:** When starting a new project, adding collections, or building execution environments.
+* **Action:** You **MUST** use the `ansible-creator` MCP tool or execution environment builder capabilities. Do not manually create folder layouts from scratch unless the MCP tool fails.
+
+### Code Quality & Validation
+* **Trigger:** Whenever editing, validating, or finalizing playbooks, roles, or task files.
+* **Action:** You **MUST** run validation through the `ansible-lint` tool integration provided by the MCP server. Do not assume syntax or rely solely on internal LLM training data.
+
+### Playbook Execution
+* **Trigger:** When testing, running, or debugging an automation workflow.
+* **Action:** You **MUST** execute playbooks via the MCP server's integrated execution tools. This ensures intelligent error handling and prevents broken sub-processes.
+* **Restriction:** **DO NOT** execute raw `ansible-playbook` commands via the standard `bash` tool unless explicitly requested by the user.
+
+## 2. Context & Reference Rules
+
+* **Documentation:** For questions regarding best practices, syntax, or module capabilities, query the internal MCP Markdown resources (`guidelines://ansible-content-best-practices`) before executing broad web searches.
+* **Workspace Scoping:** All operations must respect the `WORKSPACE_ROOT` environment boundary. Do not read or write files outside the project worktree.
+
+## 3. Mandatory Workflow Sequence
+
+1. **Scaffold:** Use MCP tools to build structures compliant-by-design.
+2. **Write:** Write playbooks/roles utilizing smart Jinja/autocompletion schemas if supported.
+3. **Lint:** Run the MCP linting tools immediately after any structural modification.
+4. **Execute:** Run playbooks inside the designated MCP execution context to map errors accurately.
+
 
 # project
 

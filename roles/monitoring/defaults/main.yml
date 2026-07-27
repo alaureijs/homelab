@@ -1,7 +1,7 @@
 ---
 # monitoring role defaults
 
-monitoring_hostname: monitoring.local.lan
+monitoring_hostname: monitoring.homelab.internal
 
 # Paths
 monitoring_config_dir: /etc/monitoring

@@ -1,6 +1,6 @@
 # Plan: step-ca + ca-portal + DNS Roles + PKI Migration + Domain Migration
 
-- [ ] Phase 0: Domain Migration (`local.lan` → `homelab.internal`)
+- [x] Phase 0: Domain Migration (`local.lan` → `homelab.internal`)
 - [ ] Phase 1: New VM + Inventory
 - [ ] Phase 2: step-ca role
 - [ ] Phase 3: ca-portal role
@@ -161,22 +161,22 @@ All of the following must be true before proceeding to Step 0.1:
 
 These variables affect all hosts — update first.
 
-- [ ] 0.1.1 `inventory/group_vars/all/main.yml:6` — `lab_domain: homelab.internal`
-- [ ] 0.1.2 `inventory/group_vars/all/main.yml:9` — `harbor_hostname: harbor.homelab.internal`
-- [ ] 0.1.3 `inventory/group_vars/all/main.yml:99-101` — controller hosts entries (BOTH domains):
+- [x] 0.1.1 `inventory/group_vars/all/main.yml:6` — `lab_domain: homelab.internal`
+- [x] 0.1.2 `inventory/group_vars/all/main.yml:9` — `harbor_hostname: harbor.homelab.internal`
+- [x] 0.1.3 `inventory/group_vars/all/main.yml:99-101` — controller hosts entries (BOTH domains):
   ```yaml
   controller_hosts_entries:
     - "192.168.100.10 ansible01 ansible01.local.lan ansible01.homelab.internal harbor.local.lan harbor.homelab.internal"
     - "192.168.100.11 ansible02 ansible02.local.lan ansible02.homelab.internal monitoring.local.lan monitoring.homelab.internal"
     - "192.168.100.12 ansible03 ansible03.local.lan ansible03.homelab.internal observability.local.lan observability.homelab.internal"
   ```
-- [ ] 0.1.4 `inventory/group_vars/harbor/main.yml:57,83,109,135` — email addresses → `@homelab.internal`
+- [x] 0.1.4 `inventory/group_vars/harbor/main.yml:57,83,109,135` — email addresses → `@homelab.internal`
 
 ### Step 0.2: Update host_vars (dual DNS entries)
 
 Add new domain entries while keeping old ones. Libvirt dnsmasq serves both.
 
-- [ ] 0.2.1 `inventory/host_vars/ansible01/main.yml:12-14`:
+- [x] 0.2.1 `inventory/host_vars/ansible01/main.yml:12-14`:
   ```yaml
   vm_dns_entries:
     - name: harbor.local.lan
@@ -184,7 +184,7 @@ Add new domain entries while keeping old ones. Libvirt dnsmasq serves both.
     - name: harbor.homelab.internal
       ip: 192.168.100.10
   ```
-- [ ] 0.2.2 `inventory/host_vars/ansible02/main.yml:17-19`:
+- [x] 0.2.2 `inventory/host_vars/ansible02/main.yml:17-19`:
   ```yaml
   vm_dns_entries:
     - name: monitoring.local.lan
@@ -192,7 +192,7 @@ Add new domain entries while keeping old ones. Libvirt dnsmasq serves both.
     - name: monitoring.homelab.internal
       ip: 192.168.100.11
   ```
-- [ ] 0.2.3 `inventory/host_vars/ansible03/main.yml:17-19`:
+- [x] 0.2.3 `inventory/host_vars/ansible03/main.yml:17-19`:
   ```yaml
   vm_dns_entries:
     - name: observability.local.lan
@@ -203,12 +203,12 @@ Add new domain entries while keeping old ones. Libvirt dnsmasq serves both.
 
 ### Step 0.3: Update role defaults and templates
 
-- [ ] 0.3.1 `roles/monitoring/defaults/main.yml:4` — `monitoring_hostname: monitoring.homelab.internal`
-- [ ] 0.3.2 `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — `server_name` gets BOTH domains:
+- [x] 0.3.1 `roles/monitoring/defaults/main.yml:4` — `monitoring_hostname: monitoring.homelab.internal`
+- [x] 0.3.2 `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — `server_name` gets BOTH domains:
   ```nginx
   server_name observability.local.lan observability.homelab.internal;
   ```
-- [ ] 0.3.3 `roles/libvirt/templates/user-data.j2:33-34` — DNS search domains:
+- [x] 0.3.3 `roles/libvirt/templates/user-data.j2:33-34` — DNS search domains:
   ```yaml
   - nmcli connection modify "System eth0" ipv4.dns-search "{{ vm_hostname }}.homelab.internal"
   - nmcli connection modify "System eth0" ipv4.dns-search "homelab.internal"
@@ -237,8 +237,8 @@ getent hosts observability.homelab.internal
 
 Config/DNS changes only — certs already have dual-domain SANs from Step 0.0.
 
-- [ ] Update `inventory/host_vars/ansible01/main.yml` DNS entries (see Step 0.2)
-- [ ] Update `inventory/group_vars/harbor/main.yml` email addresses (see Step 0.1)
+- [x] Update `inventory/host_vars/ansible01/main.yml` DNS entries (see Step 0.2)
+- [x] Update `inventory/group_vars/harbor/main.yml` email addresses (see Step 0.1)
 
 Re-provision (no cert renewal — already done):
 
@@ -257,8 +257,8 @@ curl -sk https://harbor.local.lan/api/v2.0/health
 
 Config/DNS changes only — certs already have dual-domain SANs from Step 0.0.
 
-- [ ] Update `inventory/host_vars/ansible02/main.yml` DNS entries (see Step 0.2)
-- [ ] Update `roles/monitoring/defaults/main.yml:4` — `monitoring_hostname: monitoring.homelab.internal`
+- [x] Update `inventory/host_vars/ansible02/main.yml` DNS entries (see Step 0.2)
+- [x] Update `roles/monitoring/defaults/main.yml:4` — `monitoring_hostname: monitoring.homelab.internal`
 
 Re-provision (no cert renewal):
 
@@ -282,10 +282,10 @@ node-exporter targets update automatically. Verify all targets are `up`.
 
 Config/DNS changes only — certs already have dual-domain SANs from Step 0.0.
 
-- [ ] Update `inventory/host_vars/ansible03/main.yml` DNS entries (see Step 0.2)
-- [ ] `inventory/group_vars/elk/main.yml:14` — `elk_hostname: observability.homelab.internal`
-- [ ] `inventory/group_vars/elk/main.yml:17-18` — URLs use new domain
-- [ ] `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — `server_name` gets BOTH domains:
+- [x] Update `inventory/host_vars/ansible03/main.yml` DNS entries (see Step 0.2)
+- [x] `inventory/group_vars/elk/main.yml:14` — `elk_hostname: observability.homelab.internal`
+- [x] `inventory/group_vars/elk/main.yml:17-18` — URLs use new domain
+- [x] `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — `server_name` gets BOTH domains:
   ```nginx
   server_name observability.local.lan observability.homelab.internal;
   ```

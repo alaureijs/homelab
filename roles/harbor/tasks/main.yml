@@ -288,6 +288,36 @@
   register: harbor_compose
   changed_when: "'Started' in harbor_compose.stdout or 'Created' in harbor_compose.stdout"
 
+- name: Get Harbor network subnet
+  ansible.builtin.command: podman network inspect harbor_harbor --format {% raw %}'{{range .Subnets}}{{.Subnet}}{{end}}'{% endraw %}
+  register: harbor_network_subnet
+  changed_when: false
+
+- name: Trust Harbor network in firewall
+  ansible.builtin.shell: |
+    SUBNET="{{ harbor_network_subnet.stdout }}"
+    if nft list chain inet firewalld filter_INPUT_POLICIES 2>/dev/null | grep -q "$SUBNET"; then
+      echo "already trusted"
+    else
+      nft insert rule inet firewalld filter_INPUT_POLICIES ip saddr "$SUBNET" accept
+      echo "added"
+    fi
+  register: harbor_fw_trust
+  changed_when: "'added' in harbor_fw_trust.stdout"
+
+- name: Persist firewalld nftables rules
+  ansible.builtin.shell: |
+    mkdir -p /etc/nftables
+    nft list table inet firewalld > /etc/nftables/firewalld.nft
+    printf '#!/usr/bin/nft -f\n\ninclude "/etc/nftables/firewalld.nft"\n' > /etc/nftables.conf
+  changed_when: false
+  when: harbor_fw_trust.changed
+
+- name: Ensure nftables service is enabled
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+
 - name: Deploy Harbor systemd service
   ansible.builtin.template:
     src: harbor.service.j2

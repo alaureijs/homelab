@@ -1,11 +1,6 @@
 ---
-# Certificate SANs
-certificates_extra_sans:
-  - "DNS:monitoring.local.lan"
-  - "DNS:monitoring.homelab.internal"
-
 # Monitoring stack
-monitoring_hostname: monitoring.local.lan
+monitoring_hostname: monitoring.homelab.internal
 monitoring_data_dir: /var/lib/monitoring
 monitoring_config_dir: /etc/monitoring
 
@@ -37,6 +32,9 @@ monitoring_cert_renew_threshold_days: 30
 monitoring_cert_force_renewal: false
 
 # Certificates to generate on this host (merged with group_vars/all certificates)
+certificates_extra_sans:
+  - "DNS:{{ vm_hostname }}.homelab.internal"
+  - "DNS:monitoring.homelab.internal"
 certificates_extra:
   - name: client
     type: ownca

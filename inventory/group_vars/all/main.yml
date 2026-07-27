@@ -3,10 +3,10 @@ ansible_user: root
 ansible_python_interpreter: /usr/bin/python3
 
 # Domain
-lab_domain: local.lan
+lab_domain: homelab.internal
 
 # Harbor
-harbor_hostname: harbor.local.lan
+harbor_hostname: harbor.homelab.internal
 harbor_metrics_port: 8090
 
 # Timezone
@@ -97,9 +97,9 @@ firewall_podman_interfaces:
 
 # Controller /etc/hosts entries
 controller_hosts_entries:
-  - "192.168.100.10 ansible01 ansible01.local.lan harbor.local.lan"
-  - "192.168.100.11 ansible02 ansible02.local.lan monitoring.local.lan"
-  - "192.168.100.12 ansible03 ansible03.local.lan observability.local.lan"
+  - "192.168.100.10 ansible01 ansible01.homelab.internal harbor.homelab.internal"
+  - "192.168.100.11 ansible02 ansible02.homelab.internal monitoring.homelab.internal"
+  - "192.168.100.12 ansible03 ansible03.homelab.internal observability.homelab.internal"
 
 # Node exporter textfile collectors
 node_exporter_textfile_scripts:

@@ -1,0 +1,26 @@
+---
+# Connection
+ansible_host: 192.168.100.13
+
+# VM host-specific
+vm_name: ansible04
+vm_mac: "52:54:00:aa:00:13"
+vm_ip: 192.168.100.13
+
+# VM specs (overrides group defaults)
+vm_vcpus: 2
+vm_memory: 4096
+vm_disk: 60
+
+# DNS host-specific
+vm_hostname: ansible04
+vm_dns_entries:
+  - name: ca.homelab.internal
+    ip: 192.168.100.13
+  - name: pki.homelab.internal
+    ip: 192.168.100.13
+  - name: ansible04.homelab.internal
+    ip: 192.168.100.13
+
+# Hardening — Podman requires IP forwarding
+hardening_ip_forwarding: true

@@ -8,6 +8,7 @@
 {% if libvirt_network_dhcp_enabled | bool %}
     <dhcp>
       <range start="192.168.100.200" end="192.168.100.254"/>
+      <option value='6' data='192.168.100.13'/>
 {% for host in groups['libvirt'] | default([]) %}
 {% if hostvars[host].vm_ip is defined %}
       <host mac="{{ hostvars[host].vm_mac }}" name="{{ hostvars[host].vm_hostname }}" ip="{{ hostvars[host].vm_ip }}"/>

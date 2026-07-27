@@ -1,7 +1,7 @@
 # Plan: step-ca + ca-portal + DNS Roles + PKI Migration + Domain Migration
 
 - [x] Phase 0: Domain Migration (`local.lan` → `homelab.internal`)
-- [ ] Phase 1: New VM + Inventory
+- [x] Phase 1: New VM + Inventory
 - [ ] Phase 2: step-ca role
 - [ ] Phase 3: ca-portal role
 - [ ] Phase 4: DNS role (Unbound)
@@ -428,12 +428,12 @@ If a host breaks during migration:
 
 ## Phase 1: New VM + Inventory
 
-- [ ] 1.1 Add `pki` group + `ansible04` to `inventory/hosts.yml`
-- [ ] 1.2 Create `inventory/host_vars/ansible04/main.yml` (IP, MAC, hostname, DNS, specs)
-- [ ] 1.3 Add `ansible04` to `controller_hosts_entries` in `inventory/group_vars/all/main.yml`
-- [ ] 1.4 Add `ansible04` to `libvirt` group
-- [ ] 1.5 Update `roles/libvirt/templates/network.xml.j2` — DHCP DNS to 192.168.100.13
-- [ ] 1.6 Add `ansible04` DNS entry to `ansible-net` network
+- [x] 1.1 Add `pki` group + `ansible04` to `inventory/hosts.yml`
+- [x] 1.2 Create `inventory/host_vars/ansible04/main.yml` (IP, MAC, hostname, DNS, specs)
+- [x] 1.3 Add `ansible04` to `controller_hosts_entries` in `inventory/group_vars/all/main.yml`
+- [x] 1.4 Add `ansible04` to `libvirt` group
+- [x] 1.5 Update `roles/libvirt/templates/network.xml.j2` — DHCP DNS to 192.168.100.13
+- [x] 1.6 Add `ansible04` DNS entry to `ansible-net` network
 
 ## Phase 2: step-ca Role
 

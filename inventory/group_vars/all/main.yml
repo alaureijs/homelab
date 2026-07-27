@@ -100,6 +100,7 @@ controller_hosts_entries:
   - "192.168.100.10 ansible01 ansible01.homelab.internal harbor.homelab.internal"
   - "192.168.100.11 ansible02 ansible02.homelab.internal monitoring.homelab.internal"
   - "192.168.100.12 ansible03 ansible03.homelab.internal observability.homelab.internal"
+  - "192.168.100.13 ansible04 ansible04.homelab.internal ca.homelab.internal pki.homelab.internal"
 
 # Node exporter textfile collectors
 node_exporter_textfile_scripts:

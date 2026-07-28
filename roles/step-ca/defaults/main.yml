@@ -1,0 +1,53 @@
+---
+# step-ca role defaults
+
+# Versions
+step_ca_version: "0.30.2"
+step_cli_version: "0.30.6"
+
+# Container
+step_ca_image: "smallstep/step-ca:{{ step_ca_version }}"
+step_ca_name: step-ca
+
+# Host and networking
+step_ca_hostname: ca.homelab.internal
+step_ca_port: 9000
+
+# Paths
+step_ca_config_dir: /etc/step-ca
+step_ca_data_dir: /var/lib/step-ca
+step_ca_password_file: "{{ step_ca_config_dir }}/password.txt"
+
+# CA identity
+step_ca_name_display: "Lab CA"
+step_ca_dns:
+  - "{{ step_ca_hostname }}"
+  - "localhost"
+  - "127.0.0.1"
+  - "{{ ansible_default_ipv4.address | default('192.168.100.13') }}"
+
+# Certificate durations
+step_ca_min_cert_duration: "5m"
+step_ca_default_cert_duration: "720h"
+step_ca_max_cert_duration: "2160h"
+step_ca_default_ca_cert_duration: "87600h"
+step_ca_default_ca_renew_before: "168h"
+
+# Provisioners
+step_ca_provisioners:
+  - name: admin
+    type: JWK
+    issuer: "{{ step_ca_name_display }}"
+    admin: "{{ step_ca_admin_name }}"
+  - name: acme
+    type: ACME
+    issuer: "{{ step_ca_name_display }}"
+
+step_ca_admin_name: admin
+
+# Backup
+step_ca_backup_enabled: true
+step_ca_backup_dir: "{{ playbook_dir }}/../files/step-ca"
+
+# step-cli bootstrap
+step_ca_fingerprint_cmd: "step certificate fingerprint {{ step_ca_config_dir }}/certs/root_ca.crt"

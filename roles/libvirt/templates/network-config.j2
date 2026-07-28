@@ -3,5 +3,17 @@ ethernets:
   all-en:
     match:
       name: "en*"
-    dhcp4: true
+    dhcp4: false
     dhcp6: false
+    addresses:
+      - {{ vm_ip }}/24
+    routes:
+      - to: default
+        via: {{ libvirt_network_gateway }}
+    nameservers:
+      addresses:
+        - 192.168.100.13
+        - {{ libvirt_network_gateway }}
+      search:
+        - {{ vm_hostname }}.homelab.internal
+        - homelab.internal

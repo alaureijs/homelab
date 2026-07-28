@@ -1,0 +1,61 @@
+---
+- name: Ensure base packages directory exists
+  ansible.builtin.file:
+    path: "{{ packages_repo_dir }}"
+    state: directory
+    owner: "{{ packages_repo_owner }}"
+    group: "{{ packages_repo_group }}"
+    mode: "{{ packages_repo_mode }}"
+
+- name: Ensure category directories exist
+  ansible.builtin.file:
+    path: "{{ packages_repo_dir }}/{{ item.dir }}"
+    state: directory
+    owner: "{{ packages_repo_owner }}"
+    group: "{{ packages_repo_group }}"
+    mode: "{{ packages_repo_mode }}"
+  loop: "{{ packages_exporters }}"
+  loop_control:
+    label: "{{ item.dir }}"
+
+- name: Ensure node-exporter textfile scripts directory exists
+  ansible.builtin.file:
+    path: "{{ packages_repo_dir }}/node-exporter/textfile_scripts"
+    state: directory
+    owner: "{{ packages_repo_owner }}"
+    group: "{{ packages_repo_group }}"
+    mode: "{{ packages_repo_mode }}"
+
+- name: Download exporter tarballs
+  ansible.builtin.get_url:
+    url: "https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ item.arch ~ '.tar.gz') }}"
+    dest: "{{ packages_repo_dir }}/{{ item.dir }}/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ item.arch ~ '.tar.gz') }}"
+    owner: "{{ packages_repo_owner }}"
+    group: "{{ packages_repo_group }}"
+    mode: "0644"
+    timeout: 120
+  loop: "{{ packages_exporters }}"
+  loop_control:
+    label: "{{ item.name }} {{ item.version }}"
+
+- name: Upload textfile collector scripts
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/{{ item.name }}"
+    dest: "{{ packages_repo_dir }}/node-exporter/textfile_scripts/{{ item.name }}"
+    owner: "{{ packages_repo_owner }}"
+    group: "{{ packages_repo_group }}"
+    mode: "0755"
+  loop: "{{ node_exporter_textfile_scripts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: List downloaded packages
+  ansible.builtin.find:
+    paths: "{{ packages_repo_dir }}"
+    recurse: true
+    file_type: file
+  register: _packages_list
+
+- name: Show package count
+  ansible.builtin.debug:
+    msg: "{{ _packages_list.files | length }} packages in {{ packages_repo_dir }}"

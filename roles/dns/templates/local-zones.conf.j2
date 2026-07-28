@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+# Internal host resolution — single source of truth
+# Managed by Ansible, do not edit manually
+# All entries MUST be FQDNs (ending with .homelab.internal)
+# Bare hostnames are NOT forwarded upstream — only FQDNs are resolved
+{% for zone in dns_local_zones %}
+
+local-zone: "{{ zone.name }}." {{ zone.type }}
+local-data: "{{ zone.name }}. IN A {{ zone.address }}"
+{% endfor %}

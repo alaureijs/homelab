@@ -1,0 +1,8 @@
+---
+dependencies: []
+galaxy_info:
+  role_name: dns
+  description: Unbound DNS server for homelab.internal zones
+  author: homelab
+  license: MIT
+  min_ansible_version: "2.17"

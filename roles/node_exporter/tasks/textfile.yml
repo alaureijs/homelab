@@ -26,17 +26,22 @@
          | selectattr('groups', 'subset', group_names)
          | list }}
 
-- name: Deploy textfile collector scripts
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
+- name: Download textfile collector scripts from internal repo
+  ansible.builtin.get_url:
+    url: "https://packages.homelab.internal/node-exporter/textfile_scripts/{{ item.name }}"
     dest: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
     owner: root
     group: nobody
     mode: "0750"
+    timeout: 30
   loop: "{{ _active_textfile_scripts }}"
   loop_control:
     label: "{{ item.name }}"
   notify: Regenerate textfile checksums
+  register: _textfile_download
+  failed_when:
+    - _textfile_download is failed
+    - "'404' not in (_textfile_download.response | default(''))"
 
 - name: Deploy textfile collector runner script
   ansible.builtin.copy:

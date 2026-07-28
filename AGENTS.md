@@ -143,12 +143,16 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `logstash` | Logstash via pod manifest (beats input, grok filters, ES output) | ansible03 |
 | `kibana` | Kibana via pod manifest + nginx reverse proxy | ansible03 |
 | `node_exporter` | Binary install, systemd service, mTLS web config, textfile collectors | all hosts (sidecar on ELK) |
-| `prometheus_exporters` | Download exporter tarballs from GitHub releases | localhost (controller) |
-| `certificates` | Selfsigned/CA certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
-| `common` | Package management, protected package safety, chrony | all VMs |
-| `firewall` | firewalld rules for services, UFW for libvirt host bridge | ansible02 |
+| `prometheus_exporters` | Download exporter tarballs from internal package repo | localhost (controller) |
+| `certificates` | step-ca signed certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
+| `step-ca` | Smallstep private CA (v0.30.2), Podman container, auto-init | ansible04 |
+| `ca-portal` | nginx cert distribution portal + internal package repo | ansible04 |
+| `packages` | Download exporters + textfile scripts to internal package repo | ansible04 |
+| `dns` | Unbound DNS server, local zones for homelab.internal, DNSSEC | ansible04 |
+| `common` | Package management, protected package safety, chrony, step-cli | all VMs |
+| `firewall` | firewalld rules for services, UFW for libvirt host bridge | ansible02, ansible04 |
 | `hardening` | STIG/CIS Benchmark (toggleable modules) | all VMs |
-| `nginx` | Nginx reverse proxy configuration | ansible01, ansible02 |
+| `nginx` | Nginx reverse proxy configuration | ansible01, ansible02, ansible04 |
 | `podman` | Podman setup + registries.conf | ansible03 |
 | `libvirt` | VM provisioning via `community.libvirt` collection | localhost (provisioner) |
 

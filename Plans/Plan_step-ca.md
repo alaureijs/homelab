@@ -2,16 +2,17 @@
 
 - [x] Phase 0: Domain Migration (`local.lan` → `homelab.internal`)
 - [x] Phase 1: New VM + Inventory
-- [ ] Phase 2: step-ca role
-- [ ] Phase 3: ca-portal role
-- [ ] Phase 4: DNS role (Unbound)
-- [ ] Phase 5: Playbooks
-- [ ] Phase 6: Replace certificates infrastructure
-- [ ] Phase 7: Service certificate migration
-- [ ] Phase 8: Role updates
-- [ ] Phase 9: Variables
-- [ ] Phase 10: Documentation
-- [ ] Phase 11: Cleanup
+- [x] Phase 2: step-ca role
+- [x] Phase 3: ca-portal role
+- [x] Phase 3.5: Internal Package Repository
+- [x] Phase 4: DNS role (Unbound)
+- [x] Phase 5: Playbooks
+- [x] Phase 6: Replace certificates infrastructure
+- [x] Phase 7: Service certificate migration
+- [x] Phase 8: Role updates
+- [x] Phase 9: Variables
+- [x] Phase 10: Documentation
+- [x] Phase 11: Cleanup
 
 ## Decisions
 
@@ -337,19 +338,19 @@ certificates. This is a separate step — do NOT combine with migration.
 
 #### 9a: Remove dual-domain SANs from inventory
 
-- [ ] Remove `certificates_extra_sans` from `inventory/group_vars/harbor/main.yml`
-- [ ] Remove `certificates_extra_sans` from `inventory/group_vars/monitoring/main.yml`
-- [ ] Remove `certificates_extra_sans` from `inventory/group_vars/elk/main.yml`
+- [x] Remove `certificates_extra_sans` from `inventory/group_vars/harbor/main.yml`
+- [x] Remove `certificates_extra_sans` from `inventory/group_vars/monitoring/main.yml`
+- [x] Remove `certificates_extra_sans` from `inventory/group_vars/elk/main.yml`
 
 #### 9b: Remove old domain entries from host_vars
 
-- [ ] `inventory/host_vars/ansible01/main.yml` — remove `harbor.local.lan` entry
-- [ ] `inventory/host_vars/ansible02/main.yml` — remove `monitoring.local.lan` entry
-- [ ] `inventory/host_vars/ansible03/main.yml` — remove `observability.local.lan` entry
+- [x] `inventory/host_vars/ansible01/main.yml` — remove `harbor.local.lan` entry
+- [x] `inventory/host_vars/ansible02/main.yml` — remove `monitoring.local.lan` entry
+- [x] `inventory/host_vars/ansible03/main.yml` — remove `observability.local.lan` entry
 
 #### 9c: Remove old domain from controller hosts entries
 
-- [ ] `inventory/group_vars/all/main.yml:99-101` — remove old FQDNs:
+- [x] `inventory/group_vars/all/main.yml:99-101` — remove old FQDNs:
   ```yaml
   controller_hosts_entries:
     - "192.168.100.10 ansible01 ansible01.homelab.internal harbor.homelab.internal"
@@ -359,7 +360,7 @@ certificates. This is a separate step — do NOT combine with migration.
 
 #### 9d: Remove old domain from nginx-kibana template
 
-- [ ] `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — remove `observability.local.lan`:
+- [x] `roles/kibana/templates/nginx-kibana.conf.j2:4,40` — remove `observability.local.lan`:
   ```nginx
   server_name observability.homelab.internal;
   ```
@@ -397,9 +398,9 @@ curl -sk https://harbor.local.lan/api/v2.0/health 2>&1 | head -1
 
 ### Step 0.10: Final cleanup
 
-- [ ] 0.10.1 Remove old DNS entries from libvirt network (regenerated on next `libvirt.yml` run)
-- [ ] 0.10.2 Remove old entries from controller `/etc/hosts` (done by 9c + provision-common)
-- [ ] 0.10.3 Verify no `local.lan` references remain (except CHANGELOG.md)
+- [x] 0.10.1 Remove old DNS entries from libvirt network (regenerated on next `libvirt.yml` run)
+- [x] 0.10.2 Remove old entries from controller `/etc/hosts` (done by 9c + provision-common)
+- [x] 0.10.3 Verify no `local.lan` references remain (except CHANGELOG.md)
 
 ```bash
 # Final check — should only return CHANGELOG.md and Plan migration table
@@ -437,17 +438,17 @@ If a host breaks during migration:
 
 ## Phase 2: step-ca Role
 
-- [ ] 2.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `handlers/`, `meta/`, `molecule/`
-- [ ] 2.2 `defaults/main.yml` — version, paths, ports, provisioners, cert durations, backup settings
-- [ ] 2.3 `tasks/main.yml` — install step-cli, pull image, init CA, configure provisioners (JWK + ACME), start pod, backup root CA to controller
-- [ ] 2.4 `templates/ca.json.j2` — step-ca server config (address, DNS, provisioners, claims, DB)
-- [ ] 2.5 `templates/step-ca-pod.yml.j2` — K8s YAML for `podman kube play` (container, PV/PVC, volume mounts)
-- [ ] 2.6 `templates/step-ca.service.j2` — systemd unit (oneshot, podman kube play up/down)
-- [ ] 2.7 `handlers/main.yml` — restart step-ca (podman kube play --down && up)
-- [ ] 2.8 `meta/main.yml` — depends on `podman`, `certificates`
-- [ ] 2.9 Add `step_ca_version` and `step_cli_version` to `inventory/group_vars/all/main.yml`
-- [ ] 2.10 Add `vault_stepca_password` + `vault_stepca_provisioner_password` to vault
-- [ ] 2.11 Create `inventory/group_vars/pki/main.yml` with step-ca + ca-portal vars
+- [x] 2.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `handlers/`, `meta/`, `molecule/`
+- [x] 2.2 `defaults/main.yml` — version, paths, ports, provisioners, cert durations, backup settings
+- [x] 2.3 `tasks/main.yml` — install step-cli, pull image, init CA, configure provisioners (JWK + ACME), start pod, backup root CA to controller
+- [x] 2.4 `templates/ca.json.j2` — step-ca server config (address, DNS, provisioners, claims, DB)
+- [x] 2.5 `templates/step-ca-pod.yml.j2` — K8s YAML for `podman kube play` (container, PV/PVC, volume mounts)
+- [x] 2.6 `templates/step-ca.service.j2` — systemd unit (oneshot, podman kube play up/down)
+- [x] 2.7 `handlers/main.yml` — restart step-ca (podman kube play --down && up)
+- [x] 2.8 `meta/main.yml` — depends on `podman`, `certificates`
+- [x] 2.9 Add `step_ca_version` and `step_cli_version` to `inventory/group_vars/all/main.yml`
+- [x] 2.10 Add `vault_stepca_password` + `vault_stepca_provisioner_password` to vault
+- [x] 2.11 Create `inventory/group_vars/pki/main.yml` with step-ca + ca-portal vars
 - [ ] 2.12 Molecule tests (default, minimum scenarios)
 
 ### Default Variables
@@ -482,13 +483,13 @@ step_ca_backup_dir: "{{ playbook_dir }}/../files/step-ca"
 
 ## Phase 3: ca-portal Role
 
-- [ ] 3.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `files/`, `handlers/`, `meta/`
-- [ ] 3.2 `defaults/main.yml` — hostname, ports, SSL settings, web roots
-- [ ] 3.3 `tasks/main.yml` — install nginx, deploy CA certs to web root, deploy vhost, deploy portal page, ensure nginx running
-- [ ] 3.4 `templates/ca-portal.conf.j2` — nginx vhost (port 80 ACME + redirect, port 443 portal)
-- [ ] 3.5 `templates/index.html.j2` — portal landing page (CA name, fingerprint, download links, bootstrap commands)
-- [ ] 3.6 `handlers/main.yml` — reload nginx
-- [ ] 3.7 `meta/main.yml` — depends on `step-ca`, `certificates`
+- [x] 3.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `files/`, `handlers/`, `meta/`
+- [x] 3.2 `defaults/main.yml` — hostname, ports, SSL settings, web roots
+- [x] 3.3 `tasks/main.yml` — install nginx, deploy CA certs to web root, deploy vhost, deploy portal page, ensure nginx running
+- [x] 3.4 `templates/ca-portal.conf.j2` — nginx vhost (port 80 ACME + redirect, port 443 portal + packages server block)
+- [x] 3.5 `templates/index.html.j2` — portal landing page (CA name, fingerprint, download links, bootstrap commands)
+- [x] 3.6 `handlers/main.yml` — reload nginx
+- [x] 3.7 `meta/main.yml` — depends on `step-ca`, `certificates`
 
 ### Default Variables
 
@@ -546,18 +547,90 @@ server {
 }
 ```
 
+## Phase 3.5: Internal Package Repository (packages.homelab.internal)
+
+- [x] 3.5.1 Add `packages.homelab.internal` DNS entry (controller + libvirt)
+- [x] 3.5.2 Add `packages.homelab.internal` SAN to ca-portal TLS cert
+- [x] 3.5.3 Add packages nginx server block to `ca-portal.conf.j2` (HTTPS, autoindex)
+- [x] 3.5.4 Create `packages` role scaffold: `defaults/`, `tasks/`, `meta/`
+- [x] 3.5.5 `defaults/main.yml` — repo dir, exporter list with versions/repos
+- [x] 3.5.6 `tasks/main.yml` — create dirs, download exporters from GitHub releases
+- [x] 3.5.7 `meta/main.yml` — depends on `ca-portal`
+- [x] 3.5.8 Update `provision-ansible04.yml` to include `packages` role
+- [x] 3.5.9 Refactor `prometheus_exporters` role to use internal repo
+- [x] 3.5.10 Update `node_exporter` role to download from internal repo
+
+### Default Variables
+
+```yaml
+# roles/packages/defaults/main.yml
+packages_repo_dir: /var/www/packages
+packages_repo_owner: nobody
+packages_repo_group: nobody
+packages_repo_mode: "0755"
+```
+
+### URL Scheme
+
+```
+packages.homelab.internal/
+├── exporters/
+│   ├── node_exporter-v1.12.1.linux-amd64.tar.gz
+│   ├── pushgateway-v1.11.3.linux-amd64.tar.gz
+│   ├── elasticsearch_exporter-v1.11.0.linux-amd64.tar.gz
+│   ├── mysqld_exporter-0.19.0.linux-amd64.tar.gz
+│   ├── postgres_exporter-0.20.1.linux-amd64.tar.gz
+│   ├── nginx-prometheus-exporter_1.5.1_linux_amd64.tar.gz
+│   └── logstash-exporter-linux
+├── node-exporter/
+│   └── textfile_scripts/
+│       ├── chrony.sh
+│       ├── fstab-check.sh
+│       ├── reboot-required.sh
+│       ├── authorized-keys.sh
+│       ├── container-health.sh
+│       └── logstash.sh
+└── <future categories>
+```
+
+### nginx Config Structure
+
+```nginx
+# Port 443 — Packages Repository
+server {
+    listen 443 ssl;
+    server_name packages.homelab.internal;
+
+    ssl_certificate     {{ ca_portal_ssl_cert }};
+    ssl_certificate_key {{ ca_portal_ssl_key }};
+
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    root /var/www/packages;
+
+    autoindex on;
+    autoindex_exact_size off;
+    autoindex_localtime on;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
 ## Phase 4: DNS Role (Unbound)
 
-- [ ] 4.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `handlers/`, `meta/`, `molecule/`
-- [ ] 4.2 `defaults/main.yml` — listen address, upstream forwarders, local zones, DNSSEC settings
-- [ ] 4.3 `tasks/main.yml` — install unbound, deploy config, deploy local zones, enable service
-- [ ] 4.4 `templates/unbound.conf.j2` — main config (server block, forward zones, DNSSEC, access control)
-- [ ] 4.5 `templates/local-zones.conf.j2` — `local-zone` and `local-data` entries for all hosts + services
-- [ ] 4.6 `templates/forward-zones.conf.j2` — upstream forwarders (Cloudflare 1.1.1.1, Google 8.8.8.8)
-- [ ] 4.7 `handlers/main.yml` — restart unbound
-- [ ] 4.8 `meta/main.yml` — no dependencies (DNS is foundational)
-- [ ] 4.9 Add `unbound_version` (if pinning) to `inventory/group_vars/all/main.yml`
-- [ ] 4.10 Create `inventory/group_vars/pki/main.yml` DNS vars (if separated from phase 2.11)
+- [x] 4.1 Create role scaffold: `defaults/`, `tasks/`, `templates/`, `handlers/`, `meta/`, `molecule/`
+- [x] 4.2 `defaults/main.yml` — listen address, upstream forwarders, local zones, DNSSEC settings
+- [x] 4.3 `tasks/main.yml` — install unbound, deploy config, deploy local zones, enable service
+- [x] 4.4 `templates/unbound.conf.j2` — main config (server block, forward zones, DNSSEC, access control)
+- [x] 4.5 `templates/local-zones.conf.j2` — `local-zone` and `local-data` entries for all hosts + services
+- [x] 4.6 `templates/forward-zones.conf.j2` — upstream forwarders (Cloudflare 1.1.1.1, Google 8.8.8.8)
+- [x] 4.7 `handlers/main.yml` — restart unbound
+- [x] 4.8 `meta/main.yml` — no dependencies (DNS is foundational)
+- [x] 4.9 Add `unbound_version` (if pinning) to `inventory/group_vars/all/main.yml`
+- [x] 4.10 Create `inventory/group_vars/pki/main.yml` DNS vars (if separated from phase 2.11)
 - [ ] 4.11 Molecule tests (default, minimum scenarios)
 
 ### Default Variables
@@ -745,58 +818,58 @@ On ansible04 only:
 
 ## Phase 5: Playbooks
 
-- [ ] 5.1 Create `playbooks/provision-ansible04.yml` (order: common → step-ca → ca-portal)
-- [ ] 5.2 Update `playbooks/provision-common.yml` — replace `ensure-mtls-ca.yml` import with step-ca CA distribution
-- [ ] 5.3 Delete `playbooks/ensure-mtls-ca.yml`
-- [ ] 5.4 Update `playbooks/harbor-certs.yml` — remove ensure-mtls-ca import
+- [x] 5.1 Create `playbooks/provision-ansible04.yml` (order: common → step-ca → ca-portal)
+- [x] 5.2 Update `playbooks/provision-common.yml` — replace `ensure-mtls-ca.yml` import with step-ca CA distribution
+- [x] 5.3 Delete `playbooks/ensure-mtls-ca.yml`
+- [x] 5.4 Update `playbooks/harbor-certs.yml` — remove ensure-mtls-ca import
 
 ## Phase 6: Replace Certificates Infrastructure
 
-- [ ] 6.1 Add `stepca` type to `roles/certificates/tasks/generate.yml` — uses `step ca certificate` CLI
-- [ ] 6.2 Add step-cli bootstrap task to `roles/certificates/tasks/main.yml`
-- [ ] 6.3 Distribute step-ca root CA cert to all hosts (replace mTLS CA distribution)
-- [ ] 6.4 Add step-ca root CA to system trust store on all hosts
+- [x] 6.1 Add `stepca` type to `roles/certificates/tasks/generate.yml` — uses `step ca certificate` CLI
+- [x] 6.2 Add step-cli bootstrap task to `roles/certificates/tasks/main.yml`
+- [x] 6.3 Distribute step-ca root CA cert to all hosts (replace mTLS CA distribution)
+- [x] 6.4 Add step-ca root CA to system trust store on all hosts
 
 ## Phase 7: Service Certificate Migration
 
-- [ ] 7.1 Harbor (ansible01) — `certificates` selfsigned → `stepca` type
-- [ ] 7.2 Monitoring nginx (ansible02) — `certificates` selfsigned → `stepca` type
-- [ ] 7.3 ELK/nginx (ansible03) — `certificates` selfsigned → `stepca` type
-- [ ] 7.4 node-exporter mTLS (all) — `ensure-mtls-ca.yml` ownca → `stepca` type
-- [ ] 7.5 Prometheus mTLS client (ansible02) — `ensure-mtls-ca.yml` ownca → `stepca` type
-- [ ] 7.6 ca-portal (ansible04) — self-signed bootstrap → `stepca` type after step-ca is up
+- [x] 7.1 Harbor (ansible01) — `certificates` selfsigned → `stepca` type
+- [x] 7.2 Monitoring nginx (ansible02) — `certificates` selfsigned → `stepca` type
+- [x] 7.3 ELK/nginx (ansible03) — `certificates` selfsigned → `stepca` type
+- [x] 7.4 node-exporter mTLS (all) — `ensure-mtls-ca.yml` ownca → `stepca` type
+- [x] 7.5 Prometheus mTLS client (ansible02) — `ensure-mtls-ca.yml` ownca → `stepca` type
+- [x] 7.6 ca-portal (ansible04) — self-signed bootstrap → `stepca` type after step-ca is up
 
 ## Phase 8: Role Updates
 
-- [ ] 8.1 `certificates` — add `stepca` cert type, `step-cli` bootstrap, step-ca URL/fingerprint vars
-- [ ] 8.2 `harbor` — update cert paths, trust step-ca root CA
-- [ ] 8.3 `monitoring` — update nginx cert paths, mTLS client cert from step-ca
-- [ ] 8.4 `kibana` — update nginx cert paths
-- [ ] 8.5 `node_exporter` — server cert from step-ca
-- [ ] 8.6 `common` — add step-ca root CA to system trust store
-- [ ] 8.7 `dns` — add Unbound role to all hosts' DNS config (update `/etc/resolv.conf` via NetworkManager or dhclient)
+- [x] 8.1 `certificates` — add `stepca` cert type, `step-cli` bootstrap, step-ca URL/fingerprint vars
+- [x] 8.2 `harbor` — update cert paths, trust step-ca root CA
+- [x] 8.3 `monitoring` — update nginx cert paths, mTLS client cert from step-ca
+- [x] 8.4 `kibana` — update nginx cert paths
+- [x] 8.5 `node_exporter` — server cert from step-ca
+- [x] 8.6 `common` — add step-ca root CA to system trust store
+- [x] 8.7 `dns` — add Unbound role to all hosts' DNS config (update `/etc/resolv.conf` via NetworkManager or dhclient)
 
 ## Phase 9: Variables
 
-- [ ] 9.1 Add `vault_stepca_password` + `vault_stepca_provisioner_password` to vault
-- [ ] 9.2 Create `inventory/group_vars/pki/main.yml`
-- [ ] 9.3 Update `inventory/group_vars/all/main.yml` — add versions, replace mTLS paths, update `lab_domain`
-- [ ] 9.4 Update per-group cert definitions to use `stepca` type
+- [x] 9.1 Add `vault_stepca_password` + `vault_stepca_provisioner_password` to vault
+- [x] 9.2 Create `inventory/group_vars/pki/main.yml`
+- [x] 9.3 Update `inventory/group_vars/all/main.yml` — add versions, replace mTLS paths, update `lab_domain`
+- [x] 9.4 Update per-group cert definitions to use `stepca` type
 
 ## Phase 10: Documentation
 
-- [ ] 10.1 Create `docs/pki-step-ca.md` — update with `homelab.internal`, add DNS section
-- [ ] 10.2 Update `AGENTS.md` — add step-ca + DNS to architecture diagram, roles table
-- [ ] 10.3 Update `LIFECYCLE.md` — add step-ca version management
-- [ ] 10.4 Update all docs — replace `local.lan` → `homelab.internal`
+- [x] 10.1 Create `docs/pki-step-ca.md` — update with `homelab.internal`, add DNS section
+- [x] 10.2 Update `AGENTS.md` — add step-ca + DNS to architecture diagram, roles table
+- [x] 10.3 Update `LIFECYCLE.md` — add step-ca version management
+- [x] 10.4 Update all docs — replace `local.lan` → `homelab.internal`
 
 ## Phase 11: Cleanup
 
-- [ ] 11.1 Delete `playbooks/ensure-mtls-ca.yml`
-- [ ] 11.2 Remove old mTLS CA files from `files/certificates/mtls-ca.*`
-- [ ] 11.3 Remove mTLS-related vars from `group_vars/all/main.yml`
-- [ ] 11.4 Update `roles/harbor/meta/main.yml` dependencies
-- [ ] 11.5 Verify no `local.lan` references remain (except CHANGELOG.md historical entries)
+- [x] 11.1 Delete `playbooks/ensure-mtls-ca.yml`
+- [x] 11.2 Remove old mTLS CA files from `files/certificates/mtls-ca.*`
+- [x] 11.3 Remove mTLS-related vars from `group_vars/all/main.yml`
+- [x] 11.4 Update `roles/harbor/meta/main.yml` dependencies
+- [x] 11.5 Verify no `local.lan` references remain (except CHANGELOG.md historical entries)
 
 ## Dependency Graph
 

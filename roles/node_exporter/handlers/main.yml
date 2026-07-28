@@ -6,6 +6,18 @@
     daemon_reload: true
   listen: Restart node-exporter
 
+- name: Fix node_exporter TLS permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: "{{ node_exporter_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ node_exporter_ca_combined }}", mode: "0640" }
+    - { path: "{{ node_exporter_server_cert }}", mode: "0644" }
+    - { path: "{{ node_exporter_server_key }}", mode: "0640" }
+  listen: Fix node_exporter TLS permissions
+
 - name: Restart node-exporter-textfile
   ansible.builtin.systemd:
     name: node-exporter-textfile.timer
@@ -25,7 +37,7 @@
 
 - name: Write textfile checksums
   ansible.builtin.copy:
-    content: "{{ _textfile_checksums.results | map(attribute='stat.checksum') | zip(_textfile_checksums.results | map(attribute='item.name')) | map('join', '  ') | join('\n') }}\n"
+    content: "{{ _textfile_checksums.results | selectattr('stat.exists', 'true') | map(attribute='stat.checksum') | zip(_textfile_checksums.results | selectattr('stat.exists', 'true') | map(attribute='item.name')) | map('join', '  ') | join('\\n') }}\\n"
     dest: "{{ node_exporter_textfile_scripts_dir }}/.checksums"
     owner: root
     group: nobody

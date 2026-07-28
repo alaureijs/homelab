@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: packages
+  description: Internal package repository served by nginx on ansible04
+  author: homelab
+  license: MIT
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Rocky
+      versions:
+        - "10"
+
+dependencies:
+  - role: ca-portal

@@ -125,16 +125,21 @@
     - { path: "{{ monitoring_mtls_client_key }}", mode: "0644" }
   notify: Restart monitoring pod
 
-- name: Fetch mTLS CA certs from all hosts
+- name: Fetch step-ca root CA from ansible04
   ansible.builtin.slurp:
-    src: "{{ mtls_ca_cert }}"
-  delegate_to: "{{ item }}"
-  loop: "{{ groups['all'] }}"
-  register: monitoring_mtls_ca_certs
+    src: "{{ certificates_step_ca_root | default('/etc/step-ca/certs/root_ca.crt') }}"
+  delegate_to: ansible04
+  register: _monitoring_step_ca_root
+
+- name: Fetch step-ca intermediate CA from ansible04
+  ansible.builtin.slurp:
+    src: /etc/step-ca/certs/intermediate_ca.crt
+  delegate_to: ansible04
+  register: _monitoring_step_ca_intermediate
 
 - name: Build combined mTLS CA file for Prometheus
   ansible.builtin.copy:
-    content: "{{ monitoring_mtls_ca_certs.results | map(attribute='content') | map('b64decode') | join('\n') }}"
+    content: "{{ (_monitoring_step_ca_root.content | b64decode) + (_monitoring_step_ca_intermediate.content | b64decode) }}"
     dest: "{{ monitoring_mtls_dir }}/mtls-ca-combined.crt"
     owner: root
     group: root

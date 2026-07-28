@@ -227,3 +227,92 @@
       ansible.builtin.file:
         path: "/tmp/{{ cert.name }}.csr"
         state: absent
+
+# --- stepca ---
+
+- name: Step-ca signed certificate
+  when: cert.type == "stepca"
+  block:
+    - name: Check if certificate exists
+      ansible.builtin.stat:
+        path: "{{ _cert_path }}"
+      register: _cert_exists
+
+    - name: Check if certificate expires within threshold
+      ansible.builtin.command: >-
+        openssl x509 -checkend {{ certificates_renew_threshold_days * 86400 }}
+        -noout -in {{ _cert_path }}
+      register: _cert_expiry
+      when: _cert_exists.stat.exists
+      changed_when: false
+      failed_when: false
+
+    - name: Determine if certificate needs renewal
+      ansible.builtin.set_fact:
+        _cert_needs_renewal: >-
+          {{ _cert_force
+             or not _cert_exists.stat.exists
+             or (_cert_exists.stat.exists
+                 and _cert_expiry.rc | default(1) | int != 0) }}
+
+    - name: Display stepca certificate status
+      ansible.builtin.debug:
+        msg: >-
+          stepca {{ cert.name }}: exists={{ _cert_exists.stat.exists }},
+          {% if _cert_exists.stat.exists %}
+          expires_within={{ certificates_renew_threshold_days }}d={{ _cert_expiry.rc | default(1) | int == 0 }},
+          {% endif %}
+          needs_renewal={{ _cert_needs_renewal }}
+
+    - name: Build SANs for stepca
+      ansible.builtin.set_fact:
+        _cert_stepca_sans: "{{ cert.subject_alt_name | default(['DNS:' + vm_hostname, 'IP:' + vm_ip | string] + (cert.extra_sans | default([]))) }}"
+
+    - name: Write provisioner password to temp file
+      ansible.builtin.copy:
+        content: "{{ vault_stepca_password }}"
+        dest: "{{ certificates_step_ca_password_file }}"
+        mode: "0600"
+      no_log: true
+      when: _cert_needs_renewal | bool
+
+    - name: Build step ca certificate command
+      ansible.builtin.set_fact:
+        _stepca_cmd: >-
+          step ca certificate
+          --ca-url {{ certificates_step_ca_url }}
+          --root {{ certificates_step_ca_root }}
+          --provisioner {{ certificates_step_ca_provisioner }}
+          --provisioner-password-file {{ certificates_step_ca_password_file }}
+          --not-after {{ cert.days | default('720h') }}
+          {{ '--set extendedKeyUsage=clientAuth' if cert.client | default(false) | bool else '' }}
+          {% for san in _cert_stepca_sans %}
+          --san {{ san | regex_replace('^(DNS:|IP:)', '') }}
+          {% endfor %}
+          --force
+          {{ vm_hostname }}
+          {{ _cert_path }}
+          {{ _cert_key_path }}
+
+    - name: Request certificate from step-ca
+      ansible.builtin.command: "{{ _stepca_cmd }}"
+      register: _stepca_cert_request
+      changed_when: _stepca_cert_request.rc == 0
+      when: _cert_needs_renewal | bool
+
+    - name: Remove provisioner password temp file
+      ansible.builtin.file:
+        path: "{{ certificates_step_ca_password_file }}"
+        state: absent
+      when: _cert_needs_renewal | bool
+
+    - name: Set certificate permissions
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner | default('root') }}"
+        group: "{{ item.group | default('root') }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ _cert_path }}", mode: "0644" }
+        - { path: "{{ _cert_key_path }}", mode: "0600" }
+      when: _cert_needs_renewal | bool

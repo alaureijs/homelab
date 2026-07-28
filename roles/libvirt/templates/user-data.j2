@@ -30,8 +30,6 @@ packages:
   - device-mapper-persistent-data
 
 runcmd:
-  - nmcli connection modify "System eth0" ipv4.dns-search "{{ vm_hostname }}.homelab.internal"
-  - nmcli connection modify "System eth0" ipv4.dns-search "homelab.internal"
   - sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
   - systemctl restart sshd
 

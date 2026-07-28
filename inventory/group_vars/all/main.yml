@@ -27,6 +27,10 @@ common_remove_packages:
 # Platform
 harbor_version: "v2.11.0"
 
+# PKI
+step_ca_version: "0.30.2"
+step_cli_version: "0.30.6"
+
 # Monitoring stack
 grafana_version: "13.1.1"
 prometheus_version: "v3.13.1"
@@ -58,10 +62,7 @@ python_version: "3.14-slim"
 node_version: "22-alpine"
 golang_version: "1.26-alpine"
 
-# mTLS certificate paths
-mtls_ca_cert: /etc/mtls/ca.crt
-mtls_ca_key: /etc/mtls/ca.key
-mtls_controller_cert: "{{ playbook_dir }}/../files/certificates/mtls-ca.crt"
+# node-exporter paths (certs issued by step-ca via certificates role)
 node_exporter_server_cert: /etc/node-exporter/node-exporter.crt
 node_exporter_server_key: /etc/node-exporter/node-exporter.key
 
@@ -71,14 +72,12 @@ certificates_extra_sans: []
 certificates_extra: []
 certificates:
   - name: "{{ vm_hostname }}"
-    type: selfsigned
+    type: stepca
     extra_sans: "{{ certificates_extra_sans }}"
   - name: node-exporter
-    type: ownca
+    type: stepca
     dir: /etc/node-exporter
     key_dir: /etc/node-exporter
-    ca_cert: "{{ mtls_ca_cert }}"
-    ca_key: "{{ mtls_ca_key }}"
     extra_sans:
       - "DNS:{{ vm_hostname }}.{{ lab_domain }}"
       - "DNS:{{ vm_hostname }}.homelab.internal"
@@ -100,33 +99,27 @@ controller_hosts_entries:
   - "192.168.100.10 ansible01 ansible01.homelab.internal harbor.homelab.internal"
   - "192.168.100.11 ansible02 ansible02.homelab.internal monitoring.homelab.internal"
   - "192.168.100.12 ansible03 ansible03.homelab.internal observability.homelab.internal"
-  - "192.168.100.13 ansible04 ansible04.homelab.internal ca.homelab.internal pki.homelab.internal"
+  - "192.168.100.13 ansible04 ansible04.homelab.internal ca.homelab.internal pki.homelab.internal packages.homelab.internal"
 
 # Node exporter textfile collectors
 node_exporter_textfile_scripts:
   - name: chrony.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/chrony.sh"
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/chronyc -c tracking"
   - name: fstab-check.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/fstab-check.sh"
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/test -f *"
       - "nobody ALL=(root) NOPASSWD: /usr/bin/grep *"
   - name: reboot-required.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/reboot-required.sh"
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -r"
       - "nobody ALL=(root) NOPASSWD: /usr/bin/needs-restarting -s"
   - name: authorized-keys.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/authorized-keys.sh"
     sudoers: []
   - name: container-health.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/container-health.sh"
     sudoers:
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps -a --format *"
       - "nobody ALL=(root) NOPASSWD: /usr/bin/podman stats --no-stream --format *"
   - name: logstash.sh
-    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/logstash.sh"
     sudoers: []
     groups: ["elk"]

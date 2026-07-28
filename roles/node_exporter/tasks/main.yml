@@ -88,24 +88,21 @@
         group: root
         mode: "0755"
 
+    - name: Build combined CA file for mTLS client verification
+      ansible.builtin.shell: |
+        cat {{ node_exporter_ca_cert }} /etc/step-ca/certs/intermediate_ca.crt > {{ node_exporter_ca_combined }}
+      when: node_exporter_tls_enabled | bool
+      changed_when: true
+      notify:
+        - Fix node_exporter TLS permissions
+        - Restart node-exporter
+
     - name: Fix node_exporter TLS directory permissions
       ansible.builtin.file:
         path: /etc/node-exporter
         owner: root
         group: "{{ node_exporter_group }}"
         mode: "0750"
-
-    - name: Fix node_exporter TLS file permissions
-      ansible.builtin.file:
-        path: "{{ item }}"
-        owner: root
-        group: "{{ node_exporter_group }}"
-        mode: "0640"
-      loop:
-        - "{{ mtls_ca_cert }}"
-        - "{{ node_exporter_server_cert }}"
-        - "{{ node_exporter_server_key }}"
-      when: node_exporter_tls_enabled | bool
 
     - name: Check if node_exporter TLS files exist
       ansible.builtin.stat:
@@ -114,7 +111,7 @@
       loop:
         - "{{ node_exporter_server_cert }}"
         - "{{ node_exporter_server_key }}"
-        - "{{ mtls_ca_cert }}"
+        - "{{ node_exporter_ca_cert }}"
       register: node_exporter_tls_stat
       when: node_exporter_tls_enabled | bool
 

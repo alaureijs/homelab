@@ -1,0 +1,83 @@
+---
+# Unbound DNS server deployment
+
+- name: Install Unbound
+  ansible.builtin.dnf:
+    name: unbound
+    state: present
+
+- name: Deploy Unbound main config
+  ansible.builtin.template:
+    src: unbound.conf.j2
+    dest: /etc/unbound/unbound.conf
+    owner: root
+    group: unbound
+    mode: "0640"
+  notify: Restart unbound
+
+- name: Deploy local zones config
+  ansible.builtin.template:
+    src: local-zones.conf.j2
+    dest: /etc/unbound/local-zones.conf
+    owner: root
+    group: unbound
+    mode: "0640"
+  notify: Restart unbound
+
+- name: Ensure root trust anchor directory exists (chrooted)
+  ansible.builtin.file:
+    path: /etc/unbound/var/lib/unbound
+    state: directory
+    owner: root
+    group: unbound
+    mode: "0750"
+
+- name: Generate DNSSEC root trust anchor
+  ansible.builtin.command: unbound-anchor -a /etc/unbound/var/lib/unbound/root.key
+  args:
+    creates: /etc/unbound/var/lib/unbound/root.key
+  register: dns_unbound_anchor
+
+- name: Set root trust anchor permissions
+  ansible.builtin.file:
+    path: /etc/unbound/var/lib/unbound/root.key
+    owner: root
+    group: unbound
+    mode: "0640"
+
+- name: Ensure Unbound override directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/unbound.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Override Unbound service type for chroot compatibility
+  ansible.builtin.copy:
+    content: |
+      [Service]
+      Type=simple
+    dest: /etc/systemd/system/unbound.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart unbound
+
+- name: Enable and start Unbound
+  ansible.builtin.systemd:
+    name: unbound
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Verify Unbound config
+  ansible.builtin.command: unbound-checkconf /etc/unbound/unbound.conf
+  changed_when: false
+  register: dns_unbound_check
+
+- name: Wait for Unbound to be ready
+  ansible.builtin.wait_for:
+    port: "{{ dns_port }}"
+    host: "{{ dns_listen_address }}"
+    timeout: 10

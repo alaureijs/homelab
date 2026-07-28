@@ -42,7 +42,7 @@ firewall_podman_interfaces:
 # Certificates (merged with group_vars/all certificates)
 certificates_extra:
   - name: harbor
-    type: selfsigned
+    type: stepca
     extra_sans:
       - "DNS:harbor.homelab.internal"
 

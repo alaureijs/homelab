@@ -1,0 +1,77 @@
+---
+# Unbound DNS server defaults
+# Deployed on ansible04, serves homelab.internal local zones
+
+# Listen addresses
+dns_listen_address: "{{ hostvars[inventory_hostname]['vm_ip'] | default('0.0.0.0') }}"
+dns_port: 53
+
+# Upstream forwarders
+dns_upstream_forwarders:
+  - "1.1.1.1"
+  - "1.0.0.1"
+  - "8.8.8.8"
+  - "8.8.4.4"
+
+# Access control
+dns_access_control:
+  - subnet: "127.0.0.0/8"
+    permission: allow
+  - subnet: "192.168.100.0/24"
+    permission: allow
+
+# Domain
+dns_domain: "{{ lab_domain | default('homelab.internal') }}"
+
+# Local zones — internal host resolution
+dns_local_zones:
+  - name: ansible01.homelab.internal
+    type: static
+    address: 192.168.100.10
+  - name: ansible02.homelab.internal
+    type: static
+    address: 192.168.100.11
+  - name: ansible03.homelab.internal
+    type: static
+    address: 192.168.100.12
+  - name: ansible04.homelab.internal
+    type: static
+    address: 192.168.100.13
+  - name: harbor.homelab.internal
+    type: static
+    address: 192.168.100.10
+  - name: monitoring.homelab.internal
+    type: static
+    address: 192.168.100.11
+  - name: observability.homelab.internal
+    type: static
+    address: 192.168.100.12
+  - name: ca.homelab.internal
+    type: static
+    address: 192.168.100.13
+  - name: pki.homelab.internal
+    type: static
+    address: 192.168.100.13
+  - name: packages.homelab.internal
+    type: static
+    address: 192.168.100.13
+
+# DNSSEC
+dns_dnssec_enabled: true
+dns_dnssec_anchor_file: /var/lib/unbound/root.key
+dns_dnssec_module: "validator iterator"
+
+# Performance
+dns_cache_size: "64m"
+dns_msg_cache_size: "32m"
+dns_prefetch: true
+
+# Security
+dns_harden_glue: true
+dns_harden_dnssec_stripped: true
+dns_use_caps_for_id: false
+
+# Logging
+dns_verbosity: 1
+dns_log_queries: false
+dns_log_replies: false

@@ -32,6 +32,12 @@
     state: present
   when: common_install_packages | length > 0
 
+- name: Install step-cli
+  ansible.builtin.dnf:
+    name: "https://dl.smallstep.com/gh-release/cli/gh-release-header/v{{ step_cli_version }}/step-cli-{{ step_cli_version }}-1.x86_64.rpm"
+    state: present
+    disable_gpg_check: true
+
 - name: Remove packages
   ansible.builtin.dnf:
     name: "{{ common_remove_packages }}"

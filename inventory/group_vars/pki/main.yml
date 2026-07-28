@@ -1,0 +1,22 @@
+---
+# PKI group variables (ansible04)
+# step-ca, ca-portal, and DNS configuration
+
+# step-ca
+step_ca_hostname: ca.homelab.internal
+step_ca_port: 9000
+step_ca_config_dir: /etc/step-ca
+step_ca_data_dir: /var/lib/step-ca
+
+# DNS (Unbound)
+dns_listen_address: "{{ hostvars[inventory_hostname]['vm_ip'] | default('0.0.0.0') }}"
+dns_port: 53
+
+# Firewall
+firewall_ports:
+  - 53/udp
+  - 53/tcp
+  - 80/tcp
+  - 443/tcp
+  - 9000/tcp
+  - 9100/tcp

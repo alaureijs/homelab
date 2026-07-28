@@ -1,0 +1,16 @@
+---
+# Play 0: Common roles on all hosts
+- name: Common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml
+
+# Play 1: Provision ansible04 for PKI
+- name: Provision ansible04 for PKI
+  hosts: ansible04
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: dns
+    - role: step-ca
+    - role: ca-portal
+    - role: packages

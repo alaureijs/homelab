@@ -1,0 +1,131 @@
+---
+- name: Ensure step-ca directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+  loop:
+    - "{{ step_ca_config_dir }}"
+    - "{{ step_ca_data_dir }}"
+
+- name: Pull step-ca image
+  containers.podman.podman_image:
+    name: "{{ step_ca_image }}"
+    state: present
+
+- name: Write password file for container init
+  ansible.builtin.copy:
+    content: "{{ vault_stepca_password }}\n"
+    dest: "{{ step_ca_password_file }}"
+    owner: "1000"
+    group: "1000"
+    mode: "0600"
+
+- name: Deploy step-ca systemd service
+  ansible.builtin.template:
+    src: step-ca.service.j2
+    dest: /etc/systemd/system/step-ca.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart step-ca
+
+- name: Enable step-ca service
+  ansible.builtin.systemd:
+    name: step-ca
+    enabled: true
+    daemon_reload: true
+
+- name: Start step-ca
+  ansible.builtin.systemd:
+    name: step-ca
+    state: started
+    daemon_reload: true
+  register: _step_ca_started
+
+- name: Wait for step-ca health endpoint
+  ansible.builtin.uri:
+    url: "https://localhost:{{ step_ca_port }}/health"
+    validate_certs: false
+    status_code: 200
+  register: _step_ca_health
+  retries: 15
+  delay: 2
+  until: _step_ca_health.status == 200
+
+- name: Configure CA claims (cert duration limits)
+  ansible.builtin.shell: |
+    python3 -c "
+    import json
+    with open('{{ step_ca_config_dir }}/config/ca.json') as f:
+        d = json.load(f)
+    d.setdefault('authority', {}).setdefault('claims', {})
+    claims = d['authority']['claims']
+    changed = False
+    for k, v in {
+        'maxTLSCertDuration': '{{ step_ca_max_cert_duration }}',
+        'minTLSCertDuration': '{{ step_ca_min_cert_duration }}',
+        'defaultTLSCertDuration': '{{ step_ca_default_cert_duration }}',
+        'defaultClaimDuration': '{{ step_ca_default_cert_duration }}'
+    }.items():
+        if claims.get(k) != v:
+            claims[k] = v
+            changed = True
+    if changed:
+        with open('{{ step_ca_config_dir }}/config/ca.json', 'w') as f:
+            json.dump(d, f, indent=2)
+        print('updated')
+    else:
+        print('ok')
+    "
+  register: _step_ca_claims
+  changed_when: "'updated' in _step_ca_claims.stdout"
+  notify: Restart step-ca
+
+- name: Get step-ca fingerprint
+  ansible.builtin.shell: "step certificate fingerprint {{ step_ca_config_dir }}/certs/root_ca.crt"
+  environment:
+    STEPPATH: "{{ step_ca_config_dir }}"
+  register: _step_ca_fingerprint
+  changed_when: false
+
+- name: Display step-ca fingerprint
+  ansible.builtin.debug:
+    msg: "step-ca fingerprint: {{ _step_ca_fingerprint.stdout }}"
+
+- name: Bootstrap step-cli
+  ansible.builtin.shell: |
+    step ca bootstrap \
+      --ca-url "https://{{ step_ca_hostname }}:{{ step_ca_port }}" \
+      --fingerprint "{{ _step_ca_fingerprint.stdout }}" \
+      --force
+  environment:
+    STEPPATH: "{{ step_ca_config_dir }}"
+  changed_when: false
+
+- name: Backup root CA to controller
+  when: step_ca_backup_enabled | bool
+  block:
+    - name: Ensure backup directory exists
+      ansible.builtin.file:
+        path: "{{ step_ca_backup_dir }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Fetch root CA certificate
+      ansible.builtin.fetch:
+        src: "{{ step_ca_config_dir }}/certs/root_ca.crt"
+        dest: "{{ step_ca_backup_dir }}/root_ca.crt"
+        flat: true
+
+    - name: Fetch root CA key
+      ansible.builtin.fetch:
+        src: "{{ step_ca_config_dir }}/secrets/root_ca_key"
+        dest: "{{ step_ca_backup_dir }}/root_ca_key"
+        flat: true

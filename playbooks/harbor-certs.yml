@@ -1,7 +1,4 @@
 ---
-- name: Ensure mTLS CA exists
-  ansible.builtin.import_playbook: ensure-mtls-ca.yml
-
 - name: Regenerate Harbor TLS certificates
   hosts: ansible01
   become: true

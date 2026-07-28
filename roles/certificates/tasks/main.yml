@@ -15,6 +15,83 @@
     - "{{ certificates_dir }}"
     - "{{ certificates_key_dir }}"
 
+- name: Ensure step-ca config directory exists
+  ansible.builtin.file:
+    path: /etc/step-ca/certs
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+
+- name: Fetch step-ca root CA from ansible04
+  ansible.builtin.slurp:
+    src: "{{ certificates_step_ca_root }}"
+  delegate_to: ansible04
+  register: _step_ca_root_ca_content
+  when:
+    - certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+    - inventory_hostname != 'ansible04'
+
+- name: Write step-ca root CA to host
+  ansible.builtin.copy:
+    content: "{{ _step_ca_root_ca_content.content | b64decode }}"
+    dest: "{{ certificates_step_ca_root }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: _step_ca_root_ca
+  when:
+    - certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+    - inventory_hostname != 'ansible04'
+
+- name: Copy step-ca root CA to system trust store
+  ansible.builtin.copy:
+    content: "{{ _step_ca_root_ca_content.content | b64decode }}"
+    dest: /etc/pki/ca-trust/source/anchors/step-ca-root.crt
+    owner: root
+    group: root
+    mode: "0644"
+  register: _step_ca_root_ca
+  when:
+    - certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+    - inventory_hostname != 'ansible04'
+
+- name: Fetch step-ca intermediate CA from ansible04
+  ansible.builtin.slurp:
+    src: /etc/step-ca/certs/intermediate_ca.crt
+  delegate_to: ansible04
+  register: _step_ca_intermediate_ca_content
+  when:
+    - certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+    - inventory_hostname != 'ansible04'
+
+- name: Write step-ca intermediate CA to host
+  ansible.builtin.copy:
+    content: "{{ _step_ca_intermediate_ca_content.content | b64decode }}"
+    dest: /etc/step-ca/certs/intermediate_ca.crt
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+    - inventory_hostname != 'ansible04'
+
+- name: Bootstrap step-cli
+  ansible.builtin.shell: |
+    step ca bootstrap \
+      --ca-url {{ certificates_step_ca_url }} \
+      --fingerprint $(step certificate fingerprint {{ certificates_step_ca_root }}) \
+      --force
+  args:
+    creates: /root/.step/config/defaults.json
+  when: certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+
+- name: Update system trust store
+  ansible.builtin.command: update-ca-trust extract
+  changed_when: true
+  when: certificates | selectattr('type', 'eq', 'stepca') | list | length > 0
+
 - name: Generate certificates
   ansible.builtin.include_tasks: generate.yml
   loop: "{{ certificates }}"

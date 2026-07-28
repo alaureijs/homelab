@@ -1,0 +1,31 @@
+[Unit]
+Description=Smallstep CA Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/usr/bin/mkdir -p {{ step_ca_config_dir }}
+ExecStartPre=/usr/bin/chown 1000:1000 {{ step_ca_config_dir }}
+ExecStart=/usr/bin/podman run -d \
+  --name {{ step_ca_name }} \
+  --network host \
+  -v {{ step_ca_config_dir }}:/home/step:Z \
+  -e DOCKER_STEPCA_INIT_NAME="{{ step_ca_name_display }}" \
+  -e "DOCKER_STEPCA_INIT_DNS_NAMES={{ step_ca_dns | join(',') }}" \
+  -e DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT=true \
+  -e DOCKER_STEPCA_INIT_ACME=true \
+  -e DOCKER_STEPCA_INIT_WITH_CA_URL="https://{{ step_ca_hostname }}:{{ step_ca_port }}" \
+  -e DOCKER_STEPCA_INIT_ADDRESS=":{{ step_ca_port }}" \
+  -e DOCKER_STEPCA_INIT_PROVISIONER_NAME="{{ step_ca_admin_name }}" \
+  -e DOCKER_STEPCA_INIT_ADMIN_SUBJECT="{{ step_ca_admin_name }}" \
+  -e DOCKER_STEPCA_INIT_PASSWORD_FILE="/home/step/password.txt" \
+  {{ step_ca_image }}
+ExecStop=/usr/bin/podman stop -t 30 {{ step_ca_name }}
+ExecStopPost=/usr/bin/podman rm -f {{ step_ca_name }}
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

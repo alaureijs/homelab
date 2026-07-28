@@ -259,37 +259,36 @@ to avoid false positives from distroless/variant tags.
 
 ## Certificate Renewal
 
-Certificates are automatically renewed when they expire within a configurable
-threshold. The default threshold is 30 days.
+Certificates are issued by step-ca (Smallstep private CA on ansible04) and
+automatically renewed when they expire within a configurable threshold.
+The default threshold is 30 days.
 
 ### How It Works
 
-Both the `certificates` role (host TLS) and `monitoring` role (mTLS) check
-certificate expiry on every playbook run:
+The `certificates` role checks certificate expiry on every playbook run:
 
 1. Read the existing certificate's `notAfter` date
 2. Calculate days until expiry
-3. If expiry is within the threshold, regenerate the certificate
-4. If the certificate doesn't exist, generate a new one
+3. If expiry is within the threshold, request a new cert from step-ca
+4. If the certificate doesn't exist, request a new one from step-ca
 
-For the monitoring mTLS stack, the CA renewal cascades — if the monitoring CA
-is renewed, the node-exporter server cert and Prometheus client cert are also
-regenerated (they're signed by the CA).
+step-ca issues certificates signed by its root CA. All hosts trust the
+step-ca root CA via the system certificate store.
 
 ### Variables
 
 | Variable                            | Default | Description                                   |
 |-------------------------------------|---------|-----------------------------------------------|
-| `certificates_renew_threshold_days` | 30      | Host cert renewal threshold (days before expiry) |
-| `certificates_force_renewal`        | false   | Force host cert renewal regardless of expiry   |
-| `monitoring_cert_renew_threshold_days` | 30   | mTLS cert renewal threshold (days before expiry) |
-| `monitoring_cert_force_renewal`     | false   | Force mTLS cert renewal regardless of expiry   |
+| `certificates_renew_threshold_days` | 30      | Cert renewal threshold (days before expiry)   |
+| `certificates_force_renewal`        | false   | Force cert renewal regardless of expiry        |
+| `certificates_step_ca_url`          | `https://ca.homelab.internal:9000` | step-ca server URL |
+| `certificates_step_ca_root`         | `/etc/step-ca/certs/root_ca.crt`   | step-ca root CA cert path |
 
 ### Automatic Renewal
 
 No action needed — certificates are renewed on the next playbook run when
 they're within 30 days of expiry. The default threshold can be adjusted in
-`roles/certificates/defaults/main.yml` and `roles/monitoring/defaults/main.yml`.
+`roles/certificates/defaults/main.yml`.
 
 ### Force Renewal
 
@@ -301,14 +300,6 @@ Force immediate certificate renewal regardless of expiry. Useful after:
 ```bash
 # Force renew host certificates on all hosts
 ansible-playbook playbooks/provision-ansible02.yml -e certificates_force_renewal=true
-
-# Force renew monitoring mTLS certificates
-ansible-playbook playbooks/provision-ansible02.yml -e monitoring_cert_force_renewal=true
-
-# Force renew everything
-ansible-playbook playbooks/provision-ansible02.yml \
-  -e certificates_force_renewal=true \
-  -e monitoring_cert_force_renewal=true
 ```
 
 ### Verify Certificate Expiry
@@ -319,15 +310,36 @@ Check when a certificate expires:
 # Host certificate
 openssl x509 -in /etc/pki/tls/certs/ansible02.crt -noout -enddate
 
-# Monitoring CA
-openssl x509 -in /etc/prometheus/mtls/ca.crt -noout -enddate
+# step-ca root CA
+openssl x509 -in /etc/step-ca/certs/root_ca.crt -noout -enddate
 
 # Node-exporter server cert
-openssl x509 -in /etc/pki/tls/certs/node-exporter.crt -noout -enddate
+openssl x509 -in /etc/node-exporter/node-exporter.crt -noout -enddate
+
+# Node-exporter CA (step-ca root)
+openssl x509 -in /etc/node-exporter/ca.crt -noout -enddate
 
 # Prometheus client cert
 openssl x509 -in /etc/prometheus/mtls/client.crt -noout -enddate
 ```
+
+### step-ca Version Management
+
+step-ca and step-cli versions are pinned in `inventory/group_vars/all/main.yml`:
+
+```yaml
+step_ca_version: "0.30.2"
+step_cli_version: "0.30.6"
+```
+
+To update step-ca:
+1. Update `step_ca_version` in `inventory/group_vars/all/main.yml`
+2. Run `ansible-playbook playbooks/provision-ansible04.yml`
+3. All subsequent cert requests will use the updated step-ca
+
+To update step-cli on all hosts:
+1. Update `step_cli_version` in `inventory/group_vars/all/main.yml`
+2. Run `ansible-playbook playbooks/provision-common.yml`
 
 ### Harbor Certificates
 

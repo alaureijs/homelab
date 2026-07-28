@@ -3,11 +3,7 @@
 - name: Common roles on all hosts
   ansible.builtin.import_playbook: provision-common.yml
 
-# Play 1: Ensure mTLS CA exists
-- name: Ensure mTLS CA exists
-  ansible.builtin.import_playbook: ensure-mtls-ca.yml
-
-# Play 2: Deploy Elasticsearch
+# Play 1: Deploy Elasticsearch
 - name: Deploy Elasticsearch
   hosts: elk
   become: true

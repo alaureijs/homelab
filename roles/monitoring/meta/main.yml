@@ -12,4 +12,3 @@ galaxy_info:
 
 dependencies:
   - role: podman
-  - role: certificates

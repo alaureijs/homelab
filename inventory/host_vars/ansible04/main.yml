@@ -19,6 +19,8 @@ vm_dns_entries:
     ip: 192.168.100.13
   - name: pki.homelab.internal
     ip: 192.168.100.13
+  - name: packages.homelab.internal
+    ip: 192.168.100.13
   - name: ansible04.homelab.internal
     ip: 192.168.100.13
 

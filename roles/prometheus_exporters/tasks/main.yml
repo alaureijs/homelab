@@ -7,13 +7,12 @@
   delegate_to: localhost
   become: false
 
-- name: Download Prometheus exporter tarballs
+- name: Download exporter tarballs from internal repo
   ansible.builtin.get_url:
-    url: >-
-      https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.file | default(item.name ~ '-' ~ item.version | regex_replace('^v', '') ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
-    dest: >-
-      {{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ item.version | regex_replace('^v', '') ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}
+    url: "https://packages.homelab.internal/exporters/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}"
+    dest: "{{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}"
     mode: "0644"
+    timeout: 120
   loop: "{{ prometheus_exporters }}"
   loop_control:
     label: "{{ item.name }} {{ item.version }}"

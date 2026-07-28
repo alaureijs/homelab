@@ -37,9 +37,7 @@ certificates_extra_sans:
   - "DNS:monitoring.homelab.internal"
 certificates_extra:
   - name: client
-    type: ownca
-    ca_cert: "{{ mtls_ca_cert }}"
-    ca_key: "{{ mtls_ca_key }}"
+    type: stepca
     client: true
     dir: /etc/prometheus/mtls
     key_dir: /etc/prometheus/mtls

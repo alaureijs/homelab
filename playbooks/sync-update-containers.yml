@@ -1,8 +1,0 @@
----
-- name: Sync and update container images to Harbor
-  hosts: ansible01
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: harbor_containers

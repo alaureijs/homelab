@@ -45,10 +45,10 @@ All passwords in `inventory/group_vars/all/vault.yml`.
 
 ```bash
 # Sync images
-ansible-playbook playbooks/sync-update-containers.yml
+ansible-playbook playbooks/sync-content.yml
 
 # Check for upstream updates
-ansible-playbook playbooks/sync-update-containers.yml --check
+ansible-playbook playbooks/sync-content.yml --check
 ```
 
 ## Metrics
@@ -119,10 +119,10 @@ curl -sk https://harbor.homelab.internal/api/v2.0/health
 ## Updating Container Images
 
 1. Update version in `inventory/group_vars/all/main.yml`
-2. Run `ansible-playbook playbooks/sync-update-containers.yml` to sync to Harbor
+2. Run `ansible-playbook playbooks/sync-content.yml` to sync to Harbor
 3. Re-run provisioning playbook for affected hosts (`provision-ansible01.yml`, etc.)
 
-### sync-update-containers.yml Requirements
+### sync-content.yml Requirements
 
 **Prerequisites:**
 - Harbor must be deployed and running on ansible01

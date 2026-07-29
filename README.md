@@ -39,7 +39,7 @@ ansible-playbook playbooks/provision-ansible02.yml
 ansible-playbook playbooks/provision-ansible03.yml
 
 # Sync container images to Harbor
-ansible-playbook playbooks/sync-update-containers.yml
+ansible-playbook playbooks/sync-content.yml
 
 # Configure Harbor users/projects
 ansible-playbook playbooks/harbor-users.yml
@@ -53,7 +53,7 @@ ansible-playbook playbooks/harbor-users.yml
 | `provision-ansible01.yml` | Full provisioning for Harbor host |
 | `provision-ansible02.yml` | Full provisioning for monitoring host |
 | `provision-ansible03.yml` | Full provisioning for ELK stack host |
-| `sync-update-containers.yml` | Sync images to Harbor / check upstream updates |
+| `sync-content.yml` | Sync exporter tarballs, textfile scripts, and container images |
 | `harbor-users.yml` | Manage Harbor users, projects, registries |
 | `harbor-certs.yml` | Regenerate Harbor TLS certificates |
 | `hardening.yml` | Standalone STIG/CIS hardening |

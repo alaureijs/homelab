@@ -82,7 +82,7 @@ podman pull docker.io/grafana/grafana:12.0.0 --dry-run 2>&1 | head -5
 2. **Sync new image to Harbor** (pulls from upstream, pushes to Harbor):
 
    ```bash
-   ansible-playbook playbooks/sync-update-containers.yml
+   ansible-playbook playbooks/sync-content.yml
    ```
 
    This pulls through the proxy cache project, tags, and pushes to the
@@ -165,7 +165,7 @@ Update Harbor itself (v2.11.0 → v2.12.0, etc.).
 4. **Re-sync images** (some updates change image compatibility):
 
    ```bash
-   ansible-playbook playbooks/sync-update-containers.yml
+   ansible-playbook playbooks/sync-content.yml
    ```
 
 5. **Update CHANGELOG.md** and commit.
@@ -236,7 +236,7 @@ Update base images synced to Harbor (alpine, nginx, postgres, etc.).
 2. **Sync to Harbor**:
 
    ```bash
-   ansible-playbook playbooks/sync-update-containers.yml
+   ansible-playbook playbooks/sync-content.yml
    ```
 
 3. **Update CHANGELOG.md** and commit.
@@ -250,7 +250,7 @@ The sync playbook includes an update check that compares current tags
 against upstream registries:
 
 ```bash
-ansible-playbook playbooks/sync-update-containers.yml --check
+ansible-playbook playbooks/sync-content.yml --check
 ```
 
 This reports available updates without actually pulling/pushing. The check
@@ -405,7 +405,7 @@ To sync a new image to Harbor:
 3. Run the sync:
 
    ```bash
-   ansible-playbook playbooks/sync-update-containers.yml
+   ansible-playbook playbooks/sync-content.yml
    ```
 
 4. Projects are auto-discovered when `harbor_config_sync_projects: true`

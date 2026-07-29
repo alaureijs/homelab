@@ -12,7 +12,7 @@ generates a report in `reports/`.
 ## Usage
 
 ```bash
-ansible-playbook playbooks/download-exporters.yml
+ansible-playbook playbooks/sync-content.yml
 ```
 
 ## Exporters

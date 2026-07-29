@@ -8,8 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Consolidated all content sync into single `sync-content.yml` playbook.
+  Removed `download-exporters.yml`, `sync-packages.yml`,
+  `sync-update-containers.yml`
 - Split packages role out of `provision-ansible04.yml` into standalone
-  `sync-packages.yml` playbook (content updates separated from VM provisioning)
+  `sync-content.yml` playbook (content updates separated from VM provisioning)
 - Eliminated duplicate exporter downloads: `prometheus_exporters` now only
   downloads to controller cache (`files/prometheus/exporters/`); `packages`
   role copies from cache to ansible04 instead of downloading from GitHub

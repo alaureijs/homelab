@@ -22,4 +22,3 @@
   roles:
     - role: step-ca
     - role: ca-portal
-    - role: packages

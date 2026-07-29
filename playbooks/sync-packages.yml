@@ -1,0 +1,8 @@
+---
+- name: Upload exporters and textfile scripts to internal package repo
+  hosts: ansible04
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: packages

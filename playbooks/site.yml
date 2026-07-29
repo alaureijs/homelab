@@ -1,18 +1,15 @@
 ---
-- name: Apply common configuration to all hosts
-  hosts: all
-  gather_facts: true
-  roles:
-    - common
+- name: Provision PKI and DNS infrastructure
+  ansible.builtin.import_playbook: provision-ansible04.yml
 
-- name: Configure webservers
-  hosts: webservers
-  gather_facts: true
-  roles:
-    - nginx
+- name: Provision Harbor container registry
+  ansible.builtin.import_playbook: provision-ansible01.yml
 
-- name: Configure databases
-  hosts: dbservers
-  gather_facts: true
-  roles:
-    - postgres
+- name: Sync content (exporter tarballs, textfile scripts, container images)
+  ansible.builtin.import_playbook: sync-content.yml
+
+- name: Deploy monitoring stack
+  ansible.builtin.import_playbook: provision-ansible02.yml
+
+- name: Deploy ELK stack
+  ansible.builtin.import_playbook: provision-ansible03.yml

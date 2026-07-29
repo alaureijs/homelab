@@ -49,11 +49,13 @@ ansible-playbook playbooks/harbor-users.yml
 
 | Playbook | Description |
 |----------|-------------|
+| `site.yml` | Full infrastructure provisioning (all VMs + sync) |
 | `libvirt.yml` | Create/update libvirt VMs, network, and storage pool |
+| `provision-ansible04.yml` | Provision PKI and DNS infrastructure |
 | `provision-ansible01.yml` | Full provisioning for Harbor host |
+| `sync-content.yml` | Sync exporter tarballs, textfile scripts, and container images |
 | `provision-ansible02.yml` | Full provisioning for monitoring host |
 | `provision-ansible03.yml` | Full provisioning for ELK stack host |
-| `sync-content.yml` | Sync exporter tarballs, textfile scripts, and container images |
 | `harbor-users.yml` | Manage Harbor users, projects, registries |
 | `harbor-certs.yml` | Regenerate Harbor TLS certificates |
 | `hardening.yml` | Standalone STIG/CIS hardening |

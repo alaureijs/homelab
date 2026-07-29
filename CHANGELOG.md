@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Created `site.yml` — full infrastructure provisioning orchestrator
+  (provision-ansible04 → 01 → sync-content → 02 → 03)
 - Consolidated all content sync into single `sync-content.yml` playbook.
   Removed `download-exporters.yml`, `sync-packages.yml`,
   `sync-update-containers.yml`

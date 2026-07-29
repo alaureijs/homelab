@@ -7,16 +7,13 @@
     group: "{{ packages_repo_group }}"
     mode: "{{ packages_repo_mode }}"
 
-- name: Ensure category directories exist
+- name: Ensure exporters directory exists
   ansible.builtin.file:
-    path: "{{ packages_repo_dir }}/{{ item.dir }}"
+    path: "{{ packages_repo_dir }}/exporters"
     state: directory
     owner: "{{ packages_repo_owner }}"
     group: "{{ packages_repo_group }}"
     mode: "{{ packages_repo_mode }}"
-  loop: "{{ packages_exporters }}"
-  loop_control:
-    label: "{{ item.dir }}"
 
 - name: Ensure node-exporter textfile scripts directory exists
   ansible.builtin.file:
@@ -26,17 +23,24 @@
     group: "{{ packages_repo_group }}"
     mode: "{{ packages_repo_mode }}"
 
-- name: Download exporter tarballs
-  ansible.builtin.get_url:
-    url: "https://github.com/{{ item.repo }}/releases/download/{{ item.version }}/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ item.arch ~ '.tar.gz') }}"
-    dest: "{{ packages_repo_dir }}/{{ item.dir }}/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ item.arch ~ '.tar.gz') }}"
+- name: Check if exporter cache dir exists on controller
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/../files/prometheus/exporters"
+  delegate_to: localhost
+  become: false
+  register: _cache_dir
+
+- name: Copy exporter tarballs from controller cache to repo
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}"
+    dest: "{{ packages_repo_dir }}/exporters/"
     owner: "{{ packages_repo_owner }}"
     group: "{{ packages_repo_group }}"
     mode: "0644"
-    timeout: 120
-  loop: "{{ packages_exporters }}"
+  loop: "{{ prometheus_exporters }}"
   loop_control:
     label: "{{ item.name }} {{ item.version }}"
+  when: _cache_dir.stat.exists
 
 - name: Upload textfile collector scripts
   ansible.builtin.copy:

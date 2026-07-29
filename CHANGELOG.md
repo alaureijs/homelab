@@ -10,6 +10,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Split packages role out of `provision-ansible04.yml` into standalone
   `sync-packages.yml` playbook (content updates separated from VM provisioning)
+- Eliminated duplicate exporter downloads: `prometheus_exporters` now only
+  downloads to controller cache (`files/prometheus/exporters/`); `packages`
+  role copies from cache to ansible04 instead of downloading from GitHub
+  again. `packages_exporters` list removed, `prometheus_exporters` used
+  as single source of truth for exporter definitions
 - DNS refactor: centralized all FQDN→IP mappings into single `dns_records`
   dict in `inventory/group_vars/all/main.yml`. Everything else derived:
   - `certificates_extra_sans` derived per-host in provision-common.yml pre_tasks

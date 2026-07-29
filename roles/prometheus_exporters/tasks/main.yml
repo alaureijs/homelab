@@ -83,22 +83,6 @@
   delegate_to: localhost
   become: false
 
-- name: Upload exporter to package server
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../files/prometheus/exporters/{{ info.filename }}"
-    dest: "{{ packages_repo_dir | default('/var/www/packages') }}/exporters/{{ info.filename }}"
-    owner: "{{ packages_repo_owner | default('nobody') }}"
-    group: "{{ packages_repo_group | default('nobody') }}"
-    mode: "0644"
-  loop: "{{ _exporter_info | dict2items }}"
-  loop_control:
-    label: "{{ info.name }} {{ info.tag }}"
-  vars:
-    info: "{{ item.value }}"
-  when: info.needs_update
-  delegate_to: ansible04
-  become: true
-
 - name: Build exporter report
   ansible.builtin.set_fact:
     prometheus_exporters_report: >-

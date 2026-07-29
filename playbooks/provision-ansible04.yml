@@ -3,6 +3,16 @@
 - name: Common roles on all hosts
   ansible.builtin.import_playbook: provision-common.yml
 
+# Play 0.5: Update libvirt DNS on controller
+- name: Update libvirt DNS entries
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: dns
+
 # Play 1: Provision ansible04 for PKI
 - name: Provision ansible04 for PKI
   hosts: ansible04
@@ -10,7 +20,6 @@
   gather_facts: true
 
   roles:
-    - role: dns
     - role: step-ca
     - role: ca-portal
     - role: packages

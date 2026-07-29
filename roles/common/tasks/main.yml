@@ -2,19 +2,6 @@
 - name: Load protected packages for OS family
   ansible.builtin.include_vars: "{{ ansible_os_family | lower }}.yml"
 
-- name: Ensure /etc/hosts entries for all hosts
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    line: "{{ item }}"
-    state: present
-  loop: "{{ controller_hosts_entries }}"
-
-- name: Remove stale local.lan entries from /etc/hosts
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: '.*local\.lan.*'
-    state: absent
-
 - name: Check for protected packages in removal list
   ansible.builtin.assert:
     that:

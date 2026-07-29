@@ -8,7 +8,7 @@
 {% if libvirt_network_dhcp_enabled | bool %}
     <dhcp>
       <range start="192.168.100.200" end="192.168.100.254"/>
-      <option value='6' data='192.168.100.13'/>
+      <option value='6' data='{{ libvirt_network_gateway }}'/>
 {% for host in groups['libvirt'] | default([]) %}
 {% if hostvars[host].vm_ip is defined %}
       <host mac="{{ hostvars[host].vm_mac }}" name="{{ hostvars[host].vm_hostname }}" ip="{{ hostvars[host].vm_ip }}"/>
@@ -17,7 +17,16 @@
     </dhcp>
 {% endif %}
   </ip>
-  <dns>
+  <dns enable="yes">
+    <domain>{{ dns_domain | default('homelab.internal') }}</domain>
+{% for fwd in dns_upstream_forwarders | default([]) %}
+    <forwarder addr="{{ fwd }}"/>
+{% endfor %}
+{% for zone in dns_local_zones | default([]) %}
+    <host ip="{{ zone.address }}">
+      <hostname>{{ zone.name }}</hostname>
+    </host>
+{% endfor %}
 {% for host in groups['libvirt'] | default([]) %}
 {% if hostvars[host].vm_dns_entries is defined %}
 {% for entry in hostvars[host].vm_dns_entries %}

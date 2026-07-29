@@ -8,6 +8,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `dns_local_zones`, `dns_upstream_forwarders`, `dns_domain` variables in
+  `inventory/group_vars/all/main.yml` — centralized DNS config for libvirt
+  dnsmasq (was in Unbound role defaults).
+- DNS role now manages libvirt network DNS directly (destroy/define/start
+  on `ansible-net`) instead of running Unbound on ansible04.
+- `network.xml.j2` — DNS domain, upstream forwarders, and per-host local
+  zone entries added to libvirt network definition.
+- `network-config.j2` — VM DNS changed to gateway only (192.168.100.1),
+  search domain simplified to `lab_domain` variable.
+- `prometheus_exporters` role — downloads from GitHub releases directly,
+  uploads to ansible04 package server, checks upstream for latest versions.
+- `provision-common.yml` — cleanup task removes stale entries from
+  controller `/etc/hosts` before adding current ones.
 - `docs/pki-step-ca.md` — PKI infrastructure requirements and architecture
   for step-ca (private CA), ca-portal (nginx cert distribution), and
   Unbound DNS. Covers domain migration strategy (`local.lan` →
@@ -112,6 +125,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `/etc/hosts` management removed from `roles/common/tasks/main.yml` (2 tasks:
+  add entries + remove `local.lan` entries). VMs now use libvirt DNS for
+  hostname resolution instead of static hosts file.
+- Controller `/etc/hosts` management moved from common role (applied on VMs)
+  to `playbooks/provision-common.yml` localhost play — cleanup step removes
+  stale entries before adding current ones (prevents accumulation of old IPs).
+- DNS role (`roles/dns`) rewritten from Unbound server to libvirt network
+  DNS management. Destroy/define/start cycle applies DNS changes to
+  `ansible-net`. Removed Unbound handlers, templates, and DNSSEC logic.
+
 - ELK stack split into three independent roles — `elasticsearch`,
   `logstash`, `kibana`. Each deploys its own pod via `podman kube play`
   with `hostIP: 127.0.0.1` + `hostPort` for inter-service communication.
@@ -209,6 +232,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- DNS role — `virt_net define` on an active libvirt network silently accepts
+  the XML but does not apply changes. Changed to destroy/define/start
+  sequence in `roles/dns/tasks/main.yml` to ensure DNS entries are applied.
+- libvirt network bridge recreation (`virbr-ansible` destroy/define/start)
+  orphaned VM tap interfaces, making VMs unreachable. ansible03 required
+  manual restart to reattach its tap interface.
 - mTLS directory permissions — certificate role was creating cert
   directories with `0700`, blocking container access. Changed to `0755`
   in `roles/certificates/tasks/generate.yml`. Added fix tasks in

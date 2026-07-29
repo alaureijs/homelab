@@ -7,6 +7,13 @@
   gather_facts: false
 
   tasks:
+    - name: Remove stale ansible host entries from /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.split(' ')[0] }}\\s"
+        state: absent
+      loop: "{{ controller_hosts_entries }}"
+
     - name: Ensure /etc/hosts entries for all hosts
       ansible.builtin.lineinfile:
         path: /etc/hosts

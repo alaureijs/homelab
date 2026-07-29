@@ -123,3 +123,32 @@ node_exporter_textfile_scripts:
   - name: logstash.sh
     sudoers: []
     groups: ["elk"]
+
+# DNS (libvirt dnsmasq)
+dns_domain: homelab.internal
+dns_upstream_forwarders:
+  - "1.1.1.1"
+  - "1.0.0.1"
+  - "8.8.8.8"
+  - "8.8.4.4"
+dns_local_zones:
+  - name: ansible01.homelab.internal
+    address: 192.168.100.10
+  - name: ansible02.homelab.internal
+    address: 192.168.100.11
+  - name: ansible03.homelab.internal
+    address: 192.168.100.12
+  - name: ansible04.homelab.internal
+    address: 192.168.100.13
+  - name: harbor.homelab.internal
+    address: 192.168.100.10
+  - name: monitoring.homelab.internal
+    address: 192.168.100.11
+  - name: observability.homelab.internal
+    address: 192.168.100.12
+  - name: ca.homelab.internal
+    address: 192.168.100.13
+  - name: pki.homelab.internal
+    address: 192.168.100.13
+  - name: packages.homelab.internal
+    address: 192.168.100.13

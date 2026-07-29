@@ -12,8 +12,7 @@ ethernets:
         via: {{ libvirt_network_gateway }}
     nameservers:
       addresses:
-        - 192.168.100.13
         - {{ libvirt_network_gateway }}
       search:
-        - {{ vm_hostname }}.homelab.internal
-        - homelab.internal
+        - {{ vm_hostname }}.{{ lab_domain }}
+        - {{ lab_domain }}

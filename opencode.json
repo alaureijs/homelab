@@ -13,23 +13,5 @@
     "docs/vm.md",
     "docs/container-deployment.md",
     "docs/pki-step-ca.md"
-  ],
-  "mcp": {
-    "servers": {
-      "ansible-dev-tools": {
-        "type": "local",
-        "command": [
-          "uvx",
-          "ansible-creator",
-          "mcp",
-          "run"
-        ],
-        "environment": {
-          "ANSIBLE_HOME": "/home/alaureijs/.ansible",
-          "ANSIBLE_CONFIG": "ansible.cfg",
-          "WORKSPACE_ROOT": "${workspaceFolder}"
-        }
-      }
-    }
-  }
+  ]
 }

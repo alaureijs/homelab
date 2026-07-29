@@ -1,21 +1,9 @@
 ---
-- name: Ensure prometheus exporters directory exists
+- name: Ensure local staging directory exists
   ansible.builtin.file:
     path: "{{ playbook_dir }}/../files/prometheus/exporters"
     state: directory
     mode: "0755"
-  delegate_to: localhost
-  become: false
-
-- name: Download exporter tarballs from internal repo
-  ansible.builtin.get_url:
-    url: "https://packages.homelab.internal/exporters/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}"
-    dest: "{{ playbook_dir }}/../files/prometheus/exporters/{{ item.file | default(item.name ~ '-' ~ (item.version | regex_replace('^v', '')) ~ '.' ~ prometheus_exporters_arch ~ '.tar.gz') }}"
-    mode: "0644"
-    timeout: 120
-  loop: "{{ prometheus_exporters }}"
-  loop_control:
-    label: "{{ item.name }} {{ item.version }}"
   delegate_to: localhost
   become: false
 
@@ -60,12 +48,70 @@
   delegate_to: localhost
   become: false
 
-- name: Build exporter report
+- name: Build exporter info dict
   ansible.builtin.set_fact:
-    prometheus_exporters_report: "{{ prometheus_exporters_report | default({}) | combine({item.item.name: {'current_version': item.item.version, 'latest_version': (item.stdout | default('NONE') | split('|') | first), 'update_available': (item.stdout | default('NONE') | split('|') | last | bool)}}) }}"
+    _exporter_info: >-
+      {{ _exporter_info | default({}) | combine({
+           _result.item.name: {
+             'name': _result.item.name,
+             'tag': (_result.stdout | default('NONE') | split('|') | first),
+             'needs_update': (_result.stdout | default('NONE') | split('|') | last == 'true'),
+             'repo': _result.item.repo,
+             'filename': _result.item.get('file', '') or
+                         (_result.item.name ~ '-' ~
+                          (_result.stdout | default('NONE') | split('|') | first | regex_replace('^v', '')) ~ '.' ~
+                          prometheus_exporters_arch ~ '.tar.gz')
+           }
+         }) }}
   loop: "{{ _exporter_versions.results }}"
   loop_control:
-    label: "{{ item.item.name }}: {{ item.stdout | default('?') }}"
+    label: "{{ _result.item.name }}: {{ _result.stdout | default('?') }}"
+    loop_var: _result
+
+- name: Download exporter from GitHub
+  ansible.builtin.get_url:
+    url: "https://github.com/{{ info.repo }}/releases/download/{{ info.tag }}/{{ info.filename }}"
+    dest: "{{ playbook_dir }}/../files/prometheus/exporters/{{ info.filename }}"
+    mode: "0644"
+    timeout: 120
+  loop: "{{ _exporter_info | dict2items }}"
+  loop_control:
+    label: "{{ info.name }} {{ info.tag }}"
+  vars:
+    info: "{{ item.value }}"
+  when: info.needs_update
+  delegate_to: localhost
+  become: false
+
+- name: Upload exporter to package server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../files/prometheus/exporters/{{ info.filename }}"
+    dest: "{{ packages_repo_dir | default('/var/www/packages') }}/exporters/{{ info.filename }}"
+    owner: "{{ packages_repo_owner | default('nobody') }}"
+    group: "{{ packages_repo_group | default('nobody') }}"
+    mode: "0644"
+  loop: "{{ _exporter_info | dict2items }}"
+  loop_control:
+    label: "{{ info.name }} {{ info.tag }}"
+  vars:
+    info: "{{ item.value }}"
+  when: info.needs_update
+  delegate_to: ansible04
+  become: true
+
+- name: Build exporter report
+  ansible.builtin.set_fact:
+    prometheus_exporters_report: >-
+      {{ prometheus_exporters_report | default({}) | combine({
+           item.name: {
+             'current_version': item.version,
+             'latest_version': _exporter_info[item.name].tag,
+             'update_available': _exporter_info[item.name].needs_update
+           }
+         }) }}
+  loop: "{{ prometheus_exporters }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Ensure reports directory exists
   ansible.builtin.file:

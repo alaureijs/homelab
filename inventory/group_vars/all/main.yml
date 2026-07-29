@@ -94,12 +94,8 @@ firewall_podman_interfaces:
   - podman1
   - cni-podman0
 
-# Controller /etc/hosts entries
-controller_hosts_entries:
-  - "192.168.100.10 ansible01 ansible01.homelab.internal harbor.homelab.internal"
-  - "192.168.100.11 ansible02 ansible02.homelab.internal monitoring.homelab.internal"
-  - "192.168.100.12 ansible03 ansible03.homelab.internal observability.homelab.internal"
-  - "192.168.100.13 ansible04 ansible04.homelab.internal ca.homelab.internal pki.homelab.internal packages.homelab.internal"
+# Controller /etc/hosts entries (derived from dns_records by provision-common.yml pre_tasks)
+controller_hosts_entries: []
 
 # Node exporter textfile collectors
 node_exporter_textfile_scripts:
@@ -123,32 +119,28 @@ node_exporter_textfile_scripts:
   - name: logstash.sh
     sudoers: []
     groups: ["elk"]
+  - name: step-ca-health.sh
+    sudoers:
+      - "nobody ALL=(root) NOPASSWD: /usr/bin/podman ps --filter *"
+    groups: ["pki"]
 
-# DNS (libvirt dnsmasq)
+# DNS records — single source of truth for all FQDN→IP mappings
+# Used by libvirt dnsmasq (network.xml.j2) and Unbound (local-zones.conf.j2).
+# certificates_extra_sans derived from this by provision-common.yml pre_tasks.
 dns_domain: homelab.internal
 dns_upstream_forwarders:
   - "1.1.1.1"
   - "1.0.0.1"
   - "8.8.8.8"
   - "8.8.4.4"
-dns_local_zones:
-  - name: ansible01.homelab.internal
-    address: 192.168.100.10
-  - name: ansible02.homelab.internal
-    address: 192.168.100.11
-  - name: ansible03.homelab.internal
-    address: 192.168.100.12
-  - name: ansible04.homelab.internal
-    address: 192.168.100.13
-  - name: harbor.homelab.internal
-    address: 192.168.100.10
-  - name: monitoring.homelab.internal
-    address: 192.168.100.11
-  - name: observability.homelab.internal
-    address: 192.168.100.12
-  - name: ca.homelab.internal
-    address: 192.168.100.13
-  - name: pki.homelab.internal
-    address: 192.168.100.13
-  - name: packages.homelab.internal
-    address: 192.168.100.13
+dns_records:
+  harbor.homelab.internal: 192.168.100.10
+  ansible01.homelab.internal: 192.168.100.10
+  monitoring.homelab.internal: 192.168.100.11
+  ansible02.homelab.internal: 192.168.100.11
+  observability.homelab.internal: 192.168.100.12
+  ansible03.homelab.internal: 192.168.100.12
+  ca.homelab.internal: 192.168.100.13
+  pki.homelab.internal: 192.168.100.13
+  packages.homelab.internal: 192.168.100.13
+  ansible04.homelab.internal: 192.168.100.13

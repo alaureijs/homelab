@@ -197,7 +197,7 @@ Defines and starts the NAT network with DHCP and DNS:
 - Bridge: `virbr-ansible`
 - Gateway: `192.168.100.1`
 - DHCP: static MAC→IP mappings for all VMs
-- DNS: hostname entries from `vm_dns_entries` in host_vars
+- DNS: hostname entries from `dns_records` in `group_vars/all/main.yml`
 
 The forward interface (`wlan0`) is parameterized — change
 `libvirt_network_forward_interface` to use a different NIC.
@@ -318,9 +318,7 @@ vm_hostname: ansible01
 vm_vcpus: 2
 vm_memory: 2048
 vm_disk: 60
-vm_dns_entries:
-  - name: harbor.homelab.internal
-    ip: "192.168.100.10"
+# DNS entries derived from dns_records in group_vars/all/main.yml
 ```
 
 Defaults in `roles/libvirt/defaults/main.yml` cover anything not

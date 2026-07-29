@@ -129,3 +129,21 @@
         src: "{{ step_ca_config_dir }}/secrets/root_ca_key"
         dest: "{{ step_ca_backup_dir }}/root_ca_key"
         flat: true
+
+    - name: Fetch step-ca password
+      ansible.builtin.fetch:
+        src: "{{ step_ca_password_file }}"
+        dest: "{{ step_ca_backup_dir }}/password.txt"
+        flat: true
+
+    - name: Vault-encrypt backup files on controller
+      ansible.builtin.shell: |
+        for f in root_ca_key password.txt; do
+          p="{{ step_ca_backup_dir }}/$f"
+          [ -f "$p" ] || continue
+          head -1 "$p" | grep -q '^$ANSIBLE_VAULT' && continue
+          ansible-vault encrypt "$p"
+        done
+      delegate_to: localhost
+      become: false
+      changed_when: false

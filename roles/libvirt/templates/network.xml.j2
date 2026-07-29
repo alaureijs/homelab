@@ -22,19 +22,10 @@
 {% for fwd in dns_upstream_forwarders | default([]) %}
     <forwarder addr="{{ fwd }}"/>
 {% endfor %}
-{% for zone in dns_local_zones | default([]) %}
-    <host ip="{{ zone.address }}">
-      <hostname>{{ zone.name }}</hostname>
+{% for fqdn, ip in dns_records.items() %}
+    <host ip="{{ ip }}">
+      <hostname>{{ fqdn }}</hostname>
     </host>
-{% endfor %}
-{% for host in groups['libvirt'] | default([]) %}
-{% if hostvars[host].vm_dns_entries is defined %}
-{% for entry in hostvars[host].vm_dns_entries %}
-    <host ip="{{ entry.ip }}">
-      <hostname>{{ entry.name }}</hostname>
-    </host>
-{% endfor %}
-{% endif %}
 {% endfor %}
   </dns>
 </network>

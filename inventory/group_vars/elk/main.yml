@@ -27,7 +27,4 @@ firewall_ports:
   - 9100/tcp
   - 9114/tcp
 
-# Certificate SANs (uses default SANs from certificates role)
-certificates_extra_sans:
-  - "DNS:{{ vm_hostname }}.homelab.internal"
-  - "DNS:observability.homelab.internal"
+# SANs auto-derived from dns_records in provision-common.yml pre_tasks

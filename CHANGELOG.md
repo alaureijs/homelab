@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- DNS refactor: centralized all FQDN→IP mappings into single `dns_records`
+  dict in `inventory/group_vars/all/main.yml`. Everything else derived:
+  - `certificates_extra_sans` derived per-host in provision-common.yml pre_tasks
+  - `controller_hosts_entries` derived in Play 0 of provision-common.yml
+  - `network.xml.j2` uses `dns_records` directly (replaces `dns_local_zones`
+    + `vm_dns_entries` loops)
+  - `vm_dns_entries` removed from `host_vars/*/main.yml`
+  - `certificates_extra_sans` removed from monitoring/elk group_vars
+  - `dns_local_zones` removed from `group_vars/all/main.yml`
+
 ### Added
 
 - `dns_local_zones`, `dns_upstream_forwarders`, `dns_domain` variables in

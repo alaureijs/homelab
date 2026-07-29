@@ -31,10 +31,7 @@ monitoring_mtls_client_key: "{{ monitoring_mtls_dir }}/client.key"
 monitoring_cert_renew_threshold_days: 30
 monitoring_cert_force_renewal: false
 
-# Certificates to generate on this host (merged with group_vars/all certificates)
-certificates_extra_sans:
-  - "DNS:{{ vm_hostname }}.homelab.internal"
-  - "DNS:monitoring.homelab.internal"
+# Service-specific certificates (SANs auto-derived from dns_records)
 certificates_extra:
   - name: client
     type: stepca

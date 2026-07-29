@@ -8,7 +8,7 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/usr/bin/mkdir -p {{ step_ca_config_dir }}
 ExecStartPre=/usr/bin/chown 1000:1000 {{ step_ca_config_dir }}
-ExecStart=/usr/bin/podman run -d \
+ExecStart=/usr/bin/podman run -d --replace \
   --name {{ step_ca_name }} \
   --network host \
   -v {{ step_ca_config_dir }}:/home/step:Z \

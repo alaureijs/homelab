@@ -12,11 +12,7 @@ vm_vcpus: 2
 vm_memory: 8192
 vm_disk: 120
 
-# DNS host-specific
 vm_hostname: ansible03
-vm_dns_entries:
-  - name: observability.homelab.internal
-    ip: 192.168.100.12
 
 # Hardening — Podman requires IP forwarding
 hardening_ip_forwarding: true

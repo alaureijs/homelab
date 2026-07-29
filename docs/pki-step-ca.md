@@ -328,8 +328,7 @@ local-zone: "harbor.homelab.internal." static
 local-data: "harbor.homelab.internal. IN A 192.168.100.10"
 ```
 
-To add a new host, add an entry to `dns_local_zones` in the DNS role
-defaults or group_vars. Re-run provisioning to apply.
+To add a new host, add an entry to `dns_records` in `inventory/group_vars/all/main.yml`. Re-run provisioning to apply.
 
 ## Management Commands
 

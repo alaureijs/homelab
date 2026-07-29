@@ -7,6 +7,15 @@
   gather_facts: false
 
   tasks:
+    - name: Derive /etc/hosts entries from dns_records
+      ansible.builtin.set_fact:
+        controller_hosts_entries: >-
+          {% for ip, items in (dns_records | dict2items | groupby('value')) %}
+          {%   set fqdns = items | map(attribute='key') | sort | list %}
+          {%   set short = fqdns | first | regex_replace('\..*$', '') %}
+          "{{ ip }} {{ short }} {{ fqdns | join(' ') }}"
+          {% endfor %}
+
     - name: Remove stale ansible host entries from /etc/hosts
       ansible.builtin.lineinfile:
         path: /etc/hosts
@@ -35,6 +44,15 @@
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ vm_hostname }}"
+
+    - name: Derive certificate SANs from dns_records
+      ansible.builtin.set_fact:
+        certificates_extra_sans: >-
+          {{ dns_records | dict2items
+             | selectattr('value', 'equalto', vm_ip | string)
+             | map(attribute='key')
+             | map('regex_replace', '^(.*)$', 'DNS:\\1')
+             | list }}
 
     - name: Merge certificates lists
       ansible.builtin.set_fact:

@@ -37,9 +37,7 @@ vm_name: myhost
 vm_mac: "52:54:00:aa:00:13"
 vm_ip: "192.168.100.13"
 vm_hostname: myhost
-vm_dns_entries:
-  - name: myhost.homelab.internal
-    ip: "192.168.100.13"
+# DNS entries derived from dns_records in group_vars/all/main.yml
 ```
 
 Optional overrides: `vm_vcpus`, `vm_memory`, `vm_disk`.

@@ -97,7 +97,10 @@
 
 - name: Write textfile collector checksums
   ansible.builtin.copy:
-    content: "{{ _textfile_checksums.results | map(attribute='stat.checksum') | zip(_textfile_checksums.results | map(attribute='item.name')) | map('join', '  ') | join('\n') }}\n"
+    content: |-
+      {% for r in _textfile_checksums.results if r.stat is defined and r.stat and r.stat.checksum is defined %}
+      {{ r.stat.checksum }}  {{ r.item.name }}
+      {% endfor %}
     dest: "{{ node_exporter_textfile_scripts_dir }}/.checksums"
     owner: root
     group: nobody

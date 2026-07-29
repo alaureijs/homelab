@@ -5,6 +5,15 @@
   gather_facts: true
 
   pre_tasks:
+    - name: Derive certificate SANs from dns_records
+      ansible.builtin.set_fact:
+        certificates_extra_sans: >-
+          {{ dns_records | dict2items
+             | selectattr('value', 'equalto', vm_ip | string)
+             | map(attribute='key')
+             | map('regex_replace', '^(.*)$', 'DNS:\\1')
+             | list }}
+
     - name: Merge certificates lists
       ansible.builtin.set_fact:
         certificates: "{{ certificates + certificates_extra | default([]) }}"

@@ -1,23 +1,14 @@
 ---
-# ca-portal role defaults
-
-# Hostname and ports
 ca_portal_hostname: pki.homelab.internal
-ca_portal_http_port: 80
-ca_portal_https_port: 443
 
-# TLS — bootstrap self-signed cert, replaced by step-ca cert
+ca_portal_web_root: "{{ portal_web_root }}/ca-portal"
+ca_portal_ca_dir: "{{ portal_web_root }}/ca"
+ca_portal_acme_dir: "{{ portal_web_root }}/acme"
+
 ca_portal_ssl_cert: /etc/pki/tls/certs/ca-portal.crt
 ca_portal_ssl_key: /etc/pki/tls/private/ca-portal.key
 
-# Web roots
-ca_portal_web_root: /var/www/ca-portal
-ca_portal_ca_dir: /var/www/ca
-ca_portal_acme_dir: /var/www/acme
+ca_portal_nginx_conf: "{{ portal_nginx_conf_dir }}/ca-portal.conf"
 
-# nginx
-ca_portal_nginx_conf: /etc/nginx/conf.d/ca-portal.conf
-
-# CA info (populated from step-ca role)
 ca_portal_ca_name: "{{ step_ca_name_display | default('Lab CA') }}"
 ca_portal_ca_url: "https://{{ step_ca_hostname | default('ca.homelab.internal') }}:{{ step_ca_port | default(9000) }}"

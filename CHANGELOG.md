@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Created `portal` role — shared nginx base (install, default removal, enable).
+  Centralizes directory paths and ownership config for all web-served content.
   Decouples `packages` from `ca-portal` dependency.
   - `ca-portal` depends on `portal` instead of doing nginx setup itself
   - `packages` depends on `portal` instead of `ca-portal`

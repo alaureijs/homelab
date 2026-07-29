@@ -3,9 +3,9 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
-    mode: "0755"
+    owner: "{{ portal_owner }}"
+    group: "{{ portal_group }}"
+    mode: "{{ portal_dir_mode }}"
   loop:
     - "{{ ca_portal_web_root }}"
     - "{{ ca_portal_ca_dir }}"
@@ -55,8 +55,8 @@
   ansible.builtin.template:
     src: ca-portal.conf.j2
     dest: "{{ ca_portal_nginx_conf }}"
-    owner: root
-    group: root
+    owner: "{{ portal_owner }}"
+    group: "{{ portal_group }}"
     mode: "0644"
   notify: Reload nginx
 
@@ -64,8 +64,8 @@
   ansible.builtin.template:
     src: index.html.j2
     dest: "{{ ca_portal_web_root }}/index.html"
-    owner: root
-    group: root
+    owner: "{{ portal_owner }}"
+    group: "{{ portal_group }}"
     mode: "0644"
 
 

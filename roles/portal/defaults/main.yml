@@ -1,3 +1,17 @@
 ---
 portal_http_port: 80
 portal_https_port: 443
+
+portal_web_root: /var/www
+
+portal_owner: root
+portal_group: root
+portal_dir_mode: "0755"
+
+portal_content_owner: nobody
+portal_content_group: nobody
+portal_content_dir_mode: "0755"
+
+portal_nginx_conf_dir: /etc/nginx/conf.d
+
+portal_packages_dir: "{{ portal_web_root }}/packages"

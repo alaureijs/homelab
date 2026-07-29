@@ -1,10 +1,10 @@
 map $host $portal_root {
     {{ ca_portal_hostname }}      {{ ca_portal_web_root }};
-    packages.homelab.internal  {{ packages_repo_dir | default('/var/www/packages') }};
+    packages.homelab.internal  {{ portal_packages_dir }};
 }
 
 server {
-    listen {{ ca_portal_http_port }};
+    listen {{ portal_http_port }};
     server_name {{ ca_portal_hostname }} packages.homelab.internal;
 
     location /.well-known/acme-challenge/ {
@@ -17,7 +17,7 @@ server {
 }
 
 server {
-    listen {{ ca_portal_https_port }} ssl;
+    listen {{ portal_https_port }} ssl;
     server_name {{ ca_portal_hostname }} packages.homelab.internal;
 
     ssl_certificate     {{ ca_portal_ssl_cert }};

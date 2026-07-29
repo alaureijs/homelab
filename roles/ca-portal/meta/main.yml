@@ -15,5 +15,6 @@ galaxy_info:
     - certificates
 
 dependencies:
+  - role: portal
   - role: step-ca
   - role: certificates

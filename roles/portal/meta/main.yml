@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: portal
+  author: homelab
+  description: Common nginx server for internal portals (CA, packages)
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Rocky
+      versions:
+        - "10"
+
+dependencies: []

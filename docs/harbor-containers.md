@@ -132,7 +132,9 @@ The role executes this sequence:
 4. **Push** — Pushes to the destination project via `podman push`
 5. **Upstream check** — Uses `skopeo list-tags` to find latest version matching
    same naming convention (v-prefix, part count, suffix)
-6. **Report** — Generates YAML report with current vs. latest versions
+6. **Sync latest** — If the latest upstream version differs from the pinned
+   version, pulls, tags, and pushes the latest image tag as well
+7. **Report** — Generates YAML report with current vs. latest versions
 
 ## Report Output
 

@@ -6,7 +6,7 @@
 
 - name: Download Harbor offline installer
   ansible.builtin.get_url:
-    url: "https://github.com/goharbor/harbor/releases/download/{{ harbor_version }}/harbor-offline-installer-{{ harbor_version }}.tgz"
+    url: "https://packages.homelab.internal/harbor/harbor-offline-installer-{{ harbor_version }}.tgz"
     dest: "/tmp/harbor-offline-installer-{{ harbor_version }}.tgz"
     mode: "0644"
   when: not harbor_installed.stat.exists

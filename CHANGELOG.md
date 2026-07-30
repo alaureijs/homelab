@@ -52,6 +52,56 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `vm_dns_entries` removed from `host_vars/*/main.yml`
   - `certificates_extra_sans` removed from monitoring/elk group_vars
   - `dns_local_zones` removed from `group_vars/all/main.yml`
+- `prometheus_exporters` role merged into `packages` role. Exporter
+  definitions moved to `roles/packages/defaults/main.yml` as
+  `packages_exporters`. Tarballs downloaded directly from GitHub to
+  ansible04 (no controller cache). Version checking and report
+  generation moved to packages role. `roles/prometheus_exporters/`
+  deleted.
+- "Pinned + latest" mirror strategy: `packages` and `harbor_containers`
+  roles always download the pinned version plus the latest upstream
+  version (if newer). Reports capture both for manual version pin bumps.
+- Harbor installer URL changed from GitHub to `packages.homelab.internal`
+  (downloaded by `packages` role, consumed by `harbor` role).
+- `node_exporter` role downloads directly from GitHub (was controller
+  cache copy via deleted `prometheus_exporters` role).
+- `harbor_containers` syncs latest upstream version to Harbor when it
+  differs from the pinned version.
+- nginx vhost template: fixed `item` → `vhost` in `loop_var` override
+  (bug prevented nginx from reloading in sync-content.yml on ansible04).
+- `packages` group added to inventory; `sync-content.yml` targets
+  `hosts: packages` so group_vars/packages/ are loaded.
+- Documents vhost (`documents.homelab.internal`): autoindex enabled,
+  sync-reports subdirectory added to nginx_directories.
+- `sync-content.yml` third play copies exporter and sync reports to
+  `{{ docs_web_root }}/documents/sync-reports/` on ansible04 after
+  each sync run.
+- ansible01 VM RAM bumped from 2 GB to 4 GB (Harbor OOM with 11 containers).
+- New files: `inventory/group_vars/packages/main.yml` (packages_files).
+- `playbooks/sync-content.yml` simplified — single packages play on
+  ansible04, removed prometheus_exporters play on localhost.
+- `inventory/group_vars/packages/main.yml` created with `packages_files`
+  for non-exporter packages (Harbor installer).
+- `roles/harbor/tasks/main.yml` — Harbor installer from packages repo.
+- `roles/node_exporter/tasks/main.yml` — downloads directly from GitHub.
+
+### Changed
+
+- `prometheus_exporters` role merged into `packages` role. Exporter
+  definitions moved to `roles/packages/defaults/main.yml` as
+  `packages_exporters` (was `prometheus_exporters`). Exporter tarballs
+  now downloaded directly from GitHub to ansible04's packages repo
+  (bypassing controller cache). Version checking and report generation
+  moved to packages role. `roles/prometheus_exporters/` deleted.
+- `playbooks/sync-content.yml` simplified — single play for packages
+  (ansible04), removed `prometheus_exporters` play (localhost).
+- `inventory/group_vars/packages/main.yml` created with `packages_files`
+  list for non-exporter packages (Harbor installer).
+- `roles/harbor/tasks/main.yml` — Harbor installer downloaded from
+  `packages.homelab.internal` instead of GitHub.
+- `roles/node_exporter/tasks/main.yml` — downloads directly from GitHub
+  instead of controller cache.
+
 
 ### Added
 

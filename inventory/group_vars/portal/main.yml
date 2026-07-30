@@ -10,6 +10,10 @@ nginx_directories:
     group: "{{ nginx_content_group }}"
     mode: "{{ nginx_content_dir_mode }}"
   - path: "{{ nginx_web_root }}/documents"
+  - path: "{{ nginx_web_root }}/documents/sync-reports"
+    owner: "{{ nginx_content_owner }}"
+    group: "{{ nginx_content_group }}"
+    mode: "0755"
 
 nginx_vhosts:
   - name: portal
@@ -41,7 +45,8 @@ nginx_vhosts:
     ssl_key: /etc/pki/tls/private/documents.key
     conf: /etc/nginx/conf.d/documents.conf
     template: vhost.conf.j2
-    landing_page: documents-index.html.j2
+    autoindex: true
+    landing_page: false
 
 certificates_extra:
   - name: portal

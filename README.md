@@ -76,9 +76,7 @@ ansible-playbook playbooks/harbor-users.yml
 | `node_exporter` | Node Exporter with mTLS |
 | `elk` | Elasticsearch, Logstash, Kibana, Elasticsearch Exporter |
 | `nginx` | nginx install, data-driven vhosts via `nginx_vhosts` + `nginx_directories` |
-| `packages` | Internal package repo (exporters, textfile scripts) |
-| `prometheus_exporters` | Download exporter tarballs from GitHub |
-| `harbor_containers` | Sync container images to Harbor |
+| `packages` | Internal package repo (exporters, Harbor installer, textfile scripts) |
 | `hardening` | STIG/CIS system hardening (10 toggleable modules) |
 
 ## Environment

@@ -29,8 +29,8 @@
 
 - name: Deploy vhost configs
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/{{ item.template }}"
-    dest: "{{ item.conf }}"
+    src: "{{ role_path }}/templates/{{ vhost.template }}"
+    dest: "{{ vhost.conf }}"
     owner: "{{ nginx_owner }}"
     group: "{{ nginx_group }}"
     mode: "0644"

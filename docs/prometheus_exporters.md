@@ -1,3 +1,6 @@
+> **NOTE:** This role has been merged into the `packages` role.
+> See [packages.md](packages.md) for current documentation.
+
 # prometheus_exporters Role
 
 Downloads Prometheus exporter tarballs from GitHub releases to

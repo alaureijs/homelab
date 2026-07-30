@@ -36,11 +36,12 @@
       ansible.builtin.set_fact:
         node_exporter_version_stripped: "{{ node_exporter_version | regex_replace('^v', '') }}"
 
-    - name: Copy node_exporter tarball to target
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../files/prometheus/exporters/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64.tar.gz"
+    - name: Download node_exporter tarball from GitHub
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version_stripped }}/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64.tar.gz"
         dest: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.tar.gz"
         mode: "0644"
+        timeout: 120
       when: >-
         not node_exporter_installed.stat.exists or
         (node_exporter_current_version.stdout is defined and

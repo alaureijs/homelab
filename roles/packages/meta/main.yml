@@ -8,7 +8,7 @@ galaxy_info:
   platforms:
     - name: Rocky
       versions:
-        - "10"
+        - "all"
 
 dependencies:
   - role: nginx

@@ -86,6 +86,24 @@
   ignore_errors: true
   changed_when: false
 
+- name: Build extra sync items for latest versions
+  ansible.builtin.set_fact:
+    harbor_containers_extra_sync: >-
+      {{ harbor_containers_extra_sync | default([]) +
+         [[result.item.0, result.stdout]]
+       if (result.stdout | default('NONE') not in ['NONE', result.item.1])
+       else harbor_containers_extra_sync | default([]) }}
+  loop: "{{ harbor_containers_upstream_versions.results }}"
+  loop_control:
+    loop_var: result
+
+- name: Sync latest versions to Harbor
+  ansible.builtin.include_tasks: _sync-image.yml
+  loop: "{{ harbor_containers_extra_sync | default([]) }}"
+  loop_control:
+    label: "{{ item.0.registry }}/{{ item.0.name }}:{{ item.1 }} (latest)"
+  when: harbor_containers_extra_sync | default([]) | length > 0
+
 - name: Build version report
   ansible.builtin.set_fact:
     harbor_containers_sync_report: >-

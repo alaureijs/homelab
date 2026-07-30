@@ -80,3 +80,8 @@
         owner: "{{ nginx_owner }}"
         group: "{{ nginx_group }}"
         mode: "0644"
+
+    - name: Reload nginx to pick up new vhosts and certs
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded

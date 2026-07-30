@@ -9,12 +9,16 @@
   tasks:
     - name: Derive /etc/hosts entries from dns_records
       ansible.builtin.set_fact:
-        controller_hosts_entries: >-
+        controller_hosts_entries: "{{ (_raw | from_json) }}"
+      vars:
+        _raw: >-
+          {% set ns = namespace(entries=[]) %}
           {% for ip, items in (dns_records | dict2items | groupby('value')) %}
           {%   set fqdns = items | map(attribute='key') | sort | list %}
           {%   set short = fqdns | first | regex_replace('\..*$', '') %}
-          "{{ ip }} {{ short }} {{ fqdns | join(' ') }}"
+          {%   set _ = ns.entries.append(ip ~ ' ' ~ short ~ ' ' ~ fqdns | join(' ')) %}
           {% endfor %}
+          {{ ns.entries | to_json }}
 
     - name: Remove stale ansible host entries from /etc/hosts
       ansible.builtin.lineinfile:

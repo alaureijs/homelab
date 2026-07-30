@@ -142,7 +142,7 @@
           p="{{ step_ca_backup_dir }}/$f"
           [ -f "$p" ] || continue
           head -1 "$p" | grep -q '^$ANSIBLE_VAULT' && continue
-          ansible-vault encrypt "$p"
+          ansible-vault encrypt --vault-password-file "{{ playbook_dir }}/../.vault_password" "$p"
         done
       delegate_to: localhost
       become: false

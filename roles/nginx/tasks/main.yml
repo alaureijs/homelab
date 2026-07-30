@@ -50,7 +50,6 @@
     owner: "{{ nginx_owner }}"
     group: "{{ nginx_group }}"
     mode: "0644"
-  notify: Reload nginx
 
 - name: Deploy documents vhost config
   ansible.builtin.template:
@@ -59,7 +58,6 @@
     owner: "{{ nginx_owner }}"
     group: "{{ nginx_group }}"
     mode: "0644"
-  notify: Reload nginx
 
 - name: Ensure nginx is running
   ansible.builtin.systemd:

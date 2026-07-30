@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Moved vhost config from `portal` to `nginx` role. nginx now manages
+  the portal.conf vhost (template + deploy). portal has no tasks left.
 - `nginx` role now owns all served directories (web roots, CA, packages,
   ACME). Directory paths and ownership defined in nginx defaults, created
   by nginx tasks. `portal` only deploys vhost config. `packages` references

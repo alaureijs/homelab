@@ -39,6 +39,15 @@
       group: "{{ nginx_content_group }}"
       mode: "{{ nginx_content_dir_mode }}"
 
+- name: Deploy portal vhost config
+  ansible.builtin.template:
+    src: portal.conf.j2
+    dest: "{{ nginx_vhost_portal_conf }}"
+    owner: "{{ nginx_owner }}"
+    group: "{{ nginx_group }}"
+    mode: "0644"
+  notify: Reload nginx
+
 - name: Ensure nginx is running
   ansible.builtin.systemd:
     name: nginx

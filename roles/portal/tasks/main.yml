@@ -1,9 +1,1 @@
 ---
-- name: Deploy nginx vhost config
-  ansible.builtin.template:
-    src: portal.conf.j2
-    dest: "{{ portal_nginx_vhost }}"
-    owner: "{{ portal_owner }}"
-    group: "{{ portal_group }}"
-    mode: "0644"
-  notify: Reload nginx

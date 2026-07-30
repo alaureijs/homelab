@@ -6,7 +6,7 @@ Private online Certificate Authority running on ansible04 (192.168.100.13).
 
 - **CA server**: step-ca v0.30.2 (Podman container via `podman kube play`)
 - **CLI**: step-cli v0.30.6 (installed on all hosts)
-- **Webserver**: nginx (portal role, serves root CA + ACME + packages repo)
+- **Webserver**: nginx (vhosts generated from `group_vars/portal/main.yml` via single `vhost.conf.j2` template)
 - **Storage**: `/var/lib/step-ca` (PV/PVC on 20 GB VirtIO disk)
 - **Port**: 9000 (HTTPS, bound to 127.0.0.1)
 - **Provisioners**: JWK (admin API) + ACME (automated cert issuance)
@@ -18,7 +18,7 @@ Private online Certificate Authority running on ansible04 (192.168.100.13).
 | Role | Description | Deploy Target |
 |------|-------------|---------------|
 | `step-ca` | step-ca server (Podman container, systemd, PKI init) | ansible04 |
-| `portal` | nginx webserver (CA cert distribution, ACME proxy, packages repo) | ansible04 |
+| `nginx` | nginx webserver with data-driven vhosts from `group_vars/portal/main.yml` | ansible04 |
 | `dns` | Unbound recursive resolver (local zones, DNSSEC) | ansible04 |
 
 ## Access
@@ -119,7 +119,9 @@ are now issued by step-ca with a 30-day default duration.
 | ELK TLS | `DNS:observability.homelab.internal` | 30 days | JWK |
 | node-exporter server | `DNS:hostname.homelab.internal`, `IP:x.x.x.x` | 30 days | JWK |
 | Prometheus mTLS client | clientAuth EKU | 30 days | JWK |
-| CA portal TLS | `DNS:pki.homelab.internal` | 30 days | JWK (bootstrap: selfsigned) |
+| CA portal TLS | `DNS:pki.homelab.internal` | 30 days | JWK |
+| Packages repo TLS | `DNS:packages.homelab.internal` | 30 days | JWK |
+| Documents portal TLS | `DNS:documents.homelab.internal` | 30 days | JWK |
 
 ### Renewal
 
@@ -200,9 +202,17 @@ acme.sh --issue \
 
 ## CA Portal
 
-The `portal` role deploys an nginx webserver on ansible04 that
-serves the root CA certificate, the packages repository, and handles
-ACME HTTP-01 challenges.
+Three nginx vhosts on ansible04 serve the portal, packages, and documents sites.
+All configuration is defined in `inventory/group_vars/portal/main.yml`:
+- `nginx_vhosts` — structured list of vhosts with feature flags (autoindex, ACME proxy, CA alias)
+- `nginx_directories` — web root subdirectories with ownership/permissions
+- `certificates_extra` — per-vhost step-ca certificate definitions
+
+Each vhost is rendered from a single `roles/nginx/templates/vhost.conf.j2` template,
+which uses the feature flags to conditionally include ACME challenge, CA alias, autoindex,
+and landing page index.html.
+
+The root CA certificate is copied to the web root by the `step-ca` role.
 
 ### Endpoints
 
@@ -358,7 +368,7 @@ step ca certificate revoke --cert <serial> --ca-url https://ca.homelab.internal:
 podman kube play --down /opt/step-ca/step-ca-pod.yml && \
 podman kube play /opt/step-ca/step-ca-pod.yml
 
-# Restart nginx (CA portal)
+# Restart nginx (portal, packages, documents)
 systemctl restart nginx
 
 # Restart DNS
@@ -368,7 +378,7 @@ systemctl restart unbound
 ## Deployment
 
 ```bash
-# Full provisioning (common + DNS + step-ca + portal)
+# Full provisioning (common + DNS + step-ca + nginx)
 ansible-playbook playbooks/provision-ansible04.yml
 
 # Common roles only (all hosts, includes step-ca root CA trust)
@@ -456,6 +466,18 @@ cat /etc/nginx/conf.d/portal.conf
 
 # Restart nginx
 systemctl restart nginx
+```
+
+### nginx showing default page on packages
+
+```bash
+cat /etc/nginx/conf.d/packages.conf
+```
+
+### nginx showing default page on documents
+
+```bash
+cat /etc/nginx/conf.d/documents.conf
 ```
 
 ### DNS resolution fails

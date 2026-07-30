@@ -8,6 +8,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Portal refactored: `inventory/group_vars/portal/` created with
+  `nginx_vhosts`, `nginx_directories`, and `certificates_extra`
+  definitions. `nginx_vhosts` is a structured list with feature
+  flags (acme_challenge, ca_alias, acme_proxy, autoindex).
+- `roles/nginx/` stripped to generic installer — reads `nginx_vhosts`
+  and `nginx_directories` from group_vars, deploys vhost configs from
+  single `vhost.conf.j2` template (3 separate templates removed).
+- `portal.conf.j2` split — `packages.homelab.internal` has its own
+  vhost, each vhost gets its own step-ca certificate.
+- `roles/step-ca/` now copies root CA cert to `{{ portal_web_root }}/ca/`.
+- `playbooks/provision-ansible04.yml` — cert issuance + root CA deploy
+  removed from post_tasks (handled by `certificates` role and `step-ca`
+  role). Post_tasks now only deploy landing pages.
 - `portal` role removed entirely. vhost config (`portal.conf.j2`),
   SSL paths, and port defaults moved to `nginx` role. `packages`
   depends on `nginx` directly. index.html landing page template

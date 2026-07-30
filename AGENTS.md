@@ -146,7 +146,7 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `prometheus_exporters` | Download exporter tarballs from internal package repo | localhost (controller) |
 | `certificates` | step-ca signed certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
 | `step-ca` | Smallstep private CA (v0.30.2), Podman container, auto-init | ansible04 |
-| `nginx` | nginx install, web roots, portal vhost, service management | ansible04 |
+| `nginx` | nginx install, web roots, data-driven vhosts from `group_vars/portal/main.yml` | ansible04 |
 | `packages` | Download exporters + textfile scripts to internal package repo | ansible04 |
 | `dns` | Unbound DNS server, local zones for homelab.internal, DNSSEC | ansible04 |
 | `common` | Package management, protected package safety, chrony, step-cli | all VMs |

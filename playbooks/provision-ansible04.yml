@@ -36,35 +36,6 @@
       ansible.builtin.set_fact:
         portal_fingerprint: "{{ _portal_fingerprint.stdout | default('unknown') }}"
 
-    - name: Issue step-ca cert for portal
-      ansible.builtin.shell: |
-        step ca certificate \
-          "pki.homelab.internal" \
-          "{{ nginx_ssl_cert }}" \
-          "{{ nginx_ssl_key }}" \
-          --san "packages.homelab.internal" \
-          --san "documents.homelab.internal" \
-          --san "ansible04.homelab.internal" \
-          --san "192.168.100.13" \
-          --not-after 720h \
-          --force \
-          --provisioner admin \
-          --provisioner-password-file <(echo "{{ vault_stepca_password }}")
-      environment:
-        STEPPATH: "{{ step_ca_config_dir }}"
-      register: _portal_cert_issue
-      changed_when: "'Your certificate has been saved' in _portal_cert_issue.stdout"
-      notify: Reload nginx
-
-    - name: Deploy root CA cert to web root
-      ansible.builtin.copy:
-        src: "{{ step_ca_config_dir }}/certs/root_ca.crt"
-        dest: "{{ nginx_web_root }}/ca/root_ca.crt"
-        remote_src: true
-        owner: "{{ nginx_owner }}"
-        group: nginx
-        mode: "0644"
-
     - name: Deploy portal landing page
       ansible.builtin.template:
         src: "{{ playbook_dir }}/../roles/nginx/templates/index.html.j2"

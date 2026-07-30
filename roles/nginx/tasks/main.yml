@@ -10,54 +10,34 @@
     state: absent
   notify: Reload nginx
 
-- name: Create web root directories
+- name: Create web root base directory
+  ansible.builtin.file:
+    path: "{{ nginx_web_root }}"
+    state: directory
+    owner: "{{ nginx_owner }}"
+    group: "{{ nginx_group }}"
+    mode: "{{ nginx_dir_mode }}"
+
+- name: Create web root subdirectories
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    owner: "{{ item.owner }}"
-    group: "{{ item.group }}"
-    mode: "{{ item.mode }}"
-  loop:
-    - path: "{{ nginx_web_root }}"
-      owner: "{{ nginx_owner }}"
-      group: "{{ nginx_group }}"
-      mode: "{{ nginx_dir_mode }}"
-    - path: "{{ nginx_web_root }}/ca-portal"
-      owner: "{{ nginx_owner }}"
-      group: "{{ nginx_group }}"
-      mode: "{{ nginx_dir_mode }}"
-    - path: "{{ nginx_web_root }}/acme"
-      owner: "{{ nginx_owner }}"
-      group: "{{ nginx_group }}"
-      mode: "{{ nginx_dir_mode }}"
-    - path: "{{ nginx_web_root }}/ca"
-      owner: "{{ nginx_owner }}"
-      group: "{{ nginx_group }}"
-      mode: "{{ nginx_dir_mode }}"
-    - path: "{{ nginx_web_root }}/packages"
-      owner: "{{ nginx_content_owner }}"
-      group: "{{ nginx_content_group }}"
-      mode: "{{ nginx_content_dir_mode }}"
-    - path: "{{ nginx_web_root }}/documents"
-      owner: "{{ nginx_owner }}"
-      group: "{{ nginx_group }}"
-      mode: "{{ nginx_dir_mode }}"
+    owner: "{{ item.owner | default(nginx_owner) }}"
+    group: "{{ item.group | default(nginx_group) }}"
+    mode: "{{ item.mode | default(nginx_dir_mode) }}"
+  loop: "{{ nginx_directories }}"
 
-- name: Deploy portal vhost config
+- name: Deploy vhost configs
   ansible.builtin.template:
-    src: portal.conf.j2
-    dest: "{{ nginx_vhost_portal_conf }}"
+    src: "{{ role_path }}/templates/{{ item.template }}"
+    dest: "{{ item.conf }}"
     owner: "{{ nginx_owner }}"
     group: "{{ nginx_group }}"
     mode: "0644"
-
-- name: Deploy documents vhost config
-  ansible.builtin.template:
-    src: documents.conf.j2
-    dest: "{{ nginx_vhost_documents_conf }}"
-    owner: "{{ nginx_owner }}"
-    group: "{{ nginx_group }}"
-    mode: "0644"
+  loop: "{{ nginx_vhosts }}"
+  loop_control:
+    loop_var: vhost
+  notify: Reload nginx
 
 - name: Ensure nginx is running
   ansible.builtin.systemd:

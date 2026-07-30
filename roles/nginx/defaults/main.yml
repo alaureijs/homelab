@@ -14,3 +14,4 @@ nginx_ssl_cert: /etc/pki/tls/certs/portal.crt
 nginx_ssl_key: /etc/pki/tls/private/portal.key
 
 nginx_vhost_portal_conf: /etc/nginx/conf.d/portal.conf
+nginx_vhost_documents_conf: /etc/nginx/conf.d/documents.conf

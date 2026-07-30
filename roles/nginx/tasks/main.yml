@@ -38,11 +38,24 @@
       owner: "{{ nginx_content_owner }}"
       group: "{{ nginx_content_group }}"
       mode: "{{ nginx_content_dir_mode }}"
+    - path: "{{ nginx_web_root }}/documents"
+      owner: "{{ nginx_owner }}"
+      group: "{{ nginx_group }}"
+      mode: "{{ nginx_dir_mode }}"
 
 - name: Deploy portal vhost config
   ansible.builtin.template:
     src: portal.conf.j2
     dest: "{{ nginx_vhost_portal_conf }}"
+    owner: "{{ nginx_owner }}"
+    group: "{{ nginx_group }}"
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Deploy documents vhost config
+  ansible.builtin.template:
+    src: documents.conf.j2
+    dest: "{{ nginx_vhost_documents_conf }}"
     owner: "{{ nginx_owner }}"
     group: "{{ nginx_group }}"
     mode: "0644"

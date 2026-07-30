@@ -13,8 +13,8 @@
   roles:
     - role: dns
 
-# Play 1: Provision ansible04 for PKI and portal
-- name: Provision ansible04 for PKI and portal
+# Play 1: Provision ansible04 for PKI, portal, and documents
+- name: Provision ansible04 for PKI, portal, and documents
   hosts: ansible04
   become: true
   gather_facts: true
@@ -43,6 +43,7 @@
           "{{ nginx_ssl_cert }}" \
           "{{ nginx_ssl_key }}" \
           --san "packages.homelab.internal" \
+          --san "documents.homelab.internal" \
           --san "ansible04.homelab.internal" \
           --san "192.168.100.13" \
           --not-after 720h \
@@ -68,6 +69,14 @@
       ansible.builtin.template:
         src: "{{ playbook_dir }}/../roles/nginx/templates/index.html.j2"
         dest: "{{ nginx_web_root }}/ca-portal/index.html"
+        owner: "{{ nginx_owner }}"
+        group: "{{ nginx_group }}"
+        mode: "0644"
+
+    - name: Deploy documents landing page
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/nginx/templates/documents-index.html.j2"
+        dest: "{{ nginx_web_root }}/documents/index.html"
         owner: "{{ nginx_owner }}"
         group: "{{ nginx_group }}"
         mode: "0644"

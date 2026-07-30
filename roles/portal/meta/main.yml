@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: portal
   author: homelab
-  description: Common nginx server for internal portals (CA, packages)
+  description: nginx portal for CA content and internal packages
   license: GPL-3.0-or-later
   min_ansible_version: "2.17"
   platforms:
@@ -10,4 +10,5 @@ galaxy_info:
       versions:
         - "10"
 
-dependencies: []
+dependencies:
+  - role: nginx

@@ -152,7 +152,7 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `common` | Package management, protected package safety, chrony, step-cli | all VMs |
 | `firewall` | firewalld rules for services, UFW for libvirt host bridge | ansible02, ansible04 |
 | `hardening` | STIG/CIS Benchmark (toggleable modules) | all VMs |
-| `nginx` | Nginx reverse proxy configuration | ansible01, ansible02, ansible04 |
+| `nginx` | nginx web server install, base config, service management | via portal role |
 | `podman` | Podman setup + registries.conf | ansible03 |
 | `libvirt` | VM provisioning via `community.libvirt` collection | localhost (provisioner) |
 

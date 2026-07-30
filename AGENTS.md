@@ -146,13 +146,12 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `prometheus_exporters` | Download exporter tarballs from internal package repo | localhost (controller) |
 | `certificates` | step-ca signed certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
 | `step-ca` | Smallstep private CA (v0.30.2), Podman container, auto-init | ansible04 |
-| `portal` | nginx portal (cert distribution, ACME proxy, packages repo) | ansible04 |
+| `nginx` | nginx install, web roots, portal vhost, service management | ansible04 |
 | `packages` | Download exporters + textfile scripts to internal package repo | ansible04 |
 | `dns` | Unbound DNS server, local zones for homelab.internal, DNSSEC | ansible04 |
 | `common` | Package management, protected package safety, chrony, step-cli | all VMs |
 | `firewall` | firewalld rules for services, UFW for libvirt host bridge | ansible02, ansible04 |
 | `hardening` | STIG/CIS Benchmark (toggleable modules) | all VMs |
-| `nginx` | nginx install, web root dirs, service management | via portal role |
 | `podman` | Podman setup + registries.conf | ansible03 |
 | `libvirt` | VM provisioning via `community.libvirt` collection | localhost (provisioner) |
 

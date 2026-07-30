@@ -11,4 +11,4 @@ galaxy_info:
         - "10"
 
 dependencies:
-  - role: portal
+  - role: nginx

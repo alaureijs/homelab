@@ -75,9 +75,7 @@ ansible-playbook playbooks/harbor-users.yml
 | `monitoring` | Grafana, Prometheus, Alertmanager, node-exporter |
 | `node_exporter` | Node Exporter with mTLS |
 | `elk` | Elasticsearch, Logstash, Kibana, Elasticsearch Exporter |
-| `portal` | Common nginx server (base install, default removal, enable) |
-| `nginx` | nginx install, web root dirs, default config, service management |
-| `portal` | nginx vhost + CA content (cert issuance, landing page, ACME proxy) |
+| `nginx` | nginx install, web root dirs, portal vhost, service management |
 | `packages` | Internal package repo (exporters, textfile scripts) |
 | `prometheus_exporters` | Download exporter tarballs from GitHub |
 | `harbor_containers` | Sync container images to Harbor |

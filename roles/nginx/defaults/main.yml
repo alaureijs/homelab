@@ -7,4 +7,10 @@ nginx_content_owner: nobody
 nginx_content_group: nobody
 nginx_content_dir_mode: "0755"
 
+nginx_http_port: 80
+nginx_https_port: 443
+
+nginx_ssl_cert: /etc/pki/tls/certs/portal.crt
+nginx_ssl_key: /etc/pki/tls/private/portal.key
+
 nginx_vhost_portal_conf: /etc/nginx/conf.d/portal.conf

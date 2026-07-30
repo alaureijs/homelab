@@ -4,7 +4,7 @@ map $host $portal_root {
 }
 
 server {
-    listen {{ portal_http_port }};
+    listen {{ nginx_http_port }};
     server_name pki.homelab.internal packages.homelab.internal;
 
     location /.well-known/acme-challenge/ {
@@ -17,11 +17,11 @@ server {
 }
 
 server {
-    listen {{ portal_https_port }} ssl;
+    listen {{ nginx_https_port }} ssl;
     server_name pki.homelab.internal packages.homelab.internal;
 
-    ssl_certificate     {{ portal_ssl_cert }};
-    ssl_certificate_key {{ portal_ssl_key }};
+    ssl_certificate     {{ nginx_ssl_cert }};
+    ssl_certificate_key {{ nginx_ssl_key }};
 
     ssl_protocols TLSv1.3;
     ssl_prefer_server_ciphers off;

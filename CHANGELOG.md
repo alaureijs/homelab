@@ -8,16 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Moved vhost config from `portal` to `nginx` role. nginx now manages
-  the portal.conf vhost (template + deploy). portal has no tasks left.
-- `nginx` role now owns all served directories (web roots, CA, packages,
-  ACME). Directory paths and ownership defined in nginx defaults, created
-  by nginx tasks. `portal` only deploys vhost config. `packages` references
-  `nginx_web_root` and `nginx_content_*` for its content dirs.
+- `portal` role removed entirely. vhost config (`portal.conf.j2`),
+  SSL paths, and port defaults moved to `nginx` role. `packages`
+  depends on `nginx` directly. index.html landing page template
+  moved to `nginx/templates/`.
 - Extracted nginx setup into `nginx` role (install, default.conf removal,
-  service enable, web root dirs). `portal` and `packages` depend on `nginx`
-  instead of doing nginx setup themselves.
-- Absorbed `ca-portal` into `portal` role. ca-portal removed entirely.
+  service enable, web root dirs). `packages` depends on `nginx`.
+- Absorbed `ca-portal` into `nginx` role. ca-portal removed entirely.
   CA-specific tasks (cert issuance, landing page, root CA deploy) moved
   to playbook-level post_tasks in provision-ansible04.yml after step-ca
   and portal roles.

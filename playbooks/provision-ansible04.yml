@@ -21,7 +21,7 @@
 
   roles:
     - role: step-ca
-    - role: portal
+    - role: nginx
 
   post_tasks:
     - name: Get step-ca fingerprint
@@ -40,8 +40,8 @@
       ansible.builtin.shell: |
         step ca certificate \
           "pki.homelab.internal" \
-          "{{ portal_ssl_cert }}" \
-          "{{ portal_ssl_key }}" \
+          "{{ nginx_ssl_cert }}" \
+          "{{ nginx_ssl_key }}" \
           --san "packages.homelab.internal" \
           --san "ansible04.homelab.internal" \
           --san "192.168.100.13" \
@@ -66,7 +66,7 @@
 
     - name: Deploy portal landing page
       ansible.builtin.template:
-        src: "{{ playbook_dir }}/../roles/portal/templates/index.html.j2"
+        src: "{{ playbook_dir }}/../roles/nginx/templates/index.html.j2"
         dest: "{{ nginx_web_root }}/ca-portal/index.html"
         owner: "{{ nginx_owner }}"
         group: "{{ nginx_group }}"

@@ -76,8 +76,8 @@ ansible-playbook playbooks/harbor-users.yml
 | `node_exporter` | Node Exporter with mTLS |
 | `elk` | Elasticsearch, Logstash, Kibana, Elasticsearch Exporter |
 | `portal` | Common nginx server (base install, default removal, enable) |
-| `nginx` | nginx web server install, base config, service management |
-| `portal` | nginx portal (CA content, ACME proxy, packages repo) |
+| `nginx` | nginx install, web root dirs, default config, service management |
+| `portal` | nginx vhost + CA content (cert issuance, landing page, ACME proxy) |
 | `packages` | Internal package repo (exporters, textfile scripts) |
 | `prometheus_exporters` | Download exporter tarballs from GitHub |
 | `harbor_containers` | Sync container images to Harbor |

@@ -1,6 +1,6 @@
 map $host $portal_root {
-    pki.homelab.internal       {{ portal_ca_portal_dir }};
-    packages.homelab.internal  {{ portal_packages_dir }};
+    pki.homelab.internal       {{ nginx_web_root }}/ca-portal;
+    packages.homelab.internal  {{ nginx_web_root }}/packages;
 }
 
 server {
@@ -8,7 +8,7 @@ server {
     server_name pki.homelab.internal packages.homelab.internal;
 
     location /.well-known/acme-challenge/ {
-        root {{ portal_acme_dir }};
+        root {{ nginx_web_root }}/acme;
     }
 
     location / {
@@ -33,7 +33,7 @@ server {
     autoindex_localtime on;
 
     location /ca/ {
-        alias {{ portal_ca_dir }}/;
+        alias {{ nginx_web_root }}/ca/;
         add_header Content-Disposition "attachment";
         add_header Content-Type "application/x-x509-ca-cert";
     }

@@ -10,6 +10,35 @@
     state: absent
   notify: Reload nginx
 
+- name: Create web root directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ nginx_web_root }}"
+      owner: "{{ nginx_owner }}"
+      group: "{{ nginx_group }}"
+      mode: "{{ nginx_dir_mode }}"
+    - path: "{{ nginx_web_root }}/ca-portal"
+      owner: "{{ nginx_owner }}"
+      group: "{{ nginx_group }}"
+      mode: "{{ nginx_dir_mode }}"
+    - path: "{{ nginx_web_root }}/acme"
+      owner: "{{ nginx_owner }}"
+      group: "{{ nginx_group }}"
+      mode: "{{ nginx_dir_mode }}"
+    - path: "{{ nginx_web_root }}/ca"
+      owner: "{{ nginx_owner }}"
+      group: "{{ nginx_group }}"
+      mode: "{{ nginx_dir_mode }}"
+    - path: "{{ nginx_web_root }}/packages"
+      owner: "{{ nginx_content_owner }}"
+      group: "{{ nginx_content_group }}"
+      mode: "{{ nginx_content_dir_mode }}"
+
 - name: Ensure nginx is running
   ansible.builtin.systemd:
     name: nginx

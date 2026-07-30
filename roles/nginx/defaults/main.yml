@@ -1,1 +1,8 @@
 ---
+nginx_web_root: /var/www
+nginx_owner: root
+nginx_group: root
+nginx_dir_mode: "0755"
+nginx_content_owner: nobody
+nginx_content_group: nobody
+nginx_content_dir_mode: "0755"

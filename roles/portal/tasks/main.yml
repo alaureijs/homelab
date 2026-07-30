@@ -1,18 +1,4 @@
 ---
-- name: Create web root directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ portal_owner }}"
-    group: "{{ portal_group }}"
-    mode: "{{ portal_dir_mode }}"
-  loop:
-    - "{{ portal_web_root }}"
-    - "{{ portal_ca_portal_dir }}"
-    - "{{ portal_acme_dir }}"
-    - "{{ portal_ca_dir }}"
-    - "{{ portal_packages_dir }}"
-
 - name: Deploy nginx vhost config
   ansible.builtin.template:
     src: portal.conf.j2

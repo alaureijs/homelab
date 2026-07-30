@@ -8,9 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `nginx` role now owns all served directories (web roots, CA, packages,
+  ACME). Directory paths and ownership defined in nginx defaults, created
+  by nginx tasks. `portal` only deploys vhost config. `packages` references
+  `nginx_web_root` and `nginx_content_*` for its content dirs.
 - Extracted nginx setup into `nginx` role (install, default.conf removal,
-  service enable). `portal` and `packages` depend on `nginx` instead of
-  doing nginx setup themselves.
+  service enable, web root dirs). `portal` and `packages` depend on `nginx`
+  instead of doing nginx setup themselves.
 - Absorbed `ca-portal` into `portal` role. ca-portal removed entirely.
   CA-specific tasks (cert issuance, landing page, root CA deploy) moved
   to playbook-level post_tasks in provision-ansible04.yml after step-ca

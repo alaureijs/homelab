@@ -1,5 +1,5 @@
 ---
-packages_repo_dir: "{{ portal_packages_dir }}"
-packages_repo_owner: "{{ portal_content_owner }}"
-packages_repo_group: "{{ portal_content_group }}"
-packages_repo_mode: "{{ portal_content_dir_mode }}"
+packages_repo_dir: "{{ nginx_web_root }}/packages"
+packages_repo_owner: "{{ nginx_content_owner }}"
+packages_repo_group: "{{ nginx_content_group }}"
+packages_repo_mode: "{{ nginx_content_dir_mode }}"

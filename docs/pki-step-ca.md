@@ -6,7 +6,7 @@ Private online Certificate Authority running on ansible04 (192.168.100.13).
 
 - **CA server**: step-ca v0.30.2 (Podman container via `podman kube play`)
 - **CLI**: step-cli v0.30.6 (installed on all hosts)
-- **Webserver**: nginx (ca-portal role, serves root CA + ACME)
+- **Webserver**: nginx (portal role, serves root CA + ACME + packages repo)
 - **Storage**: `/var/lib/step-ca` (PV/PVC on 20 GB VirtIO disk)
 - **Port**: 9000 (HTTPS, bound to 127.0.0.1)
 - **Provisioners**: JWK (admin API) + ACME (automated cert issuance)
@@ -18,7 +18,7 @@ Private online Certificate Authority running on ansible04 (192.168.100.13).
 | Role | Description | Deploy Target |
 |------|-------------|---------------|
 | `step-ca` | step-ca server (Podman container, systemd, PKI init) | ansible04 |
-| `ca-portal` | nginx webserver serving root CA cert + ACME challenges | ansible04 |
+| `portal` | nginx webserver (CA cert distribution, ACME proxy, packages repo) | ansible04 |
 | `dns` | Unbound recursive resolver (local zones, DNSSEC) | ansible04 |
 
 ## Access
@@ -200,8 +200,8 @@ acme.sh --issue \
 
 ## CA Portal
 
-The `ca-portal` role deploys an nginx webserver on ansible04 that
-serves the root CA certificate for browser download and handles
+The `portal` role deploys an nginx webserver on ansible04 that
+serves the root CA certificate, the packages repository, and handles
 ACME HTTP-01 challenges.
 
 ### Endpoints
@@ -368,7 +368,7 @@ systemctl restart unbound
 ## Deployment
 
 ```bash
-# Full provisioning (common + DNS + step-ca + ca-portal)
+# Full provisioning (common + DNS + step-ca + portal)
 ansible-playbook playbooks/provision-ansible04.yml
 
 # Common roles only (all hosts, includes step-ca root CA trust)
@@ -452,7 +452,7 @@ step ca bootstrap --ca-url https://ca.homelab.internal:9000 --fingerprint <fp> -
 curl -sk https://pki.homelab.internal/ -o /dev/null -w "%{http_code}\n"
 
 # Verify nginx config
-cat /etc/nginx/conf.d/ca-portal.conf
+cat /etc/nginx/conf.d/portal.conf
 
 # Restart nginx
 systemctl restart nginx

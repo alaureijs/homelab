@@ -13,12 +13,61 @@
   roles:
     - role: dns
 
-# Play 1: Provision ansible04 for PKI
-- name: Provision ansible04 for PKI
+# Play 1: Provision ansible04 for PKI and portal
+- name: Provision ansible04 for PKI and portal
   hosts: ansible04
   become: true
   gather_facts: true
 
   roles:
     - role: step-ca
-    - role: ca-portal
+    - role: portal
+
+  post_tasks:
+    - name: Get step-ca fingerprint
+      ansible.builtin.shell: "step certificate fingerprint {{ step_ca_config_dir }}/certs/root_ca.crt"
+      environment:
+        STEPPATH: "{{ step_ca_config_dir }}"
+      register: _portal_fingerprint
+      changed_when: false
+      failed_when: false
+
+    - name: Set fingerprint fact
+      ansible.builtin.set_fact:
+        portal_fingerprint: "{{ _portal_fingerprint.stdout | default('unknown') }}"
+
+    - name: Issue step-ca cert for portal
+      ansible.builtin.shell: |
+        step ca certificate \
+          "pki.homelab.internal" \
+          "{{ portal_ssl_cert }}" \
+          "{{ portal_ssl_key }}" \
+          --san "packages.homelab.internal" \
+          --san "ansible04.homelab.internal" \
+          --san "192.168.100.13" \
+          --not-after 720h \
+          --force \
+          --provisioner admin \
+          --provisioner-password-file <(echo "{{ vault_stepca_password }}")
+      environment:
+        STEPPATH: "{{ step_ca_config_dir }}"
+      register: _portal_cert_issue
+      changed_when: "'Your certificate has been saved' in _portal_cert_issue.stdout"
+      notify: Reload nginx
+
+    - name: Deploy root CA cert to web root
+      ansible.builtin.copy:
+        src: "{{ step_ca_config_dir }}/certs/root_ca.crt"
+        dest: "{{ portal_ca_dir }}/root_ca.crt"
+        remote_src: true
+        owner: "{{ portal_owner }}"
+        group: nginx
+        mode: "0644"
+
+    - name: Deploy portal landing page
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/portal/templates/index.html.j2"
+        dest: "{{ portal_ca_portal_dir }}/index.html"
+        owner: "{{ portal_owner }}"
+        group: "{{ portal_group }}"
+        mode: "0644"

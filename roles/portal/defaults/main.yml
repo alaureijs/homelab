@@ -3,6 +3,10 @@ portal_http_port: 80
 portal_https_port: 443
 
 portal_web_root: /var/www
+portal_ca_portal_dir: "{{ portal_web_root }}/ca-portal"
+portal_acme_dir: "{{ portal_web_root }}/acme"
+portal_ca_dir: "{{ portal_web_root }}/ca"
+portal_packages_dir: "{{ portal_web_root }}/packages"
 
 portal_owner: root
 portal_group: root
@@ -13,5 +17,7 @@ portal_content_group: nobody
 portal_content_dir_mode: "0755"
 
 portal_nginx_conf_dir: /etc/nginx/conf.d
+portal_nginx_vhost: "{{ portal_nginx_conf_dir }}/portal.conf"
 
-portal_packages_dir: "{{ portal_web_root }}/packages"
+portal_ssl_cert: /etc/pki/tls/certs/portal.crt
+portal_ssl_key: /etc/pki/tls/private/portal.key

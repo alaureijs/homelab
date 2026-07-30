@@ -8,11 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Created `portal` role — shared nginx base (install, default removal, enable).
-  Centralizes directory paths and ownership config for all web-served content.
-  Decouples `packages` from `ca-portal` dependency.
-  - `ca-portal` depends on `portal` instead of doing nginx setup itself
-  - `packages` depends on `portal` instead of `ca-portal`
+- Absorbed `ca-portal` into `portal` role. ca-portal removed entirely.
+  Portal now handles nginx + vhost config + CA content in a single role.
+  CA-specific tasks (cert issuance, landing page, root CA deploy) moved
+  to playbook-level post_tasks in provision-ansible04.yml after step-ca
+  and portal roles.
 - Created `site.yml` — full infrastructure provisioning orchestrator
   (provision-ansible04 → 01 → sync-content → 02 → 03)
 - Consolidated all content sync into single `sync-content.yml` playbook.

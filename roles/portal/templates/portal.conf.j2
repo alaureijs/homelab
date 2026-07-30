@@ -1,14 +1,14 @@
 map $host $portal_root {
-    {{ ca_portal_hostname }}      {{ ca_portal_web_root }};
+    pki.homelab.internal       {{ portal_ca_portal_dir }};
     packages.homelab.internal  {{ portal_packages_dir }};
 }
 
 server {
     listen {{ portal_http_port }};
-    server_name {{ ca_portal_hostname }} packages.homelab.internal;
+    server_name pki.homelab.internal packages.homelab.internal;
 
     location /.well-known/acme-challenge/ {
-        root {{ ca_portal_acme_dir }};
+        root {{ portal_acme_dir }};
     }
 
     location / {
@@ -18,10 +18,10 @@ server {
 
 server {
     listen {{ portal_https_port }} ssl;
-    server_name {{ ca_portal_hostname }} packages.homelab.internal;
+    server_name pki.homelab.internal packages.homelab.internal;
 
-    ssl_certificate     {{ ca_portal_ssl_cert }};
-    ssl_certificate_key {{ ca_portal_ssl_key }};
+    ssl_certificate     {{ portal_ssl_cert }};
+    ssl_certificate_key {{ portal_ssl_key }};
 
     ssl_protocols TLSv1.3;
     ssl_prefer_server_ciphers off;
@@ -33,7 +33,7 @@ server {
     autoindex_localtime on;
 
     location /ca/ {
-        alias {{ ca_portal_ca_dir }}/;
+        alias {{ portal_ca_dir }}/;
         add_header Content-Disposition "attachment";
         add_header Content-Type "application/x-x509-ca-cert";
     }

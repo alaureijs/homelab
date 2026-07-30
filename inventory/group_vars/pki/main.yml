@@ -1,6 +1,6 @@
 ---
 # PKI group variables (ansible04)
-# step-ca, ca-portal configuration
+# step-ca, portal configuration
 
 # step-ca
 step_ca_hostname: ca.homelab.internal

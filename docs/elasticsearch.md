@@ -58,8 +58,8 @@ Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
 
 ## Container Configuration
 
-- **Podman CNI network**: `elk` (shared across all three pods)
-- **Inter-service communication**: All pods use `hostIP: 127.0.0.1` + `hostPort`. Logstash/Kibana connect to Elasticsearch via `127.0.0.1:9200`.
+- **Networking**: All three ELK pods use host network mode (`podman kube play --network host`). No `hostIP`/`hostPort` mappings — containers bind directly to host ports.
+- **Inter-service communication**: Logstash/Kibana connect to Elasticsearch via `127.0.0.1:9200` on the host loopback (shared network namespace).
 - **Volume mounts**: Separate host directories for configs (Logstash config/pipeline split)
 - **Image pulls**: Auth via Harbor credentials, TLS trust via CA cert
 - **Deploy fix**: `chown -R 1000:1000` on Elasticsearch data dir after `kube play`

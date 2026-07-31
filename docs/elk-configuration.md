@@ -39,7 +39,7 @@ The ELK role uses variables defined in `inventory/group_vars/elk/main.yml` and `
 | `elk_hostname` | `observability.homelab.internal` | Reverse proxy hostname |
 | `elk_config_dir` | `/etc/elk` | Configuration directory |
 | `elk_data_dir` | `/var/lib/elk` | Data directory |
-| `elk_network_name` | `elk` | Podman network name |
+| `elk_network_name` | `elk` | Podman network name (legacy — pods use host network mode, see below) |
 
 ## How to Configure
 
@@ -253,7 +253,11 @@ logstash_heap_size: "4g"
 
 ### Change ELK Network
 
-1. Edit `inventory/group_vars/elk/main.yml`:
+ELK pods run in host network mode (`podman kube play --network host`) so
+services bind directly to host ports and inter-service communication uses
+`127.0.0.1`. The `elk` Podman network still exists for legacy/backward
+compat but is not used by the pods. To change the network name, edit
+`inventory/group_vars/elk/main.yml`:
 
 ```yaml
 elk_network_name: "custom-elk-network"
@@ -308,8 +312,8 @@ curl -s http://127.0.0.1:9600/_node/stats | jq .
 ### Restart Stack
 
 ```bash
-podman kube play --down /etc/elk/elk-pod.yml
-podman kube play --network elk /etc/elk/elk-pod.yml
+podman kube play --down /etc/elk/elasticsearch-pod.yml
+podman kube play --network host /etc/elk/elasticsearch-pod.yml
 chown -R 1000:1000 /var/lib/elk/elasticsearch
 podman restart elk-elasticsearch
 ```

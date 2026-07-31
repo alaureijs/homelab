@@ -250,7 +250,7 @@ cd roles/harbor && molecule idempotence
 ## Networking
 - All monitoring + ELK services behind nginx reverse proxy on port 443 (HTTPS)
 - Harbor directly exposed on HTTP/HTTPS (port 80/443) and metrics (port 8090)
-- Use Podman CNI networks for inter-container communication: `elk` and `monitoring`
+- Use Podman CNI network for inter-container communication: `monitoring` (monitoring pod). ELK pods use host network mode (`podman kube play --network host`) — do NOT restart them with a CNI network or the host port bindings are lost.
 - mTLS for node-exporter scraping — single shared mTLS CA generated on
   controller (`files/certificates/mtls-ca.crt`, git-trackable; key in
   `files/certificates/mtls-ca.key`, vault-encrypted with `ansible-vault`),

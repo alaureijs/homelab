@@ -51,11 +51,12 @@ Monitoring, Elasticsearch, Logstash, and Kibana each deploy via separate K8s YAM
 2. Slurp static files for ConfigMap content
 3. Write pod manifest with inline ConfigMaps + PersistentVolumes/PVCs
 4. Run `podman kube play --down` then `podman kube play --network <name>`
+   (`monitoring` for the monitoring pod, `host` for ELK pods)
 5. Fix data directory ownership: grafana=472, prometheus/alertmanager=65534, elasticsearch=1000
 
 **Configuration pattern**: All config as ConfigMaps (not hostPath mounts). PV/PVC with `ReadWriteOnce`, reclaim policy Retain.
 
-**Inter-service communication**: All pods use `hostIP: 127.0.0.1` + `hostPort` for port mappings. Services communicate via `127.0.0.1` on the host loopback (not pod-internal DNS). Each role deploys its own independent pod.
+**Inter-service communication**: Monitoring pod uses `hostIP: 127.0.0.1` + `hostPort` for port mappings. ELK pods use host network mode — containers bind directly to host ports. Both communicate via `127.0.0.1` on the host loopback (not pod-internal DNS). Each role deploys its own independent pod.
 
 ## nginx Reverse Proxy
 

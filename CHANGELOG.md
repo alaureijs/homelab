@@ -8,6 +8,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- ELK restart handlers (`elasticsearch`, `logstash`, `kibana`) now use
+  `podman kube play --network host` — previously used `--network {{ elk_network_name }}`
+  (bridge `elk` network), which dropped host port bindings on config-driven
+  restarts and caused nginx 502s. Tasks already used host network mode;
+  handlers now match.
+- ELK networking documented as host network mode (`--network host`) in
+  `docs/elasticsearch.md`, `docs/elk-configuration.md`,
+  `docs/container-deployment.md`, and AGENTS.md. `elk_network_name` marked
+  legacy (network no longer used by pods).
 - Portal refactored: `inventory/group_vars/portal/` created with
   `nginx_vhosts`, `nginx_directories`, and `certificates_extra`
   definitions. `nginx_vhosts` is a structured list with feature

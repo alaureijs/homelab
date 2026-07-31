@@ -1,13 +1,7 @@
 ---
-# Play 0: Common roles on all hosts
+# Full provisioning for ansible02: common roles on all hosts + monitoring app roles.
 - name: Common roles on all hosts
   ansible.builtin.import_playbook: provision-common.yml
 
-# Play 1: Deploy monitoring stack on monitoring host
-- name: Deploy monitoring stack
-  hosts: monitoring
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: monitoring
+- name: App roles for ansible02
+  ansible.builtin.import_playbook: provision-ansible02-app.yml

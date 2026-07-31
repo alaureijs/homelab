@@ -49,13 +49,16 @@ ansible-playbook playbooks/harbor-users.yml
 
 | Playbook | Description |
 |----------|-------------|
-| `site.yml` | Full infrastructure provisioning (all VMs + sync) |
+| `site.yml` | Full infrastructure provisioning (common once + all hosts + sync + otel) |
 | `libvirt.yml` | Create/update libvirt VMs, network, and storage pool |
-| `provision-ansible04.yml` | Provision PKI and DNS infrastructure |
-| `provision-ansible01.yml` | Full provisioning for Harbor host |
+| `provision-common.yml` | Common roles on all hosts (firewall, certs, podman, hardening, node_exporter) |
+| `provision-ansible04.yml` | Full provisioning for PKI/DNS host (common + app) |
+| `provision-ansible01.yml` | Full provisioning for Harbor host (common + app) |
 | `sync-content.yml` | Sync exporter tarballs, textfile scripts, and container images |
-| `provision-ansible02.yml` | Full provisioning for monitoring host |
-| `provision-ansible03.yml` | Full provisioning for ELK stack host |
+| `provision-ansible02.yml` | Full provisioning for monitoring host (common + app) |
+| `provision-ansible03.yml` | Full provisioning for ELK stack host (common + app) |
+| `provision-ansible0X-app.yml` | App-specific roles only (used by wrappers and site.yml; no common) |
+| `provision-otel.yml` | Deploy OpenTelemetry collectors on all hosts |
 | `harbor-users.yml` | Manage Harbor users, projects, registries |
 | `harbor-certs.yml` | Regenerate Harbor TLS certificates |
 | `hardening.yml` | Standalone STIG/CIS hardening |

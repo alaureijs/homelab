@@ -1,19 +1,7 @@
 ---
-# Play 0: Common roles on all hosts
+# Full provisioning for ansible01: common roles on all hosts + Harbor app roles.
 - name: Common roles on all hosts
   ansible.builtin.import_playbook: provision-common.yml
 
-# Play 1: Provision ansible01 for Harbor
-- name: Provision ansible01 for Harbor
-  hosts: ansible01
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: harbor
-    - role: harbor_config
-
-  post_tasks:
-    - name: Mirror Trivy DB to Harbor
-      ansible.builtin.include_tasks:
-        file: "{{ playbook_dir }}/../roles/harbor/tasks/trivy-db-mirror.yml"
+- name: App roles for ansible01
+  ansible.builtin.import_playbook: provision-ansible01-app.yml

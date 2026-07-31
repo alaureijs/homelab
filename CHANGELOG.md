@@ -47,6 +47,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `provision-common.yml` pre_task now merges `otel_client_certificates`
   into the certificates list (Ansible replaces lists across groups, so
   `portal`'s `certificates_extra` clobbered `otel`'s on ansible04).
+- `site.yml` restructured to run common roles exactly once on all hosts.
+  App-specific plays split into `provision-ansible0X-app.yml`; each
+  `provision-ansible0X.yml` wrapper stays self-contained (imports
+  `provision-common.yml` + its `-app` playbook). `site.yml` now imports
+  common once, then `provision-ansible04-app` → `provision-ansible01-app`
+  → `sync-content` → `provision-ansible02-app` → `provision-ansible03-app`
+  → `provision-otel.yml` (newly included). Previously common roles ran
+  4× on every host per `site.yml` run.
 
 ### Fixed
 

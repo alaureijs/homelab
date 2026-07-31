@@ -1,0 +1,26 @@
+---
+# App-specific provisioning for ansible03 (ELK stack).
+# Common roles applied by provision-common.yml or the provision-ansible03.yml wrapper.
+- name: Deploy Elasticsearch
+  hosts: elk
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: elasticsearch
+
+- name: Deploy Logstash
+  hosts: elk
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: logstash
+
+- name: Deploy Kibana
+  hosts: elk
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: kibana

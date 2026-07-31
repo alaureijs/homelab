@@ -1,31 +1,7 @@
 ---
-# Play 0: Common roles on all hosts
+# Full provisioning for ansible03: common roles on all hosts + ELK app roles.
 - name: Common roles on all hosts
   ansible.builtin.import_playbook: provision-common.yml
 
-# Play 1: Deploy Elasticsearch
-- name: Deploy Elasticsearch
-  hosts: elk
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: elasticsearch
-
-# Play 3: Deploy Logstash
-- name: Deploy Logstash
-  hosts: elk
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: logstash
-
-# Play 4: Deploy Kibana
-- name: Deploy Kibana
-  hosts: elk
-  become: true
-  gather_facts: true
-
-  roles:
-    - role: kibana
+- name: App roles for ansible03
+  ansible.builtin.import_playbook: provision-ansible03-app.yml

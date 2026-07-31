@@ -1,15 +1,23 @@
 ---
+# Full infrastructure provisioning: common roles once on all hosts, then each
+# host's app roles, content sync, and OTel collectors.
+- name: Provision common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml
+
 - name: Provision PKI and DNS infrastructure
-  ansible.builtin.import_playbook: provision-ansible04.yml
+  ansible.builtin.import_playbook: provision-ansible04-app.yml
 
 - name: Provision Harbor container registry
-  ansible.builtin.import_playbook: provision-ansible01.yml
+  ansible.builtin.import_playbook: provision-ansible01-app.yml
 
 - name: Sync content (exporter tarballs, textfile scripts, container images)
   ansible.builtin.import_playbook: sync-content.yml
 
 - name: Deploy monitoring stack
-  ansible.builtin.import_playbook: provision-ansible02.yml
+  ansible.builtin.import_playbook: provision-ansible02-app.yml
 
 - name: Deploy ELK stack
-  ansible.builtin.import_playbook: provision-ansible03.yml
+  ansible.builtin.import_playbook: provision-ansible03-app.yml
+
+- name: Provision OpenTelemetry collectors
+  ansible.builtin.import_playbook: provision-otel.yml

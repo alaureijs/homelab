@@ -20,6 +20,11 @@ elk_elasticsearch_url: "https://observability.homelab.internal/elasticsearch/"
 # Elasticsearch HTTP port (used by logstash pipeline output and kibana connection)
 elasticsearch_http_port: 9200
 
+# Heap sizes (VM has 8 GB RAM, no swap — total JVM heaps + native must fit)
+# 4g ES + 2g Logstash exceeded 8 GB -> OOM-killed ES repeatedly.
+elasticsearch_heap_size: 2g
+logstash_heap_size: 2g
+
 # Firewall
 firewall_ports:
   - 80/tcp

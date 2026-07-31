@@ -8,6 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `elasticsearch_heap_size` reduced 4g → 2g (`inventory/group_vars/elk/main.yml`)
+  and pod manifest resources lowered (limits 5Gi → 4Gi, requests 4Gi → 3Gi).
+  ES (`-Xmx4g` + 2 GB direct memory) plus Logstash (2g heap) exceeded the
+  8 GB ansible03 VM with no swap, so the OOM killer repeatedly killed the
+  ES JVM and the restart loop pinned CPU at 100%.
 - ELK restart handlers (`elasticsearch`, `logstash`, `kibana`) now use
   `podman kube play --network host` — previously used `--network {{ elk_network_name }}`
   (bridge `elk` network), which dropped host port bindings on config-driven

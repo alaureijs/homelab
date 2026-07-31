@@ -70,9 +70,9 @@ spec:
           subPath: elasticsearch.yml
       resources:
         limits:
-          memory: 5Gi
-        requests:
           memory: 4Gi
+        requests:
+          memory: 3Gi
       livenessProbe:
         httpGet:
           path: /_cluster/health

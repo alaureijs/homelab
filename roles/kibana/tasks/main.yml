@@ -44,25 +44,6 @@
     mode: "0644"
   notify: Restart rsyslog
 
-- name: Deploy logrotate config for ELK logs
-  ansible.builtin.copy:
-    content: |
-      /var/log/elk/*.log {
-          daily
-          rotate 14
-          compress
-          delaycompress
-          missingok
-          notifempty
-          copytruncate
-          dateext
-          dateformat -%Y%m%d
-      }
-    dest: /etc/logrotate.d/elk
-    owner: root
-    group: root
-    mode: "0644"
-
 - name: Ensure Podman auth directory exists
   ansible.builtin.file:
     path: /root/.config/containers
@@ -139,6 +120,25 @@
   ansible.builtin.dnf:
     name: nginx
     state: present
+
+- name: Read step-ca root CA
+  ansible.builtin.slurp:
+    src: "{{ certificates_step_ca_root | default('/etc/step-ca/certs/root_ca.crt') }}"
+  register: _kibana_step_ca_root
+
+- name: Read step-ca intermediate CA
+  ansible.builtin.slurp:
+    src: /etc/step-ca/certs/intermediate_ca.crt
+  register: _kibana_step_ca_intermediate
+
+- name: Build combined mTLS CA file for nginx
+  ansible.builtin.copy:
+    content: "{{ (_kibana_step_ca_root.content | b64decode) + (_kibana_step_ca_intermediate.content | b64decode) }}"
+    dest: "{{ kibana_nginx_mtls_ca }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
 
 - name: Deploy nginx reverse proxy for Kibana
   ansible.builtin.template:

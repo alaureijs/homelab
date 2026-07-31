@@ -1,0 +1,13 @@
+---
+# Provision OpenTelemetry collectors on all hosts.
+# Requires prior runs:
+#   1. provision-common.yml  (issues otel-client step-ca certs + log rotation)
+#   2. sync-content.yml      (syncs otelcol-contrib binary to packages server)
+#   3. provision-ansible03.yml (ELK stack + nginx mTLS endpoint)
+- name: Provision OpenTelemetry collectors
+  hosts: otel
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: otel

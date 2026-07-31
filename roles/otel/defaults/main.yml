@@ -1,0 +1,47 @@
+---
+# Binary from internal packages server (synced by packages role)
+# Effective version without 'v' prefix (collection expects bare version)
+otel_collector_version_effective: "{{ otel_collector_version | regex_replace('^v', '') }}"
+otel_collector_binary_url: "https://packages.homelab.internal/exporters/otelcol-contrib_{{ otel_collector_version_effective }}_linux_amd64.tar.gz"
+
+# Elasticsearch endpoint via nginx reverse proxy with mTLS
+otel_endpoint: "https://observability.homelab.internal/elasticsearch"
+
+# mTLS client cert/key (issued by step-ca via group_vars/otel)
+# Outside /etc/otel-collector: collection install wipes that dir on upgrade.
+otel_mtls_dir: /etc/otel-client
+otel_mtls_ca_combined: "{{ otel_mtls_dir }}/mtls-ca-combined.crt"
+otel_client_cert: "{{ otel_mtls_dir }}/otel-client.crt"
+otel_client_key: "{{ otel_mtls_dir }}/otel-client.key"
+
+# Mirrored from grafana.grafana.opentelemetry_collector defaults for use in own tasks
+otel_collector_service_user: otel
+otel_collector_service_group: otel
+
+# File log paths (per host, host_vars)
+otel_log_paths: []
+
+# Collect journald logs
+otel_journald: true
+
+# Pipeline config (passed to grafana.grafana.opentelemetry_collector)
+otel_processors:
+  resourcedetection/system:
+    detectors:
+      - system
+    system:
+      hostname_sources:
+        - os
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+otel_exporters:
+  elasticsearch:
+    endpoint: "{{ otel_endpoint }}"
+    tls:
+      ca_file: "{{ otel_mtls_ca_combined }}"
+      cert_file: "{{ otel_client_cert }}"
+      key_file: "{{ otel_client_key }}"
+    mapping:
+      mode: otel

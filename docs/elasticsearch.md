@@ -10,13 +10,17 @@ Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12) for
 Client (Filebeat) → Logstash (5044) → Elasticsearch (9200)
                                           ↓
 Kibana (5601) ← nginx (443) → Elasticsearch (9200)
+                                          ↑
+otel-collector (all VMs, journald+files, mTLS) → nginx /elasticsearch/
 ```
 
-- **Elasticsearch**: Single-node, security disabled, 4g heap, data in `/var/lib/elk/elasticsearch/` (own pod)
+- **Elasticsearch**: Single-node, security disabled, 2g heap, data in `/var/lib/elk/elasticsearch/` (own pod)
 - **Logstash**: Beats input (5044), grok filters for syslog/nginx, ES output, 2g heap (own pod)
 - **Kibana**: HTTP UI on 5601, connected to Elasticsearch (own pod + nginx reverse proxy)
 - **Elasticsearch Exporter**: Sidecar in Elasticsearch pod on port 9114
 - **Nginx**: HTTPS reverse proxy on 443, routes `/kibana/` and `/elasticsearch/`
+- **OpenTelemetry**: `otel-collector` on all VMs ships journald + file logs
+  over mTLS to the `/elasticsearch/` endpoint (see below)
 
 ## Access URLs
 
@@ -53,8 +57,45 @@ Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
 
 1. Open `https://observability.homelab.internal/kibana/`
 2. Go to **Management → Stack Management → Index Patterns**
-3. Create index pattern: `filebeat-*` or `system-*`
+3. Create index pattern: `filebeat-*` or `system-*` (or `logs-generic.otel-default` for OTel logs)
 4. Go to **Discover** to view logs
+
+## OpenTelemetry Logs
+
+`otel-collector` (otelcol-contrib v0.157.0) runs on all 4 VMs (`roles/otel/`,
+`playbooks/provision-otel.yml`) and ships journald + file logs to
+Elasticsearch via the nginx reverse proxy:
+
+- **Endpoint**: `https://observability.homelab.internal/elasticsearch`
+  (nginx on ansible03 → `127.0.0.1:9200`)
+- **Auth**: mTLS — per-host step-ca client certs in `/etc/otel-client/`
+  (`otel-client.crt`, `otel-client.key`, combined CA `mtls-ca-combined.crt`).
+  Requests without a client cert get HTTP 400.
+- **Pipeline**: journald + filelog receivers → resourcedetection/system +
+  batch (5s/512) → elasticsearch exporter (`mapping.mode: otel`)
+- **File paths**: per host via `otel_log_paths` (`/var/log/harbor/*.log`,
+  `/var/log/nginx/*.log`, `/var/log/elk/*.log`)
+- **Data stream**: `logs-generic.otel-default` (backing indices
+  `.ds-logs-generic.otel-default-*`)
+- **Lifecycle**: ILM policy `otel-logs-policy` — hot phase rollover after
+  1 day or 50 GB; delete after 30 days (`elasticsearch_otel_retention`).
+  Applied via component template `logs@custom` (`index.lifecycle.name`).
+
+```bash
+# Verify OTel data is flowing
+curl -s "http://127.0.0.1:9200/_cat/indices/logs-generic*?h=index,docs.count&s=index"
+
+# Check ILM policy
+curl -s "http://127.0.0.1:9200/_ilm/policy/otel-logs-policy" | python3 -m json.tool
+
+# mTLS negative test (expect 400 without a client cert)
+curl -sk -o /dev/null -w "%{http_code}\n" https://observability.homelab.internal/elasticsearch/
+```
+
+After any certificate renewal run (`provision-common.yml`), re-run
+`provision-otel.yml` to restore `0644` key permissions — the certificates
+role resets the client key to `0600`, which blocks the collector from
+starting.
 
 ## Container Configuration
 

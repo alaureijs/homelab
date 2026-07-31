@@ -4,7 +4,7 @@
     _cert_dir: "{{ cert.dir | default(certificates_dir) }}"
     _cert_key_dir: "{{ cert.key_dir | default(certificates_key_dir) }}"
     _cert_days: "{{ cert.days | default(3650) }}"
-    _cert_force: "{{ cert.force | default(false) | bool }}"
+    _cert_force: "{{ cert.force | default(false) | bool or certificates_force_renewal | default(false) | bool }}"
     _cert_path: "{{ cert.dir | default(certificates_dir) }}/{{ cert.name }}.crt"
     _cert_key_path: "{{ cert.key_dir | default(certificates_key_dir) }}/{{ cert.name }}.key"
 

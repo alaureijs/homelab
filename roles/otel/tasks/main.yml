@@ -1,0 +1,128 @@
+---
+- name: Install SELinux management utilities
+  ansible.builtin.dnf:
+    name: policycoreutils-python-utils
+    state: present
+
+- name: Ensure OTel collector directory exists
+  ansible.builtin.file:
+    path: /etc/otel-collector
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Set SELinux fcontext for OTel collector directory
+  community.general.sefcontext:
+    target: '/etc/otel-collector(/.*)?'
+    setype: bin_t
+    state: present
+  when: ansible_selinux.status == 'enabled'
+
+- name: Relabel OTel collector directory
+  ansible.builtin.command: restorecon -RF /etc/otel-collector
+  changed_when: false
+
+- name: Build OTel receivers config
+  ansible.builtin.set_fact:
+    _otel_receivers:
+      journald:
+        directory: /var/log/journal
+      filelog:
+        include: "{{ otel_log_paths }}"
+        include_file_path: true
+        include_file_name: false
+  when: otel_log_paths | length > 0
+
+- name: Build OTel receivers config (journald only)
+  ansible.builtin.set_fact:
+    _otel_receivers:
+      journald:
+        directory: /var/log/journal
+  when: otel_log_paths | length == 0
+
+- name: Build OTel pipeline receiver list
+  ansible.builtin.set_fact:
+    _otel_pipeline_receivers: "{{ ['journald'] if otel_log_paths | length == 0 else ['journald', 'filelog'] }}"
+
+- name: Build OTel service config
+  ansible.builtin.set_fact:
+    _otel_service:
+      pipelines:
+        logs:
+          receivers: "{{ _otel_pipeline_receivers }}"
+          processors:
+            - resourcedetection/system
+            - batch
+          exporters:
+            - elasticsearch
+      telemetry:
+        logs:
+          level: info
+
+- name: Resolve effective collector version
+  ansible.builtin.set_fact:
+    otel_collector_version_effective: "{{ otel_collector_version | regex_replace('^v', '') }}"
+
+- name: Deploy OpenTelemetry collector
+  ansible.builtin.include_role:
+    name: grafana.grafana.opentelemetry_collector
+  vars:
+    otel_collector_version: "{{ otel_collector_version_effective }}"
+    otel_collector_receivers: "{{ _otel_receivers }}"
+    otel_collector_processors: "{{ otel_processors }}"
+    otel_collector_exporters: "{{ otel_exporters }}"
+    otel_collector_service: "{{ _otel_service }}"
+
+- name: Relabel OTel collector files after install
+  ansible.builtin.command: restorecon -RF /etc/otel-collector
+  changed_when: false
+
+- name: Add otel user to systemd-journal group
+  ansible.builtin.user:
+    name: "{{ otel_collector_service_user }}"
+    groups: systemd-journal
+    append: true
+  when: otel_journald | bool
+  notify: Restart OpenTelemetry Collector
+
+- name: Read step-ca root CA
+  ansible.builtin.slurp:
+    src: "{{ certificates_step_ca_root | default('/etc/step-ca/certs/root_ca.crt') }}"
+  register: _otel_step_ca_root
+
+- name: Read step-ca intermediate CA
+  ansible.builtin.slurp:
+    src: /etc/step-ca/certs/intermediate_ca.crt
+  register: _otel_step_ca_intermediate
+
+- name: Build combined mTLS CA file for OTel collector
+  ansible.builtin.copy:
+    content: "{{ (_otel_step_ca_root.content | b64decode) + (_otel_step_ca_intermediate.content | b64decode) }}"
+    dest: "{{ otel_mtls_ca_combined }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set mTLS client cert/key permissions for OTel collector
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { path: "{{ otel_client_cert }}" }
+    - { path: "{{ otel_client_key }}" }
+  notify: Restart OpenTelemetry Collector
+
+- name: Check for SELinux AVC denials from OTel collector
+  ansible.builtin.command: ausearch -m AVC -ts recent
+  register: _otel_avc
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Show SELinux AVC denials
+  ansible.builtin.debug:
+    var: _otel_avc.stdout_lines
+  when: _otel_avc.rc == 0

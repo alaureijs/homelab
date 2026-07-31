@@ -11,7 +11,7 @@
           {{ dns_records | dict2items
              | selectattr('value', 'equalto', vm_ip | string)
              | map(attribute='key')
-             | map('regex_replace', '^(.*)$', 'DNS:\\1')
+             | map('regex_replace', '^(.*)$', 'DNS:\1')
              | list }}
 
     - name: Merge certificates lists

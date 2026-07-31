@@ -6,3 +6,4 @@ kibana_port: 5601
 kibana_config_template: "{{ role_path }}/templates/kibana.yml.j2"
 kibana_nginx_cert_path: "/etc/pki/tls/certs/{{ vm_hostname }}.crt"
 kibana_nginx_key_path: "/etc/pki/tls/private/{{ vm_hostname }}.key"
+kibana_nginx_mtls_ca: "/etc/pki/tls/certs/otel-mtls-ca-combined.crt"

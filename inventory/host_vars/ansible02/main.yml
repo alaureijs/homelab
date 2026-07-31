@@ -16,3 +16,7 @@ vm_hostname: ansible02
 
 # Hardening — Podman requires IP forwarding
 hardening_ip_forwarding: true
+
+# OpenTelemetry filelog paths
+otel_log_paths:
+  - /var/log/nginx/*.log

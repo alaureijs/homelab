@@ -6,6 +6,60 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- OpenTelemetry log collection on all 4 VMs (`roles/otel/` +
+  `playbooks/provision-otel.yml`). `otelcol-contrib` v0.157.0 collector
+  ships journald + file logs over mTLS to
+  `https://observability.homelab.internal/elasticsearch` → Elasticsearch
+  data stream `logs-generic.otel-default`. Pipeline: journald/filelog
+  receivers → resourcedetection/system + batch (5s/512) → elasticsearch
+  exporter (`mapping.mode: otel`). File paths per host via `otel_log_paths`
+  (Harbor `/var/log/harbor/*.log`, nginx `/var/log/nginx/*.log`, ELK
+  `/var/log/elk/*.log`).
+- OTel collector binary synced via internal packages server —
+  `otelcol-contrib_0.157.0_linux_amd64.tar.gz` added to
+  `packages_exporters` in `roles/packages/defaults/main.yml`.
+- `grafana.grafana` 6.1.0 collection added to `requirements.yml` +
+  `collections_path = collections` in `ansible.cfg`.
+- Elasticsearch ILM lifecycle for OTel logs (`roles/elasticsearch`):
+  policy `otel-logs-policy` (hot rollover `max_age` 1d /
+  `max_primary_shard_size` 50gb; delete after `elasticsearch_otel_retention`
+  default 30d) applied via component template `logs@custom`
+  (`index.lifecycle.name`).
+- nginx mTLS on `/elasticsearch/` (`roles/kibana`): combined root +
+  intermediate CA built to `otel-mtls-ca-combined.crt`,
+  `ssl_verify_client optional` + `ssl_verify_depth 2`,
+  `$ssl_client_verify` guard returning 400, `client_max_body_size 20m`.
+- `otel` inventory group (all 4 hosts) + `inventory/group_vars/otel/main.yml`
+  with `otel_client_certificates` (step-ca client cert in `/etc/otel-client`,
+  outside the install-wiped `/etc/otel-collector`).
+- `certificates_force_renewal` extra var honored per-cert in
+  `roles/certificates/tasks/generate.yml` (forces renewal regardless of expiry).
+- Journald retention in `common` role: `/etc/systemd/journald.conf.d/99-retention.conf`
+  (`SystemMaxUse=1G`, `MaxRetentionSec=7day`) + `Restart systemd-journald` handler.
+
+### Changed
+
+- Logrotate for Harbor and ELK log dirs centralized in `common` role via
+  `common_logrotate_configs` (rotate 7, daily, copytruncate). Per-role
+  logrotate blocks removed from `harbor`, `elasticsearch`, `logstash`, `kibana`.
+- `provision-common.yml` pre_task now merges `otel_client_certificates`
+  into the certificates list (Ansible replaces lists across groups, so
+  `portal`'s `certificates_extra` clobbered `otel`'s on ansible04).
+
+### Fixed
+
+- SAN derivation `regex_replace` replacement `'DNS:\\1'` → `'DNS:\1'` in
+  `playbooks/provision-common.yml` and `playbooks/harbor-certs.yml`. The
+  double backslash emitted literal `DNS:1` SANs — all host certs were
+  regenerated with broken SANs (`DNS:ansible0X, DNS:1, DNS:1`, service
+  FQDNs missing). After fix host certs carry correct FQDNs
+  (e.g. ansible03: `observability.homelab.internal`).
+- nginx `ssl_verify_client` is not allowed inside `location` context
+  (nginx 1.26.3). Moved to server level with `optional`, enforced in the
+  `/elasticsearch/` location via `if ($ssl_client_verify != SUCCESS) { return 400; }`.
+
 ### Changed
 
 - `elasticsearch_heap_size` reduced 4g → 2g (`inventory/group_vars/elk/main.yml`)

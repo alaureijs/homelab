@@ -5,6 +5,9 @@ server {
 
     ssl_certificate {{ kibana_nginx_cert_path }};
     ssl_certificate_key {{ kibana_nginx_key_path }};
+    ssl_client_certificate {{ kibana_nginx_mtls_ca }};
+    ssl_verify_client optional;
+    ssl_verify_depth 2;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -25,8 +28,12 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
-    # Elasticsearch (read-only, for debugging)
+    # Elasticsearch (OTel collector writes, mTLS required)
     location /elasticsearch/ {
+        if ($ssl_client_verify != SUCCESS) {
+            return 400;
+        }
+        client_max_body_size 20m;
         proxy_pass http://127.0.0.1:{{ elasticsearch_http_port }}/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

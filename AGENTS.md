@@ -81,7 +81,7 @@ Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 ### System
 - Ansible >= 2.17
 - Python 3.14.6+
-- Collections: `ansible.posix`, `community.crypto`, `containers.podman`
+- Collections: `ansible.posix`, `community.crypto`, `containers.podman`, `grafana.grafana`
 - `ansible-vault` for encrypted variables
 
 ### Environment
@@ -143,6 +143,7 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | `logstash` | Logstash via pod manifest (beats input, grok filters, ES output) | ansible03 |
 | `kibana` | Kibana via pod manifest + nginx reverse proxy | ansible03 |
 | `node_exporter` | Binary install, systemd service, mTLS web config, textfile collectors | all hosts (sidecar on ELK) |
+| `otel` | OpenTelemetry collector (otelcol-contrib): journald + file logs over mTLS to ELK | all VMs |
 | `certificates` | step-ca signed certificates with auto-renewal (≤ 30 days) | all VMs + localhost |
 | `step-ca` | Smallstep private CA (v0.30.2), Podman container, auto-init | ansible04 |
 | `nginx` | nginx install, web roots, data-driven vhosts from `group_vars/portal/main.yml` | ansible04 |

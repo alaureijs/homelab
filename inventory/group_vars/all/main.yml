@@ -50,6 +50,9 @@ kibana_version: "9.4.4"
 elk_elasticsearch_exporter_port: 9114
 logstash_exporter_port: 9198
 
+# OpenTelemetry log collection
+otel_collector_version: "v0.157.0"
+
 # Base images
 alpine_version: "3.24"
 ubuntu_version: "24.04"

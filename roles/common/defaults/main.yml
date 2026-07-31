@@ -20,3 +20,15 @@ common_protected_packages: "{{ _common_protected_packages }}"
 
 # Ensure chrony (NTP) is running
 common_enable_chrony: true
+
+# journald retention
+common_journald_max_retention_sec: "7day"
+common_journald_system_max_use: "1G"
+
+# Log rotation (centralized; per-role configs migrated here)
+common_logrotate_rotate: 7
+common_logrotate_configs:
+  - name: harbor
+    path: /var/log/harbor/*.log
+  - name: elk
+    path: /var/log/elk/*.log

@@ -203,25 +203,6 @@
     mode: "0644"
   notify: Restart rsyslog
 
-- name: Deploy logrotate config for Harbor logs
-  ansible.builtin.copy:
-    content: |
-      /var/log/harbor/*.log {
-          daily
-          rotate 14
-          compress
-          delaycompress
-          missingok
-          notifempty
-          copytruncate
-          dateext
-          dateformat -%Y%m%d
-      }
-    dest: /etc/logrotate.d/harbor
-    owner: root
-    group: root
-    mode: "0644"
-
 - name: Patch docker-compose.yml for Podman compatibility
   ansible.builtin.shell: |
     cp docker-compose.yml docker-compose.yml.bak

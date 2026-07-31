@@ -45,25 +45,6 @@
     mode: "0644"
   notify: Restart rsyslog
 
-- name: Deploy logrotate config for ELK logs
-  ansible.builtin.copy:
-    content: |
-      /var/log/elk/*.log {
-          daily
-          rotate 14
-          compress
-          delaycompress
-          missingok
-          notifempty
-          copytruncate
-          dateext
-          dateformat -%Y%m%d
-      }
-    dest: /etc/logrotate.d/elk
-    owner: root
-    group: root
-    mode: "0644"
-
 - name: Ensure Podman auth directory exists
   ansible.builtin.file:
     path: /root/.config/containers
@@ -147,3 +128,44 @@
     executable: /bin/bash
   register: elasticsearch_kube
   changed_when: "'Pod' in elasticsearch_kube.stdout or 'Container' in elasticsearch_kube.stdout"
+
+- name: Wait for Elasticsearch to be healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ elasticsearch_http_port }}/_cluster/health"
+    method: GET
+  register: elasticsearch_health
+  until: (elasticsearch_health.json | default({})).status | default('red') in ['yellow', 'green']
+  retries: 30
+  delay: 5
+
+- name: Create ILM policy for OpenTelemetry logs
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ elasticsearch_http_port }}/_ilm/policy/{{ elasticsearch_ilm_policy_name }}"
+    method: PUT
+    body_format: json
+    body:
+      policy:
+        phases:
+          hot:
+            actions:
+              rollover:
+                max_age: 1d
+                max_primary_shard_size: 50gb
+          delete:
+            min_age: "{{ elasticsearch_otel_retention }}"
+            actions:
+              delete: {}
+  register: elasticsearch_ilm
+  changed_when: elasticsearch_ilm.status == 200
+
+- name: Apply ILM policy to OTel logs component template
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ elasticsearch_http_port }}/_component_template/logs@custom"
+    method: PUT
+    body_format: json
+    body:
+      template:
+        settings:
+          index.lifecycle.name: "{{ elasticsearch_ilm_policy_name }}"
+  register: elasticsearch_comp_template
+  changed_when: elasticsearch_comp_template.status == 200

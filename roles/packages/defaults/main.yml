@@ -30,3 +30,7 @@ packages_exporters:
     version: "{{ logstash_exporter_version }}"
     repo: kuskoman/logstash-exporter
     file: "logstash-exporter-linux"
+  - name: otelcol-contrib
+    version: "{{ otel_collector_version }}"
+    repo: open-telemetry/opentelemetry-collector-releases
+    file: "otelcol-contrib_{{ otel_collector_version | regex_replace('^v', '') }}_linux_amd64.tar.gz"

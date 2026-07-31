@@ -10,3 +10,7 @@ elasticsearch_data_dir: "{{ elk_data_dir }}/elasticsearch"
 elasticsearch_config_template: "{{ role_path }}/templates/elasticsearch.yml.j2"
 
 elasticsearch_exporter_image: "{{ harbor_hostname }}/prometheuscommunity/elasticsearch-exporter:{{ elasticsearch_exporter_version }}"
+
+# OpenTelemetry logs lifecycle
+elasticsearch_ilm_policy_name: otel-logs-policy
+elasticsearch_otel_retention: 30d

@@ -12,3 +12,7 @@ vm_memory: 4096
 
 # Hardening — Podman requires IP forwarding
 hardening_ip_forwarding: true
+
+# OpenTelemetry filelog paths
+otel_log_paths:
+  - /var/log/harbor/*.log

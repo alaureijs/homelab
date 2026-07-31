@@ -27,6 +27,7 @@ group variable references these variables — no hardcoded tags remain elsewhere
 | Logstash        | `logstash_version`     | 8.17.0        |
 | Kibana          | `kibana_version`       | 8.17.0        |
 | ES Exporter     | `elasticsearch_exporter_version` | v1.11.0 |
+| OTel Collector  | `otel_collector_version` | v0.157.0    |
 
 Base images (alpine, ubuntu, nginx, etc.) are also tracked in the same file.
 
@@ -243,6 +244,48 @@ Update base images synced to Harbor (alpine, nginx, postgres, etc.).
 
    No deployment is needed — base images are synced for offline use and
    consumed by other projects/teams.
+
+### 5. OpenTelemetry Collector Update
+
+Update the `otelcol-contrib` binary installed on all 4 VMs.
+
+#### Procedure
+
+1. **Edit `group_vars/all/main.yml`**:
+
+   ```yaml
+   otel_collector_version: "v0.158.0"   # was v0.157.0
+   ```
+
+2. **Sync the new binary to the packages server**:
+
+   ```bash
+   ansible-playbook playbooks/sync-content.yml
+   ```
+
+   The `packages` role downloads the new tarball to
+   `/var/www/packages/exporters/` on ansible04.
+
+3. **Deploy collectors**:
+
+   ```bash
+   ansible-playbook playbooks/provision-otel.yml
+   ```
+
+   Note: the collection install wipes `/etc/otel-collector/` on version
+   change. mTLS client certs live in `/etc/otel-client/` (not wiped);
+   re-run `playbooks/provision-common.yml` first if certs are missing.
+
+4. **Verify**:
+
+   ```bash
+   ssh root@192.168.100.10 'systemctl is-active otel-collector'
+
+   # Data flowing to ES
+   ssh root@192.168.100.12 'curl -s "http://127.0.0.1:9200/_cat/indices/logs-generic*?h=index,docs.count&s=index"'
+   ```
+
+5. **Update CHANGELOG.md** and commit.
 
 ## Checking for Updates
 

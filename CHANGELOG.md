@@ -56,6 +56,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   instead of through Harbor proxy-cache projects, enabling use against
   Harbor instances without proxy-cache projects. Push target and destination
   project unchanged; proxy-cache preflight checks skipped in direct mode.
+- OKF v0.2 knowledge wiki at `knowledge/` (63 concepts: VMs, network,
+  storage, services, playbooks, roles, operations, guides, references).
+  Concepts carry `sources`/`generated`/`verified` frontmatter, per-claim
+  footnotes, and bundle-relative cross-links. `scripts/okf.py` provides
+  `check` (conformance: frontmatter parse, `type` required, reserved-name
+  structure, warn-only broken links) and `index --write` (index.md
+  generation). Vault opens as an Obsidian vault with committed `.obsidian/`
+  config (markdown link format). Enforced via AGENTS.md "Knowledge Wiki"
+  section; `knowledge/index.md` added to opencode instructions.
 
 ### Changed
 

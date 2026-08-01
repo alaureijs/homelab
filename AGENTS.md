@@ -293,9 +293,30 @@ ansible-playbook playbooks/provision-ansibleXX.yml --check
 ansible-playbook playbooks/provision-ansibleXX.yml
 ```
 
+## Knowledge Wiki (OKF)
+
+`knowledge/` is an Open Knowledge Format v0.2 bundle (spec:
+`knowledge/references/okf-spec.md`). It mirrors infrastructure knowledge as
+concepts with YAML frontmatter (`type`, `sources`, `generated`, `verified`).
+
+- **Maintain on change**: when infra changes (roles, playbooks, inventory,
+  versions, addresses), update the affected `knowledge/` concepts and add a
+  `log.md` entry. Do NOT leave knowledge out of sync with code.
+- **Required frontmatter**: every concept needs `type`; use
+  `generated`/`verified` with `human:<id>` or `<producer>/<version>` actors;
+  attribute claims to docs via `sources` + `[^id]` footnotes.
+- **Validate before finishing**: run `python3 scripts/okf.py check`
+  (must pass, 0 violations). Broken links are warnings but should be fixed.
+- **Regenerate indexes**: after adding/removing concepts run
+  `python3 scripts/okf.py index --write`; update the hand-authored root
+  `knowledge/index.md` for new top-level entries.
+- Reserved names: `index.md` (directory listing) and `log.md` (update
+  history) — never concept files.
+
 ## References
 
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures
+- [knowledge/index.md](knowledge/index.md) — OKF knowledge wiki bundle
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration
 - [docs/harbor-containers.md](docs/harbor-containers.md) — Harbor container sync
 - [docs/prometheus_exporters.md](docs/prometheus_exporters.md) — Exporter downloads (merged into packages role)

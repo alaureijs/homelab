@@ -12,6 +12,7 @@
     "docs/prometheus_exporters.md",
     "docs/vm.md",
     "docs/container-deployment.md",
-    "docs/pki-step-ca.md"
+    "docs/pki-step-ca.md",
+    "knowledge/index.md"
   ]
 }

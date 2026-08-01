@@ -91,6 +91,7 @@ ansible-playbook playbooks/harbor-users.yml
 
 ## Documentation
 
+- [knowledge/](knowledge/index.md) — OKF v0.2 knowledge wiki (concepts for VMs, services, playbooks, roles)
 - [LIFECYCLE.md](LIFECYCLE.md) — Version management, update procedures, certificate renewal
 - [docs/harbor.md](docs/harbor.md) — Harbor configuration, logging, management
 - [docs/monitoring.md](docs/monitoring.md) — Monitoring stack details, mTLS, troubleshooting

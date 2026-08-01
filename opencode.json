@@ -14,5 +14,15 @@
     "docs/container-deployment.md",
     "docs/pki-step-ca.md",
     "knowledge/index.md"
-  ]
+  ],
+  "mcp": {
+    "ansible-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "@ansible/ansible-mcp-server", "--stdio"],
+      "enabled": true,
+      "environment": {
+        "WORKSPACE_ROOT": "."
+      }
+    }
+  }
 }

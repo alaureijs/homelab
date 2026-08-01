@@ -19,13 +19,15 @@ Instructions for AI agents working on this Ansible infrastructure project.
 
 ## 4. Ansible MCP Tool Utilization
 - see section "OpenCode Execution Rules: Ansible Development Tools MCP"
-- Prefer Ansible MCP tools (`check_syntax`, `run_playbook`, `list_inventory`) over standard shell execution where applicable.
-- Pass `check_mode: true` (dry-run) via MCP when testing playbooks before applying changes.
+- MCP server registered in `opencode.json` as `ansible-mcp` (`npx -y @ansible/ansible-mcp-server --stdio`, `WORKSPACE_ROOT: "."`). Restart opencode after config changes.
+- Prefer MCP tools (`ansible_lint`, `ansible_navigator`, `adt_check_env`, `ade_environment_info`, `create_ansible_projects`, `define_and_build_execution_env`) over standard shell execution where applicable.
+- Pass check mode (`--check`) via `ansible_navigator` (dry-run) when testing playbooks before applying changes.
+- List available tools with `list_available_tools`; philosophy/docs via `zen_of_ansible` + `ansible_content_best_practices`.
 
 ## 5. Micro-Task Planning & State Tracking
 - Breakdown tasks into the smallest atomic steps possible (`- [ ]`).
 - Save execution plans to: `Plans/Plan_<Name>.md`.
-- Follow every modification with a syntax check (`check_syntax`).
+- Follow every modification with a syntax check (`ansible_lint` / `ansible_navigator`).
 - If linting or syntax fails:
   - Mark task as `[FAILED]`.
   - Refactor the plan note with numbered remediation sub-tasks (e.g., 3a, 3b).
@@ -36,32 +38,39 @@ Instructions for AI agents working on this Ansible infrastructure project.
 
 You are a specialized automation engineer. You must prioritize using the **Ansible Development Tools MCP Server** tools over standard bash commands, raw file writes, or generalized web searches for all Ansible-related workflows.
 
+Registered in `opencode.json` as `ansible-mcp` (`npx -y @ansible/ansible-mcp-server --stdio`, `WORKSPACE_ROOT: "."`). Run `list_available_tools` to enumerate the live tool set — names below reflect server version 26.6.0 (technical preview; can drift).
+
 ## 1. Explicit Tool Triggers & Restrictions
 
 ### Project Scaffolding & Setup
 * **Trigger:** When starting a new project, adding collections, or building execution environments.
-* **Action:** You **MUST** use the `ansible-creator` MCP tool or execution environment builder capabilities. Do not manually create folder layouts from scratch unless the MCP tool fails.
+* **Action:** Use `create_ansible_projects` (scaffold playbooks/collections) or `define_and_build_execution_env` (build/validate EE definitions). Do not manually create folder layouts from scratch unless the MCP tool fails.
+
+### Environment & Tooling
+* **Trigger:** When unsure the Ansible toolchain (ansible-core, ansible-lint, ansible-navigator, molecule, ansible-creator) is present or up to date.
+* **Action:** Run `ade_environment_info` (version check) and `adt_check_env` (install ansible-dev-tools via pip, pipx fallback) before workflows that depend on it.
 
 ### Code Quality & Validation
 * **Trigger:** Whenever editing, validating, or finalizing playbooks, roles, or task files.
-* **Action:** You **MUST** run validation through the `ansible-lint` tool integration provided by the MCP server. Do not assume syntax or rely solely on internal LLM training data.
+* **Action:** Run `ansible_lint` (lint + fix). Do not assume syntax or rely solely on internal LLM training data.
 
 ### Playbook Execution
 * **Trigger:** When testing, running, or debugging an automation workflow.
-* **Action:** You **MUST** execute playbooks via the MCP server's integrated execution tools. This ensures intelligent error handling and prevents broken sub-processes.
-* **Restriction:** **DO NOT** execute raw `ansible-playbook` commands via the standard `bash` tool unless explicitly requested by the user.
+* **Action:** Execute playbooks via `ansible_navigator` (container-aware, smart environment detection). Pass `--check` for dry-run before applying changes.
+* **Restriction:** **DO NOT** execute raw `ansible-playbook`/`ansible-lint` commands via the standard `bash` tool unless explicitly requested by the user.
 
 ## 2. Context & Reference Rules
 
-* **Documentation:** For questions regarding best practices, syntax, or module capabilities, query the internal MCP Markdown resources (`guidelines://ansible-content-best-practices`) before executing broad web searches.
-* **Workspace Scoping:** All operations must respect the `WORKSPACE_ROOT` environment boundary. Do not read or write files outside the project worktree.
+* **Documentation:** For questions regarding best practices, syntax, or module capabilities, query `ansible_content_best_practices` / `zen_of_ansible` before executing broad web searches.
+* **Workspace Scoping:** All operations must respect the `WORKSPACE_ROOT` environment boundary (`WORKSPACE_ROOT: "."` = repo root). Do not read or write files outside the project worktree.
 
 ## 3. Mandatory Workflow Sequence
 
-1. **Scaffold:** Use MCP tools to build structures compliant-by-design.
-2. **Write:** Write playbooks/roles utilizing smart Jinja/autocompletion schemas if supported.
-3. **Lint:** Run the MCP linting tools immediately after any structural modification.
-4. **Execute:** Run playbooks inside the designated MCP execution context to map errors accurately.
+1. **Verify toolchain:** `ade_environment_info` / `adt_check_env`.
+2. **Scaffold:** `create_ansible_projects` or `define_and_build_execution_env` to build structures compliant-by-design.
+3. **Write:** Write playbooks/roles utilizing smart Jinja/autocompletion schemas if supported.
+4. **Lint:** Run `ansible_lint` immediately after any structural modification.
+5. **Execute:** Run playbooks via `ansible_navigator` (with `--check` first) to map errors accurately.
 
 
 # project

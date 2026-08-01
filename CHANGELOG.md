@@ -8,6 +8,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Ansible Development Tools (ADT) installed via pipx on the controller
+  (`ansible-lint 26.6.0`, ansible-navigator, ansible-builder,
+  ansible-creator, molecule). Verified via `ade_environment_info`.
+- `docs/ansible-mcp.md` — setup guide for the Ansible Development Tools
+  MCP server (`ansible-mcp`) plus additional servers registered in
+  `opencode.json`: `grafana` (uvx mcp-grafana, monitoring.homelab.internal),
+  `podman` (npx podman-mcp-server), `kubernetes` (npx kubernetes-mcp-server,
+  inert — no cluster), `elasticsearch` (uvx elasticsearch-mcp-server →
+  `192.168.100.12:9200`, security disabled), `obsidian` (uvx mcp-obsidian),
+  `github` (podman run ghcr.io/github/github-mcp-server), `libvirt` (local
+  clone `~/.local/share/mcp-servers/libvirt-mcp`).
+  `CHANGEME-*` placeholders pending Grafana service account token, GitHub
+  PAT, and Obsidian API key.
+- `knowledge/guides/ansible-mcp.md` — OKF guide mirroring the MCP setup
+  (registered in `knowledge/guides/index.md`).
 - OpenTelemetry log collection on all 4 VMs (`roles/otel/` +
   `playbooks/provision-otel.yml`). `otelcol-contrib` v0.157.0 collector
   ships journald + file logs over mTLS to

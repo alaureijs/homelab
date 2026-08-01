@@ -13,6 +13,7 @@
     "docs/vm.md",
     "docs/container-deployment.md",
     "docs/pki-step-ca.md",
+    "docs/ansible-mcp.md",
     "knowledge/index.md"
   ],
   "mcp": {
@@ -23,6 +24,59 @@
       "environment": {
         "WORKSPACE_ROOT": "."
       }
+    },
+    "grafana": {
+      "type": "local",
+      "command": ["uvx", "mcp-grafana"],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "https://monitoring.homelab.internal/grafana/",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "CHANGEME-grafana-sa-token"
+      }
+    },
+    "podman": {
+      "type": "local",
+      "command": ["npx", "-y", "podman-mcp-server@latest"],
+      "enabled": true
+    },
+    "kubernetes": {
+      "type": "local",
+      "command": ["npx", "-y", "kubernetes-mcp-server@latest"],
+      "enabled": true,
+      "environment": {
+        "KUBECONFIG": "CHANGEME-kubeconfig-path"
+      }
+    },
+    "elasticsearch": {
+      "type": "local",
+      "command": ["uvx", "elasticsearch-mcp-server"],
+      "enabled": true,
+      "environment": {
+        "ELASTICSEARCH_HOSTS": "http://192.168.100.12:9200"
+      }
+    },
+    "obsidian": {
+      "type": "local",
+      "command": ["uvx", "mcp-obsidian"],
+      "enabled": true,
+      "environment": {
+        "OBSIDIAN_API_KEY": "CHANGEME-obsidian-api-key",
+        "OBSIDIAN_HOST": "127.0.0.1",
+        "OBSIDIAN_PORT": "27124"
+      }
+    },
+    "github": {
+      "type": "local",
+      "command": ["podman", "run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "enabled": true,
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "CHANGEME-github-pat"
+      }
+    },
+    "libvirt": {
+      "type": "local",
+      "command": ["uv", "--directory", "/home/alaureijs/.local/share/mcp-servers/libvirt-mcp", "run", "server.py"],
+      "enabled": true
     }
   }
 }

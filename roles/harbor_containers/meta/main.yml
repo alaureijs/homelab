@@ -2,17 +2,28 @@
 galaxy_info:
   role_name: harbor_containers
   author: alaureijs
-  description: Sync container images to Harbor and check upstream versions
+  description: >-
+    Sync container images to Harbor through proxy-cache projects and check
+    upstream versions. Read-only toward Harbor: never creates or modifies users,
+    projects, or permissions. Requires a pre-provisioned Harbor with destination
+    projects, proxy-cache projects, and a sync user holding developer (push)
+    rights on all destination projects.
   license: GPL-3.0-or-later
   min_ansible_version: "2.17"
   platforms:
     - name: EL
       versions:
+        - "8"
+        - "9"
         - "10"
+    - name: Ubuntu
+      versions:
+        - "all"
   galaxy_tags:
     - harbor
     - containers
     - sync
     - images
+    - readonly
 
 dependencies: []

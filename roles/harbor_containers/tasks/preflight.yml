@@ -1,0 +1,86 @@
+---
+- name: Collect destination projects from image names
+  ansible.builtin.set_fact:
+    harbor_containers_dest_projects: >-
+      {{ harbor_sync_images | map(attribute='name') | map('split', '/') | map('first') | unique | list }}
+
+- name: Collect proxy projects from registry map
+  ansible.builtin.set_fact:
+    harbor_containers_proxy_projects: >-
+      {{ harbor_config_proxy_projects.values() | unique | list }}
+
+- name: Query destination projects
+  ansible.builtin.uri:
+    url: "{{ harbor_containers_api_url }}/projects?name={{ item }}"
+    method: GET
+    user: "{{ harbor_containers_sync_user }}"
+    password: "{{ harbor_containers_sync_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  loop: "{{ harbor_containers_dest_projects }}"
+  loop_control:
+    label: "project: {{ item }}"
+  register: harbor_containers_preflight_dest
+  ignore_errors: true
+  no_log: true
+
+- name: Query proxy projects
+  ansible.builtin.uri:
+    url: "{{ harbor_containers_api_url }}/projects?name={{ item }}"
+    method: GET
+    user: "{{ harbor_containers_sync_user }}"
+    password: "{{ harbor_containers_sync_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  loop: "{{ harbor_containers_proxy_projects }}"
+  loop_control:
+    label: "proxy: {{ item }}"
+  register: harbor_containers_preflight_proxy
+  ignore_errors: true
+  no_log: true
+
+- name: Evaluate destination project access
+  ansible.builtin.set_fact:
+    harbor_containers_preflight_failures: >-
+      {{ harbor_containers_preflight_failures | default([]) + [item.item ~ ' (HTTP ' ~ (item.status | default('ERR')) ~ ')']
+         if (item.failed | default(false))
+         else (harbor_containers_preflight_failures | default([]) + [item.item ~ ' (not found or no access)'])
+         if (item.json | default([]) | selectattr('name', 'equalto', item.item) | list | length == 0)
+         else (harbor_containers_preflight_failures | default([])
+               + [item.item ~ ' (role ' ~ _proj.current_user_role_id ~ ' < ' ~ harbor_containers_push_role_min ~ ')'])
+         if (_proj is not none and _proj.current_user_role_id is defined and _proj.current_user_role_id | int < harbor_containers_push_role_min)
+         else harbor_containers_preflight_failures | default([]) }}
+  loop: "{{ harbor_containers_preflight_dest.results }}"
+  loop_control:
+    label: "check: {{ item.item }}"
+  vars:
+    _proj: "{{ item.json | default([]) | selectattr('name', 'equalto', item.item) | list | first | default(none) }}"
+
+- name: Evaluate proxy project access
+  ansible.builtin.set_fact:
+    harbor_containers_preflight_failures: >-
+      {{ harbor_containers_preflight_failures | default([]) + [item.item ~ ' (HTTP ' ~ (item.status | default('ERR')) ~ ')']
+         if (item.failed | default(false))
+         else (harbor_containers_preflight_failures | default([]) + [item.item ~ ' (not found or no access)'])
+         if (item.json | default([]) | selectattr('name', 'equalto', item.item) | list | length == 0)
+         else (harbor_containers_preflight_failures | default([])
+               + [item.item ~ ' (role ' ~ _proj.current_user_role_id ~ ' < ' ~ harbor_containers_pull_role_min ~ ')'])
+         if (_proj is not none and _proj.current_user_role_id is defined and _proj.current_user_role_id | int < harbor_containers_pull_role_min
+             and _proj.metadata.public | default('false') != 'true')
+         else harbor_containers_preflight_failures | default([]) }}
+  loop: "{{ harbor_containers_preflight_proxy.results }}"
+  loop_control:
+    label: "check: {{ item.item }}"
+  vars:
+    _proj: "{{ item.json | default([]) | selectattr('name', 'equalto', item.item) | list | first | default(none) }}"
+
+- name: Fail on preflight validation errors
+  ansible.builtin.assert:
+    that:
+      - harbor_containers_preflight_failures | default([]) | length == 0
+    fail_msg: >-
+      Harbor preflight failed for user '{{ harbor_containers_sync_user }}'.
+      Missing, inaccessible, or insufficient-role projects
+      (destination requires role >= {{ harbor_containers_push_role_min }},
+      proxy requires role >= {{ harbor_containers_pull_role_min }} or public):
+      {{ harbor_containers_preflight_failures | default([]) | join(', ') }}

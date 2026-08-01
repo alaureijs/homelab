@@ -22,15 +22,21 @@
 - name: Write Harbor auth file
   ansible.builtin.copy:
     content: >-
-      {{ {'auths': {harbor_hostname: {'auth': (harbor_containers_sync_user + ':' + vault_harbor_sync_password) | b64encode}}} | to_json }}
+      {{ {'auths': {harbor_hostname: {'auth': (harbor_containers_sync_user + ':' + harbor_containers_sync_password) | b64encode}}} | to_json }}
     dest: "{{ harbor_containers_auth_dir }}/auth.json"
     mode: "0600"
+
+- name: Run Harbor preflight checks
+  ansible.builtin.include_tasks: preflight.yml
+  when: harbor_containers_preflight and not ansible_check_mode
 
 - name: Sync images to Harbor
   ansible.builtin.include_tasks: _sync-image.yml
   loop: "{{ harbor_sync_images | subelements('tags') }}"
   loop_control:
-    label: "{{ item.0.registry }}/{{ item.0.name }}:{{ item.1 }} -> {{ item.0.name | regex_replace('([^/]+)/.*', '\\1') }}/{{ item.0.name | regex_replace('.*/', '') }}:{{ item.1 }}"
+    label: >-
+      {{ item.0.registry }}/{{ item.0.name }}:{{ item.1 }} ->
+      {{ item.0.name | regex_replace('([^/]+)/.*', '\\1') }}/{{ item.0.name | regex_replace('.*/', '') }}:{{ item.1 }}
 
 - name: Check upstream for latest versions
   ansible.builtin.shell: |
@@ -130,13 +136,13 @@
 - name: Generate sync report file
   ansible.builtin.copy:
     content: "{{ harbor_containers_sync_report | to_nice_yaml }}"
-    dest: "{{ harbor_containers_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
+    dest: "{{ harbor_containers_report_dir }}/sync-report-{{ '%Y-%m-%d' | strftime }}.yml"
     mode: "0644"
 
 - name: Fetch sync report to controller
   ansible.builtin.fetch:
-    src: "{{ harbor_containers_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
-    dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml"
+    src: "{{ harbor_containers_report_dir }}/sync-report-{{ '%Y-%m-%d' | strftime }}.yml"
+    dest: "{{ playbook_dir }}/{{ harbor_containers_local_report_dir }}/sync-report-{{ '%Y-%m-%d' | strftime }}.yml"
     flat: true
 
 - name: Display sync summary
@@ -152,7 +158,7 @@
       {% endfor %}
 
       Reports saved to:
-        {{ harbor_containers_local_report_dir }}/sync-report-{{ ansible_date_time.date }}.yml
+        {{ harbor_containers_local_report_dir }}/sync-report-{{ '%Y-%m-%d' | strftime }}.yml
 
 - name: Remove Harbor auth file
   ansible.builtin.file:

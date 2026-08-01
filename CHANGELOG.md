@@ -38,8 +38,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `roles/certificates/tasks/generate.yml` (forces renewal regardless of expiry).
 - Journald retention in `common` role: `/etc/systemd/journald.conf.d/99-retention.conf`
   (`SystemMaxUse=1G`, `MaxRetentionSec=7day`) + `Restart systemd-journald` handler.
+- `harbor_containers` preflight (`tasks/preflight.yml`, toggle
+  `harbor_containers_preflight`): read-only Harbor API checks before sync —
+  destination project exists, target project role ≥ 2, proxy cache project
+  role ≥ 3 or public (project names exempt from the proxy check), with
+  existence-only fallback and fail-fast assertion. Gated behind
+  `and not ansible_check_mode`.
+- `harbor_containers` sync password indirection: `harbor_containers_sync_password`
+  defaults to `{{ vault_harbor_sync_password }}`, overridable via extra vars
+  / custom credential for AAP.
+- `roles/harbor_containers/docs/README.md`: role documentation covering
+  read-only design, pre-provisioning checklist, variables, preflight,
+  AAP usage (collections, vault, ephemeral reports, optional skopeo/become),
+  and an OS compatibility matrix (EL 8.4+/EL 9/Ubuntu 24.04).
 
 ### Changed
+
+- `harbor_containers` no longer requires `gather_facts`: `ansible_date_time`
+  replaced with `'%Y-%m-%d' | strftime` (controller time) in the four report
+  paths. Role runs with `gather_facts: false`; `become` optional (no
+  root-required tasks; rootless needs subuid/subgid + `fuse-overlayfs`).
+- `harbor_containers` Galaxy schema: Ubuntu `"24.04"` rejected by galaxy —
+  platforms list uses `"all"` for Ubuntu; adds EL 8.4+ / EL 9 / EL 10 +
+  Ubuntu 24.04 compatibility, `galaxy_tags: readonly`.
+- `harbor_containers` defaults reflowed: sync password indirection and
+  preflight vars moved into `defaults/main.yml`; `harbor_containers_preflight`
+  off by default (proxy-cache model and naming convention unchanged).
 
 - Logrotate for Harbor and ELK log dirs centralized in `common` role via
   `common_logrotate_configs` (rotate 7, daily, copytruncate). Per-role

@@ -1,0 +1,27 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    common_install_packages:
+      - curl
+      - wget
+      - git
+      - vim
+      - lvm2
+      - chrony
+    common_remove_packages:
+      - nano
+    common_enable_chrony: false
+    common_logrotate_configs:
+      - name: harbor
+        path: /var/log/harbor/*.log
+      - name: elk
+        path: /var/log/elk/*.log
+      - name: custom
+        path: /var/log/custom/*.log
+
+  roles:
+    - role: common

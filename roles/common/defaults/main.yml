@@ -18,6 +18,9 @@ common_remove_packages: []
 # Loaded from vars/<os_family>.yml at runtime.
 common_protected_packages: "{{ _common_protected_packages }}"
 
+# step-cli (Smallstep CLI) version for RPM install
+step_cli_version: "0.30.6"
+
 # Ensure chrony (NTP) is running
 common_enable_chrony: true
 

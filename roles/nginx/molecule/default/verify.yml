@@ -1,0 +1,39 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert nginx running and enabled
+      ansible.builtin.assert:
+        that:
+          - "'nginx.service' in ansible_facts.services"
+          - ansible_facts.services['nginx.service'].state == 'running'
+          - "'enabled' in ansible_facts.services['nginx.service'].status"
+        fail_msg: "nginx not running/enabled"
+
+    - name: Check web root exists
+      ansible.builtin.stat:
+        path: /var/www
+      register: web_root
+
+    - name: Assert default web root exists
+      ansible.builtin.assert:
+        that:
+          - web_root.stat.exists
+          - web_root.stat.isdir
+        fail_msg: "Default web root /var/www missing"
+
+    - name: Check default server block removed
+      ansible.builtin.stat:
+        path: /etc/nginx/conf.d/default.conf
+      register: default_conf
+
+    - name: Assert default server block removed
+      ansible.builtin.assert:
+        that: not default_conf.stat.exists
+        fail_msg: "nginx default server block still present"

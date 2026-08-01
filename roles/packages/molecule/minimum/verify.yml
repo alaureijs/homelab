@@ -1,0 +1,48 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check repo base directory exists
+      ansible.builtin.stat:
+        path: /var/www/packages
+      register: repo
+
+    - name: Assert repo base directory exists
+      ansible.builtin.assert:
+        that:
+          - repo.stat.exists
+          - repo.stat.isdir
+        fail_msg: "Packages repo dir missing"
+
+    - name: Check repo subdirectories
+      ansible.builtin.stat:
+        path: "/var/www/packages/{{ item }}"
+      loop:
+        - exporters
+        - node-exporter/textfile_scripts
+        - harbor
+        - rpm
+        - images
+      register: dirs
+
+    - name: Assert repo subdirectories exist
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Repo subdirectory missing: {{ item.item }}"
+      loop: "{{ dirs.results }}"
+
+    - name: Check no exporters downloaded
+      ansible.builtin.find:
+        paths: /var/www/packages/exporters
+        file_type: file
+      register: exporters
+
+    - name: Assert no exporters downloaded
+      ansible.builtin.assert:
+        that: exporters.files | length == 0
+        fail_msg: "Exporters should not be downloaded in minimum scenario"

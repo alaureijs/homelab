@@ -1,0 +1,19 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    common_install_packages:
+      - curl
+      - wget
+      - git
+      - vim
+      - device-mapper-persistent-data
+      - lvm2
+      - chrony
+    common_enable_chrony: false
+
+  roles:
+    - role: common

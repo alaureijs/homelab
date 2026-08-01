@@ -18,5 +18,4 @@
 * [otel](otel.md) - Install otelcol-contrib collector; ships journald + file logs over mTLS to ELK.
 * [packages](packages.md) - Download exporters, Harbor installer, and textfile scripts to the internal package repo.
 * [podman](podman.md) - Install Podman, Buildah, Skopeo, podman-compose and configure registries.conf.
-* [postgres](postgres.md) - Install and configure PostgreSQL.
 * [step-ca](step-ca.md) - Deploy Smallstep step-ca v0.30.2 as a Podman container; PKI init, JWK + ACME provisioners.

@@ -1,0 +1,38 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert nginx running
+      ansible.builtin.assert:
+        that:
+          - "'nginx.service' in ansible_facts.services"
+          - ansible_facts.services['nginx.service'].state == 'running'
+        fail_msg: "nginx not running"
+
+    - name: Check custom web root exists
+      ansible.builtin.stat:
+        path: /srv/www
+      register: web_root
+
+    - name: Assert custom web root exists
+      ansible.builtin.assert:
+        that:
+          - web_root.stat.exists
+          - web_root.stat.isdir
+        fail_msg: "Custom web root /srv/www missing"
+
+    - name: Check default web root absent
+      ansible.builtin.stat:
+        path: /var/www
+      register: default_root
+
+    - name: Assert default web root absent
+      ansible.builtin.assert:
+        that: not default_root.stat.exists
+        fail_msg: "Default web root /var/www should not exist in minimum scenario"

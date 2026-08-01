@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    packages_exporters: []
+    packages_files: []
+    node_exporter_textfile_scripts: []
+
+  roles:
+    - role: packages

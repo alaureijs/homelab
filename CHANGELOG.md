@@ -6,8 +6,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- Nextcloud/Deck references from `AGENTS.md` — ansible04 is the step-ca,
+  Unbound DNS, and nginx portal/packages/docs host (no Nextcloud role was
+  ever implemented).
+- Filebeat client documentation from `docs/elasticsearch.md` and
+  `knowledge/services/kibana.md` — OTel collector is the sole log shipping
+  pipeline to Elasticsearch.
+- Stale sample `roles/postgres/` role (apt/Ubuntu-based, incompatible with
+  Rocky Linux targets) and its `knowledge/roles/postgres.md` concept.
+- Stale mTLS references in `AGENTS.md` Networking section — superseded by
+  step-ca issued certificates (`docs/pki-step-ca.md`).
+
+### Fixed
+
+- `firewall` role: firewalld reload task (`systemd state: reloaded`) always
+  reported changed → non-idempotent. Replaced with handler notifications
+  (`notify: Reload firewalld` + `flush_handlers`).
+- `packages` role: `packages_exporter_info` undefined when
+  `packages_exporters` is empty → minimum deployment failed. Report tasks
+  now guarded / defaulted.
+- `docs/vm.md` VM table missing ansible04 (192.168.100.13).
+- `AGENTS.md` roles table missing `harbor_config` and `harbor_containers`.
+
 ### Added
 
+- Molecule coverage for 5 roles — `common`, `podman`, `firewall`, `nginx`,
+  `packages` — each with `default`/`minimum`/`full` scenarios
+  (`roles/*/molecule/`) run in isolated Podman containers; all 15 green
+  (syntax, converge, idempotence, verify). Fires on
+  `export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=1; cd roles/<role> && molecule test -s <scenario>`.
+- `docs/packages.md` — documentation for the `packages` role (referenced by
+  `docs/prometheus_exporters.md` but previously missing); registered as
+  source in `knowledge/services/packages.md`.
 - Ansible Development Tools (ADT) installed via pipx on the controller
   (`ansible-lint 26.6.0`, ansible-navigator, ansible-builder,
   ansible-creator, molecule). Verified via `ade_environment_info`.

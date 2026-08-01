@@ -81,7 +81,7 @@ Infrastructure-as-code for a homelab environment managing four Rocky Linux 10 VM
 - **ansible01** (192.168.100.10): Harbor v2.11.0 container registry
 - **ansible02** (192.168.100.11): Grafana/Prometheus/Alertmanager monitoring stack + nginx reverse proxy
 - **ansible03** (192.168.100.12): Elasticsearch/Logstash/Kibana (ELK) logging stack
-- **ansible04** (192.168.100.13): Nextcloud with Deck integration (collaborative workspace)
+- **ansible04** (192.168.100.13): step-ca private CA, Unbound DNS, nginx portal/packages/docs
 
 Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 
@@ -110,10 +110,10 @@ Host OS: CachyOS (Arch-based) with libvirt 12.5.0 and Podman 5.8.2.
 │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐     │
 │ │   ansible01  │ │    ansible02  │ │   ansible04  │     │
 │ │              │ │              │ │              │     │
-│ │  Harbor v2.11│ │ Monitoring   │ │ Nextcloud+Deck│     │
-│ │              │ │              │ │              │     │
+│ │  Harbor v2.11│ │ Monitoring   │ │ step-ca +    │     │
+│ │              │ │              │ │ DNS + nginx  │     │
 │ │  /data/harbor│ │ Grafana 3000 │ │ Web :443     │     │
-│ │  storage/    │ │ Prometheus   │ │ Deck:443     │     │
+│ │  storage/    │ │ Prometheus   │ │ portal/packages│   │
 │ └──────┬───────┘ │ Alertmanager │ │              │     │
 │        │         │ node-exporter│ │              │     │
 │        ▼         │ (mTLS:9100)  │ │              │     │
@@ -147,6 +147,8 @@ All services run as Podman containers using `podman kube play` with K8s YAML man
 | Role | Description | Deploy Target |
 |------|-------------|---------------|
 | `harbor` | Harbor v2.11.0 container registry (offline installer + prepare) | ansible01 |
+| `harbor_config` | Harbor users, projects, and registries via the v2.0 API | ansible01 |
+| `harbor_containers` | Sync container images to Harbor (proxy-cache or direct) + reports | ansible01 |
 | `monitoring` | Grafana/Prometheus/Alertmanager via ConfigMaps | ansible02 |
 | `elasticsearch` | Elasticsearch + exporter via pod manifest + PVC | ansible03 |
 | `logstash` | Logstash via pod manifest (beats input, grok filters, ES output) | ansible03 |
@@ -261,12 +263,10 @@ cd roles/harbor && molecule idempotence
 - All monitoring + ELK services behind nginx reverse proxy on port 443 (HTTPS)
 - Harbor directly exposed on HTTP/HTTPS (port 80/443) and metrics (port 8090)
 - Use Podman CNI network for inter-container communication: `monitoring` (monitoring pod). ELK pods use host network mode (`podman kube play --network host`) — do NOT restart them with a CNI network or the host port bindings are lost.
-- mTLS for node-exporter scraping — single shared mTLS CA generated on
-  controller (`files/certificates/mtls-ca.crt`, git-trackable; key in
-  `files/certificates/mtls-ca.key`, vault-encrypted with `ansible-vault`),
-  copied to all hosts at `/etc/mtls/` via `ensure-mtls-ca.yml`. Key is
-  decrypted on controller and written as plaintext to hosts. Server/client
-  certs signed by this CA.
+- mTLS for node-exporter scraping — certificates issued by step-ca (see
+  `docs/pki-step-ca.md`). Server certs signed per-host; Prometheus client
+  cert/key in `/etc/prometheus/mtls/`, CA bundle copied to all hosts via the
+  `certificates` role. Renewed automatically within 30 days.
 - DNS entries in `ansible-net` libvirt network
 
 ## Playbook Development

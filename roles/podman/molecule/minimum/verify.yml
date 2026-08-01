@@ -1,0 +1,54 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check podman installed
+      ansible.builtin.stat:
+        path: /usr/bin/podman
+      register: podman_bin
+
+    - name: Assert podman installed
+      ansible.builtin.assert:
+        that: podman_bin.stat.exists
+        fail_msg: "podman not installed"
+
+    - name: Check non-minimal tooling absent
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /usr/bin/buildah
+        - /usr/bin/skopeo
+        - /usr/local/bin/podman-compose
+      register: extra
+
+    - name: Assert non-minimal tooling absent
+      ansible.builtin.assert:
+        that: not item.stat.exists
+        fail_msg: "{{ item.item }} should not be installed in minimum scenario"
+      loop: "{{ extra.results }}"
+
+    - name: Read registries config
+      ansible.builtin.slurp:
+        path: /etc/containers/registries.conf
+      register: registries
+
+    - name: Assert only docker.io configured
+      ansible.builtin.assert:
+        that:
+          - "'docker.io' in registries.content | b64decode"
+          - "'quay.io' not in registries.content | b64decode"
+        fail_msg: "Minimum registries not configured correctly"
+
+    - name: Check podman.socket is not active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active podman.socket
+      register: socket_active
+      changed_when: false
+      failed_when: false
+
+    - name: Assert podman.socket inactive
+      ansible.builtin.assert:
+        that: socket_active.rc != 0
+        fail_msg: "podman.socket should be disabled in minimum scenario"

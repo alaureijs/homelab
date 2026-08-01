@@ -9,6 +9,7 @@ Libvirt VMs on CachyOS host, running Rocky Linux 10.2.
 | ansible01 | 192.168.100.10 | 2 | 2 GB | 60 GB | 52:54:00:aa:00:10 | Harbor registry |
 | ansible02 | 192.168.100.11 | 2 | 4 GB | 80 GB | 52:54:00:aa:00:11 | Monitoring stack |
 | ansible03 | 192.168.100.12 | 2 | 8 GB | 120 GB | 52:54:00:aa:00:12 | ELK stack |
+| ansible04 | 192.168.100.13 | 2 | 4 GB | 60 GB | 52:54:00:aa:00:13 | PKI/DNS/portal/packages |
 
 ## Automation
 

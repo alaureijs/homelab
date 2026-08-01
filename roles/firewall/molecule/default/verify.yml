@@ -1,0 +1,40 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert firewalld running and enabled
+      ansible.builtin.assert:
+        that:
+          - "'firewalld.service' in ansible_facts.services"
+          - ansible_facts.services['firewalld.service'].state == 'running'
+          - "'enabled' in ansible_facts.services['firewalld.service'].status"
+        fail_msg: "firewalld not running/enabled"
+
+    - name: List firewalld ports
+      ansible.builtin.command: firewall-cmd --list-ports
+      changed_when: false
+      register: ports
+
+    - name: Assert default ports open
+      ansible.builtin.assert:
+        that:
+          - "'80/tcp' in ports.stdout"
+          - "'443/tcp' in ports.stdout"
+        fail_msg: "Expected ports not open. Got: {{ ports.stdout }}"
+
+    - name: List firewalld services
+      ansible.builtin.command: firewall-cmd --list-services
+      changed_when: false
+      register: services
+
+    - name: Assert default services allowed
+      ansible.builtin.assert:
+        that:
+          - "'ssh' in services.stdout"
+        fail_msg: "Expected service not allowed. Got: {{ services.stdout }}"

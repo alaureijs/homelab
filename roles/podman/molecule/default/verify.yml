@@ -1,0 +1,56 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check podman tooling installed
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /usr/bin/podman
+        - /usr/bin/buildah
+        - /usr/bin/skopeo
+      register: tool
+
+    - name: Assert podman tooling installed
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Binary not installed: {{ item.item }}"
+      loop: "{{ tool.results }}"
+
+    - name: Check podman-compose installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/podman-compose
+      register: compose
+
+    - name: Assert podman-compose installed
+      ansible.builtin.assert:
+        that: compose.stat.exists
+        fail_msg: "podman-compose not installed"
+
+    - name: Read registries config
+      ansible.builtin.slurp:
+        path: /etc/containers/registries.conf
+      register: registries
+
+    - name: Assert default registries configured
+      ansible.builtin.assert:
+        that:
+          - "'docker.io' in registries.content | b64decode"
+          - "'quay.io' in registries.content | b64decode"
+          - "'ghcr.io' in registries.content | b64decode"
+        fail_msg: "Expected registries missing from registries.conf"
+
+    - name: Check podman.socket is active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active podman.socket
+      register: socket_active
+      changed_when: false
+      failed_when: socket_active.rc != 0
+
+    - name: Check podman.socket is enabled  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-enabled podman.socket
+      register: socket_enabled
+      changed_when: false
+      failed_when: socket_enabled.rc != 0

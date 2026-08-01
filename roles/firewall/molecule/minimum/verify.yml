@@ -1,0 +1,29 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert firewalld running
+      ansible.builtin.assert:
+        that:
+          - "'firewalld.service' in ansible_facts.services"
+          - ansible_facts.services['firewalld.service'].state == 'running'
+        fail_msg: "firewalld not running"
+
+    - name: List firewalld ports
+      ansible.builtin.command: firewall-cmd --list-ports
+      changed_when: false
+      register: ports
+
+    - name: Assert only minimum port open
+      ansible.builtin.assert:
+        that:
+          - "'22/tcp' in ports.stdout"
+          - "'80/tcp' not in ports.stdout"
+          - "'443/tcp' not in ports.stdout"
+        fail_msg: "Unexpected firewall ports. Got: {{ ports.stdout }}"

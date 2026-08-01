@@ -1,0 +1,37 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check exporter downloaded
+      ansible.builtin.stat:
+        path: /var/www/packages/exporters/node_exporter-1.12.1.linux-amd64.tar.gz
+      register: exporter
+
+    - name: Assert exporter downloaded
+      ansible.builtin.assert:
+        that:
+          - exporter.stat.exists
+          - exporter.stat.mode == "0644"
+        fail_msg: "node_exporter tarball missing or wrong mode"
+
+    - name: Check repo subdirectories
+      ansible.builtin.stat:
+        path: "/var/www/packages/{{ item }}"
+      loop:
+        - exporters
+        - node-exporter/textfile_scripts
+        - harbor
+        - rpm
+        - images
+      register: dirs
+
+    - name: Assert repo subdirectories exist
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Repo subdirectory missing: {{ item.item }}"
+      loop: "{{ dirs.results }}"

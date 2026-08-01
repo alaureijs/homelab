@@ -1,0 +1,55 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check vhost config deployed
+      ansible.builtin.stat:
+        path: /etc/nginx/conf.d/test.conf
+      register: vhost_conf
+
+    - name: Assert vhost config deployed
+      ansible.builtin.assert:
+        that:
+          - vhost_conf.stat.exists
+          - vhost_conf.stat.mode == "0644"
+        fail_msg: "Vhost config missing or wrong mode"
+
+    - name: Check web root subdirectories
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /var/www/test
+        - /var/www/acme
+        - /var/www/ca
+      register: dirs
+
+    - name: Assert web root subdirectories exist
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Subdirectory missing: {{ item.item }}"
+      loop: "{{ dirs.results }}"
+
+    - name: Test nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      register: nginx_test
+
+    - name: Assert nginx configuration valid
+      ansible.builtin.assert:
+        that: nginx_test.rc == 0
+        fail_msg: "nginx -t failed: {{ nginx_test.stderr }}"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert nginx running
+      ansible.builtin.assert:
+        that:
+          - "'nginx.service' in ansible_facts.services"
+          - ansible_facts.services['nginx.service'].state == 'running'
+        fail_msg: "nginx not running"

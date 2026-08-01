@@ -1,0 +1,21 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    packages_exporters:
+      - name: node_exporter
+        version: "v1.12.1"
+        repo: prometheus/node_exporter
+      - name: pushgateway
+        version: "v1.11.3"
+        repo: prometheus/pushgateway
+    packages_files: []
+    node_exporter_textfile_scripts:
+      - name: chrony.sh
+      - name: fstab-check.sh
+
+  roles:
+    - role: packages

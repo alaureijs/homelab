@@ -6,9 +6,13 @@ resource: https://packages.homelab.internal/
 tags: [packages, repo, downloads]
 status: stable
 sources:
+  - id: packages-doc
+    resource: ../../docs/packages.md
+    title: packages role documentation
+    last_modified: 2026-08-01
   - id: exporters-doc
     resource: ../../docs/prometheus_exporters.md
-    title: Exporter downloads documentation
+    title: Exporter downloads documentation (merged into packages role)
     last_modified: 2026-07-31
 generated:
   by: human:alaureijs
@@ -22,7 +26,7 @@ verified:
 
 Centralizes binary downloads so VMs install from an internal origin instead
 of upstream GitHub releases. Served by [/services/nginx.md](/services/nginx.md)
-as the `packages.homelab.internal` autoindex vhost.[^exporters-doc]
+as the `packages.homelab.internal` autoindex vhost.[^packages-doc][^exporters-doc]
 
 ## Contents
 
@@ -38,4 +42,5 @@ Versions pinned via `packages_exporters` and `*_version` vars in
 [/playbooks/sync-content.md](/playbooks/sync-content.md) (first play, runs
 the [packages role](/roles/packages.md) on ansible04).
 
+[^packages-doc]: packages role documentation — repo layout, exporters, upstream check
 [^exporters-doc]: Exporter downloads — merged into the packages role

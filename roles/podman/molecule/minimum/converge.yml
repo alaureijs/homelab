@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    podman_packages:
+      - podman
+      - python3-packaging
+    podman_pip_packages: []
+    podman_enable_socket: false
+    podman_registries:
+      - docker.io
+
+  roles:
+    - role: podman

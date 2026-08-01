@@ -17,6 +17,7 @@
     state: enabled
     immediate: false
   loop: "{{ firewall_ports }}"
+  notify: Reload firewalld
 
 - name: Allow required services
   ansible.posix.firewalld:
@@ -25,6 +26,7 @@
     state: enabled
     immediate: false
   loop: "{{ firewall_services }}"
+  notify: Reload firewalld
 
 - name: Trust Podman bridge interface
   ansible.posix.firewalld:
@@ -34,8 +36,7 @@
     state: enabled
     immediate: false
   loop: "{{ firewall_podman_interfaces | default([]) }}"
+  notify: Reload firewalld
 
-- name: Reload firewalld
-  ansible.builtin.systemd:
-    name: firewalld
-    state: reloaded
+- name: Flush firewalld reload handlers
+  ansible.builtin.meta: flush_handlers

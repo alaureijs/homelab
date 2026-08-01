@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    packages_exporters:
+      - name: node_exporter
+        version: "v1.12.1"
+        repo: prometheus/node_exporter
+    packages_files: []
+    node_exporter_textfile_scripts: []
+
+  roles:
+    - role: packages

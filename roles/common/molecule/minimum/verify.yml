@@ -1,0 +1,55 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check minimal package installed
+      ansible.builtin.stat:
+        path: /usr/bin/curl
+      register: curl_bin
+
+    - name: Assert minimal package installed
+      ansible.builtin.assert:
+        that: curl_bin.stat.exists
+        fail_msg: "curl not installed"
+
+    - name: Check non-minimal package absent
+      ansible.builtin.stat:
+        path: /usr/bin/vim
+      register: vim_bin
+
+    - name: Assert non-minimal package absent
+      ansible.builtin.assert:
+        that: not vim_bin.stat.exists
+        fail_msg: "vim should not be installed in minimum scenario"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert chronyd not running
+      ansible.builtin.assert:
+        that:
+          - "'chronyd.service' not in ansible_facts.services or ansible_facts.services['chronyd.service'].state != 'running'"
+        fail_msg: "chronyd should be disabled in minimum scenario"
+
+    - name: Check journald retention config still deployed
+      ansible.builtin.stat:
+        path: /etc/systemd/journald.conf.d/99-retention.conf
+      register: journald_conf
+
+    - name: Assert journald retention config deployed
+      ansible.builtin.assert:
+        that: journald_conf.stat.exists
+        fail_msg: "Journald retention config missing"
+
+    - name: Check default logrotate config absent
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/harbor
+      register: logrotate_conf
+
+    - name: Assert default logrotate config absent
+      ansible.builtin.assert:
+        that: not logrotate_conf.stat.exists
+        fail_msg: "Logrotate config should not be deployed in minimum scenario"

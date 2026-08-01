@@ -7,10 +7,10 @@ Elasticsearch/Logstash/Kibana stack deployed on `ansible03` (192.168.100.12) for
 ## Architecture
 
 ```
-Client (Filebeat) → Logstash (5044) → Elasticsearch (9200)
-                                          ↓
+Client (otel-collector) → nginx /elasticsearch/ → Elasticsearch (9200)
+                                                      ↓
 Kibana (5601) ← nginx (443) → Elasticsearch (9200)
-                                          ↑
+                                                      ↑
 otel-collector (all VMs, journald+files, mTLS) → nginx /elasticsearch/
 ```
 
@@ -29,35 +29,11 @@ otel-collector (all VMs, journald+files, mTLS) → nginx /elasticsearch/
 
 ## Usage
 
-### Send Logs to ELK Stack
-
-Install Filebeat on clients and configure it to send logs to Logstash:
-
-```yaml
-# /etc/filebeat/filebeat.yml
-output.logstash:
-  hosts: ["192.168.100.12:5044"]
-
-filebeat.inputs:
-  - type: log
-    paths:
-      - /var/log/*.log
-    fields:
-      type: syslog
-```
-
-### Index Patterns
-
-Logstash creates indices in the format: `{beat}-{YYYY.MM.dd}`
-
-- `filebeat-{YYYY.MM.dd}` - Filebeat logs
-- `system-{YYYY.MM.dd}` - System logs
-
 ### Kibana Usage
 
 1. Open `https://observability.homelab.internal/kibana/`
 2. Go to **Management → Stack Management → Index Patterns**
-3. Create index pattern: `filebeat-*` or `system-*` (or `logs-generic.otel-default` for OTel logs)
+3. Create index pattern: `logs-generic.otel-default` (OTel logs)
 4. Go to **Discover** to view logs
 
 ## OpenTelemetry Logs

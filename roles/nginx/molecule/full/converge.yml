@@ -1,0 +1,26 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    nginx_directories:
+      - path: "{{ nginx_web_root }}/test"
+      - path: "{{ nginx_web_root }}/acme"
+      - path: "{{ nginx_web_root }}/ca"
+    nginx_vhosts:
+      - name: test
+        server_name: molecule-test.local
+        web_root: "{{ nginx_web_root }}/test"
+        ssl_cert: /etc/pki/tls/certs/molecule-test.crt
+        ssl_key: /etc/pki/tls/private/molecule-test.key
+        conf: /etc/nginx/conf.d/test.conf
+        template: vhost.conf.j2
+        acme_challenge: true
+        ca_alias: true
+        acme_proxy: false
+        landing_page: index.html.j2
+
+  roles:
+    - role: nginx

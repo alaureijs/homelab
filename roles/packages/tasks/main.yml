@@ -103,7 +103,7 @@
     group: "{{ packages_repo_group }}"
     mode: "0644"
     timeout: 120
-  loop: "{{ packages_exporter_info | dict2items }}"
+  loop: "{{ packages_exporter_info | default({}) | dict2items }}"
   loop_control:
     label: "{{ info.name }} {{ info.tag }}"
   vars:
@@ -134,6 +134,7 @@
   loop: "{{ packages_exporters }}"
   loop_control:
     label: "{{ item.name }}"
+  when: packages_exporter_info is defined
 
 - name: Ensure reports directory exists
   ansible.builtin.file:
@@ -145,11 +146,12 @@
 
 - name: Write exporter report
   ansible.builtin.copy:
-    content: "{{ packages_exporter_report | to_nice_yaml }}"
+    content: "{{ packages_exporter_report | default({}) | to_nice_yaml }}"
     dest: "{{ playbook_dir }}/../reports/exporters-report-{{ ansible_date_time.date }}.yml"
     mode: "0644"
   delegate_to: localhost
   become: false
+  when: packages_exporter_report is defined
 
 - name: Display exporter summary
   ansible.builtin.debug:
@@ -164,6 +166,7 @@
 
       Report saved to:
         reports/exporters-report-{{ ansible_date_time.date }}.yml
+  when: packages_exporter_report is defined
 
 - name: List downloaded packages
   ansible.builtin.find:

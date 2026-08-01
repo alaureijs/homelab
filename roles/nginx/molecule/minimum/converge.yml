@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    nginx_web_root: /srv/www
+    nginx_vhosts: []
+    nginx_directories: []
+
+  roles:
+    - role: nginx

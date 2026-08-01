@@ -16,6 +16,16 @@
     "docs/ansible-mcp.md",
     "knowledge/index.md"
   ],
+  "lsp": {
+    "ansible": {
+      "command": ["ansible-language-server", "--stdio"],
+      "extensions": [".yml", ".yaml"]
+    },
+    "pyright": {
+      "command": ["pyright-langserver", "--stdio"],
+      "extensions": [".py"]
+    }
+  },
   "mcp": {
     "ansible-mcp": {
       "type": "local",

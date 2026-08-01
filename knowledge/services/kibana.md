@@ -34,8 +34,8 @@ verified:
 
 ## Usage
 
-Index patterns to create: `filebeat-*`, `system-*`, or
-`logs-generic.otel-default` for OTel logs. Then browse in Discover.
+Create index pattern `logs-generic.otel-default` for OTel logs, then browse
+in Discover.
 
 ## Management
 

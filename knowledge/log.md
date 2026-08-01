@@ -1,6 +1,12 @@
 # Directory Update Log
 
 ## 2026-08-01
+* **Update**: Added molecule coverage for 5 roles — `common`, `podman`,
+  `firewall`, `nginx`, `packages` — each with `default`/`minimum`/`full`
+  scenarios run in isolated Podman containers (all 15 green). Fixed
+  idempotency in `firewall` (handler-based reload), empty-exporter handling
+  in `packages`, and verify assertions in `podman` (socket via systemctl).
+  Role concepts updated with Molecule Testing sections.
 * **Creation**: Established the OKF v0.2 knowledge bundle: 63 concepts across
   infrastructure, services, playbooks, roles, operations, guides, and
   references. Added tooling (`scripts/okf.py` check + index), committed

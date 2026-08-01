@@ -1,0 +1,36 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check exporters downloaded
+      ansible.builtin.stat:
+        path: "/var/www/packages/exporters/{{ item }}"
+      loop:
+        - node_exporter-1.12.1.linux-amd64.tar.gz
+        - pushgateway-1.11.3.linux-amd64.tar.gz
+      register: exporters
+
+    - name: Assert exporters downloaded
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Exporter tarball missing: {{ item.item }}"
+      loop: "{{ exporters.results }}"
+
+    - name: Check textfile scripts uploaded
+      ansible.builtin.stat:
+        path: "/var/www/packages/node-exporter/textfile_scripts/{{ item }}"
+      loop:
+        - chrony.sh
+        - fstab-check.sh
+      register: scripts
+
+    - name: Assert textfile scripts uploaded
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.mode == "0755"
+        fail_msg: "Textfile script missing or wrong mode: {{ item.item }}"
+      loop: "{{ scripts.results }}"

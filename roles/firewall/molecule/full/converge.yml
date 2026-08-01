@@ -1,0 +1,19 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    firewall_backend: firewalld
+    firewall_ports:
+      - 80/tcp
+      - 443/tcp
+      - 9090/tcp
+      - 9100/tcp
+    firewall_services:
+      - ssh
+      - https
+
+  roles:
+    - role: firewall

@@ -1,0 +1,63 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check common packages installed
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /usr/bin/curl
+        - /usr/bin/wget
+        - /usr/bin/git
+        - /usr/bin/vim
+      register: pkg
+
+    - name: Assert common packages installed
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Package not installed: {{ item.item }}"
+      loop: "{{ pkg.results }}"
+
+    - name: Check chronyd binary exists
+      ansible.builtin.stat:
+        path: /usr/sbin/chronyd
+      register: chronyd_bin
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert chronyd package installed but not running
+      ansible.builtin.assert:
+        that:
+          - chronyd_bin.stat.exists
+          - "'chronyd.service' not in ansible_facts.services or ansible_facts.services['chronyd.service'].state != 'running'"
+        fail_msg: "chronyd package missing or service state unexpected"
+
+    - name: Check journald retention config
+      ansible.builtin.stat:
+        path: /etc/systemd/journald.conf.d/99-retention.conf
+      register: journald_conf
+
+    - name: Assert journald retention config deployed
+      ansible.builtin.assert:
+        that:
+          - journald_conf.stat.exists
+          - journald_conf.stat.mode == "0644"
+        fail_msg: "Journald retention config missing or wrong mode"
+
+    - name: Check logrotate configs
+      ansible.builtin.stat:
+        path: "/etc/logrotate.d/{{ item }}"
+      loop:
+        - harbor
+        - elk
+      register: logrotate_conf
+
+    - name: Assert logrotate configs deployed
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Logrotate config missing: {{ item.item }}"
+      loop: "{{ logrotate_conf.results }}"

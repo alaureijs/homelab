@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    firewall_backend: firewalld
+    firewall_ports:
+      - 22/tcp
+    firewall_services: []
+
+  roles:
+    - role: firewall

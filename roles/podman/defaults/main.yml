@@ -5,6 +5,7 @@ podman_packages:
   - podman
   - buildah
   - skopeo
+  - python3-packaging
 
 podman_pip_packages:
   - podman-compose

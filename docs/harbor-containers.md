@@ -36,6 +36,13 @@ harbor_config_proxy_projects:
 The key is the upstream registry URL used in `harbor_sync_images[].registry`.
 The value is the Harbor project name where the proxy cache stores images.
 
+Proxy projects are only required in proxy-cache mode. With
+`harbor_containers_use_proxy_cache: false` the role pulls directly from the
+upstream registry (`{{ registry }}/{{ name }}:{{ tag }}`) and
+`harbor_config_proxy_projects` is ignored (proxy preflight checks skipped).
+The push target — `harbor.{{ host }}/{{ project }}/{{ image }}:{{ tag }}` with
+the project taken from the first path component — is identical in both modes.
+
 ### 3. Define `harbor_sync_images`
 
 Each item requires three fields:

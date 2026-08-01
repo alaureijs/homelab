@@ -4,9 +4,16 @@
     harbor_containers_project: "{{ item.0.name | regex_replace('([^/]+)/.*', '\\1') }}"
     harbor_containers_short: "{{ item.0.name | regex_replace('.*/', '') }}"
 
-- name: Pull image through proxy cache
+- name: Set image source location
+  ansible.builtin.set_fact:
+    harbor_containers_source_image: >-
+      {{ (harbor_hostname ~ '/' ~ harbor_config_proxy_projects[item.0.registry] ~ '/' ~ item.0.name)
+         if harbor_containers_use_proxy_cache
+         else (item.0.registry ~ '/' ~ item.0.name) }}
+
+- name: Pull image
   containers.podman.podman_image:
-    name: "{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.0.registry] }}/{{ item.0.name }}"
+    name: "{{ harbor_containers_source_image }}"
     tag: "{{ item.1 }}"
     pull: true
     force: true
@@ -15,7 +22,7 @@
 
 - name: Tag image for Harbor project
   containers.podman.podman_tag:
-    image: "{{ harbor_hostname }}/{{ harbor_config_proxy_projects[item.0.registry] }}/{{ item.0.name }}:{{ item.1 }}"
+    image: "{{ harbor_containers_source_image }}:{{ item.1 }}"
     target_names:
       - "{{ harbor_hostname }}/{{ harbor_containers_project }}/{{ harbor_containers_short }}:{{ item.1 }}"
 

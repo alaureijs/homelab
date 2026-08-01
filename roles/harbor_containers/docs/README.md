@@ -113,6 +113,7 @@ supported interpreter (Python 3.6).
 | `harbor_containers_sync_password` | `{{ vault_harbor_sync_password }}` | Sync user password (override to inject via extra vars / custom credential) |
 | `harbor_containers_auth_dir` | `/tmp/harbor-auth` | Temp dir for auth.json on target |
 | `harbor_containers_local_report_dir` | `../reports` | Local dir under `playbook_dir/` for fetched reports |
+| `harbor_containers_use_proxy_cache` | `true` | Pull through Harbor proxy-cache projects (`true`) or directly from the upstream registry (`false`) |
 | `harbor_containers_preflight` | `false` | Run read-only Harbor API validation before sync |
 | `harbor_containers_api_url` | `https://{{ harbor_hostname }}/api/v2.0` | Harbor API base URL |
 | `harbor_containers_push_role_min` | `2` | Min role for destination projects (2 = developer) |
@@ -124,8 +125,25 @@ supported interpreter (Python 3.6).
 |----------|--------|-------------|
 | `harbor_hostname` | group_vars | Harbor instance FQDN |
 | `harbor_sync_images` | group_vars | Image list (see [Naming Convention](#naming-convention)) |
-| `harbor_config_proxy_projects` | group_vars | Registry → proxy-cache project mapping |
+| `harbor_config_proxy_projects` | group_vars | Registry → proxy-cache project mapping (only with `harbor_containers_use_proxy_cache: true`) |
 | `vault_harbor_sync_password` | vault | Encrypted sync password (when not overriding `harbor_containers_sync_password`) |
+
+## Proxy vs. Direct Sync
+
+`harbor_containers_use_proxy_cache` selects the pull source:
+
+| Mode | Pull source | Push target |
+|------|-------------|-------------|
+| `true` (default) | `{{ harbor_hostname }}/{{ harbor_config_proxy_projects[registry] }}/{{ name }}:{{ tag }}` | `{{ harbor_hostname }}/{{ project }}/{{ short }}:{{ tag }}` |
+| `false` | `{{ registry }}/{{ name }}:{{ tag }}` | `{{ harbor_hostname }}/{{ project }}/{{ short }}:{{ tag }}` |
+
+In direct mode `harbor_config_proxy_projects` is unused and the proxy-cache
+preflight checks are skipped — only destination-project access is validated.
+The push target and destination project never change: the sync user still
+needs role ≥ `harbor_containers_push_role_min` on the destination project.
+Direct pulls from upstream are unauthenticated (the `auth.json` holds Harbor
+credentials only), so private upstream registries are not supported in this
+mode.
 
 ## Preflight Validation
 

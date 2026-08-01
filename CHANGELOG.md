@@ -51,6 +51,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   read-only design, pre-provisioning checklist, variables, preflight,
   AAP usage (collections, vault, ephemeral reports, optional skopeo/become),
   and an OS compatibility matrix (EL 8.4+/EL 9/Ubuntu 24.04).
+- `harbor_containers_use_proxy_cache` toggle (default `true`): with `false`
+  the role pulls directly from the upstream registry (`{{ registry }}/{{ name }}:{{ tag }}`)
+  instead of through Harbor proxy-cache projects, enabling use against
+  Harbor instances without proxy-cache projects. Push target and destination
+  project unchanged; proxy-cache preflight checks skipped in direct mode.
 
 ### Changed
 

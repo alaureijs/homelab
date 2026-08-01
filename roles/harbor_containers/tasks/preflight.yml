@@ -8,6 +8,7 @@
   ansible.builtin.set_fact:
     harbor_containers_proxy_projects: >-
       {{ harbor_config_proxy_projects.values() | unique | list }}
+  when: harbor_containers_use_proxy_cache
 
 - name: Query destination projects
   ansible.builtin.uri:
@@ -38,6 +39,7 @@
   register: harbor_containers_preflight_proxy
   ignore_errors: true
   no_log: true
+  when: harbor_containers_use_proxy_cache
 
 - name: Evaluate destination project access
   ansible.builtin.set_fact:
@@ -73,6 +75,7 @@
     label: "check: {{ item.item }}"
   vars:
     _proj: "{{ item.json | default([]) | selectattr('name', 'equalto', item.item) | list | first | default(none) }}"
+  when: harbor_containers_use_proxy_cache
 
 - name: Fail on preflight validation errors
   ansible.builtin.assert:

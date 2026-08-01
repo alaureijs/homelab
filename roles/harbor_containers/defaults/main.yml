@@ -7,6 +7,9 @@ harbor_containers_sync_password: "{{ vault_harbor_sync_password }}"
 harbor_containers_auth_dir: /tmp/harbor-auth
 harbor_containers_local_report_dir: ../reports
 
+# Pull through Harbor proxy cache projects (true) or directly from upstream registry (false)
+harbor_containers_use_proxy_cache: true
+
 # Read-only preflight validation against the Harbor API (GET only)
 harbor_containers_preflight: false
 harbor_containers_api_url: "https://{{ harbor_hostname }}/api/v2.0"

@@ -19,6 +19,7 @@ Destructive teardown of the libvirt lab back to a bare host. Inverse of [libvirt
 
 * `community.libvirt.virt` destroy + undefine each VM in the `libvirt` inventory group (undefine flags `managed_save`, `snapshots_metadata`, `nvram`, `checkpoints_metadata` — the `nvram` flag also removes the per-VM `_VARS.fd` file).
 * Delete `{{ libvirt_storage_path }}/<vm>.qcow2`, `<vm>_VARS.fd`, `<vm>-cloudinit.iso`, and the cached `Rocky-10-GenericCloud-Base-latest.x86_64.qcow2`.
+* Destroy + undefine the `sdb` storage pool and delete `{{ libvirt_sdb_pool_path }}` (`/var/lib/libvirt/sdb`) — this pool was dir-backed and held orphaned VM disks/ISOs/VARS/console logs from an earlier VM generation (current lab disks live in the `default` pool at `/var/lib/libvirt/images`).
 * `community.libvirt.virt_net` destroy + undefine for each network in `libvirt_networks` (`ansible-net`, `project01`).
 * Delete UFW DHCP (67/udp) and DNS (53/udp+tcp) rules on the bridge, plus the `route allow` rules (guest cross-traffic, NAT via `wlan0`) using `ufw route delete` command tasks.
 
@@ -27,6 +28,7 @@ Destructive teardown of the libvirt lab back to a bare host. Inverse of [libvirt
 * Operates on the system libvirt daemon (`qemu:///system`); the controller's default `virsh` URI is `qemu:///session`, so verify teardown with `sudo virsh -c qemu:///system`.
 * `community.libvirt.virt_net` command-based `undefine` never reports `changed`, and `destroy` on an inactive network raises (suppressed with `failed_when: false`) — absence is confirmed via the system daemon, not task state.
 * The `default` network and `libvirtd`/packages are left untouched; re-run `playbooks/libvirt.yml` to recreate the lab (re-downloads the cloud image).
+* `community.libvirt.virt_pool` command-based `destroy`/`undefine` never report `changed`; absence is confirmed via the system daemon and the `state: absent` file task on the pool directory.
 
 ## Related
 

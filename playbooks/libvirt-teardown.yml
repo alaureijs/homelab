@@ -11,6 +11,8 @@
     libvirt_network_bridge: virbr-ansible
     libvirt_network_forward_interface: wlan0
     libvirt_cloud_image_name: Rocky-10-GenericCloud-Base-latest.x86_64.qcow2
+    libvirt_sdb_pool_name: sdb
+    libvirt_sdb_pool_path: /var/lib/libvirt/sdb
     libvirt_networks:
       - ansible-net
       - project01
@@ -78,6 +80,25 @@
     - name: Remove cached cloud image
       ansible.builtin.file:
         path: "{{ libvirt_storage_path }}/{{ libvirt_cloud_image_name }}"
+        state: absent
+
+    - name: Destroy sdb storage pool
+      community.libvirt.virt_pool:
+        command: destroy
+        name: "{{ libvirt_sdb_pool_name }}"
+        uri: "{{ libvirt_uri }}"
+      failed_when: false
+
+    - name: Undefine sdb storage pool
+      community.libvirt.virt_pool:
+        command: undefine
+        name: "{{ libvirt_sdb_pool_name }}"
+        uri: "{{ libvirt_uri }}"
+      failed_when: false
+
+    - name: Remove sdb pool directory and contents
+      ansible.builtin.file:
+        path: "{{ libvirt_sdb_pool_path }}"
         state: absent
 
     - name: Stop libvirt networks

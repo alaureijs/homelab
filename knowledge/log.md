@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-08-02
+* **Update**: `libvirt-teardown` now also destroys/undefines the `sdb` storage pool and deletes `/var/lib/libvirt/sdb` — the pool was dir-backed and held orphaned VM artifacts (old ansible01-03 qcow2, `vm-rhel-10-stream.qcow2`, VARS, ISOs, console logs) from a prior generation. Executed: pool gone from system daemon, directory removed; `boot`/`default` pools untouched.
 * **Creation**: Added playbook `libvirt-teardown` — destroys/undefines all lab VMs, removes `ansible-net` and `project01` networks, deletes qcow2/VARS/ISO/base cloud image, and clears UFW bridge + route rules (system daemon only; guard `libvirt_teardown_confirm=true`). Registered in `playbooks/index.md`; linked from `roles/libvirt.md`.
 * **Update**: Teardown executed — ansible01–04 destroyed/undefined (UEFI NVRAM removed), VM disks/ISOs and cached Rocky cloud image deleted, `ansible-net` + `project01` undefined, UFW rules for `virbr-ansible` (DHCP/DNS v4+v6 + route rules) removed. Lab host returned to bare state (`default` network and libvirtd untouched).
 

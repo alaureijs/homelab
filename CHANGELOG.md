@@ -15,6 +15,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   for `virbr-ansible`. Refuses to run without
   `-e libvirt_teardown_confirm=true`. Documented in
   `knowledge/playbooks/libvirt-teardown.md`.
+- `libvirt-teardown` also destroys/undefines the `sdb` storage pool and
+  deletes `/var/lib/libvirt/sdb` (dir-backed pool holding orphaned VM
+  artifacts from an earlier generation).
 
 ### Removed
 

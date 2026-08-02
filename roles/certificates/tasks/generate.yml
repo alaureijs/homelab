@@ -70,7 +70,10 @@
       community.crypto.openssl_csr:
         path: "/tmp/{{ cert.name }}.csr"
         privatekey_path: "{{ _cert_key_path }}"
-        common_name: "{{ cert.subject | default({}) | combine({'CN': vm_hostname}) | combine({'CN': cert.subject.CN}) if cert.subject is defined else vm_hostname }}"
+        common_name: >-
+          {{ cert.subject | default({}) | combine({'CN': vm_hostname})
+          | combine({'CN': cert.subject.CN}) if cert.subject is defined
+          else vm_hostname }}
         organization_name: "{{ cert.subject.O | default('Lab') if cert.subject is defined else 'Lab' }}"
         subject_alt_name: "{{ _cert_sans }}"
       when: _cert_needs_renewal | bool

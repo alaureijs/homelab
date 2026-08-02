@@ -62,7 +62,10 @@
     cmd: "{{ item }}"
   loop:
     - ufw route allow in on {{ libvirt_network_bridge }} out on {{ libvirt_network_bridge }} comment "libvirt guest cross-traffic"
-    - ufw route allow in on {{ libvirt_network_bridge }} out on {{ libvirt_network_forward_interface }} comment "libvirt NAT out via {{ libvirt_network_forward_interface }}"
+    - >-
+      ufw route allow in on {{ libvirt_network_bridge }}
+      out on {{ libvirt_network_forward_interface }}
+      comment "libvirt NAT out via {{ libvirt_network_forward_interface }}"
   changed_when: false
 
 - name: Ensure cloud image cache directory exists
@@ -103,7 +106,10 @@
 
 - name: Get VM disk sizes
   ansible.builtin.shell:
-    cmd: qemu-img info -U --output=json {{ libvirt_storage_path }}/{{ vm_name }}.qcow2 | python3 -c "import sys,json; print(json.load(sys.stdin)['virtual-size'])"
+    cmd: >-
+      set -o pipefail; qemu-img info -U --output=json
+      {{ libvirt_storage_path }}/{{ vm_name }}.qcow2 | python3 -c
+      "import sys,json; print(json.load(sys.stdin)['virtual-size'])"
   loop: "{{ groups['libvirt'] }}"
   vars:
     vm_name: "{{ hostvars[item].vm_name }}"
@@ -125,6 +131,7 @@
     - (libvirt_disk_info.results[item_idx].stdout | int) != (vm_disk | int) * 1024 * 1024 * 1024
   loop_control:
     index_var: item_idx
+  changed_when: true
 
 - name: Generate cloud-init user-data
   ansible.builtin.template:
@@ -171,6 +178,7 @@
   vars:
     vm_name: "{{ hostvars[item].vm_name }}"
   when: hostvars[item].vm_name is defined
+  changed_when: true
 
 - name: Define VMs
   community.libvirt.virt:

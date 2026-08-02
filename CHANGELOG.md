@@ -29,6 +29,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   now guarded / defaulted.
 - `docs/vm.md` VM table missing ansible04 (192.168.100.13).
 - `AGENTS.md` roles table missing `harbor_config` and `harbor_containers`.
+- ansible-lint cleanup: fixed all 23 non-`var-naming` violations across
+  roles — `schema[meta]` platform version in nginx, missing `mode` on ELK
+  template tasks, `set -o pipefail` on shell pipes, `changed_when` on
+  libvirt resize/cloud-init tasks, folded long YAML scalars, and
+  `systemd`/`command` module idioms in step-ca handlers/tasks.
 
 ### Added
 

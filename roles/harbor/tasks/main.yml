@@ -245,7 +245,7 @@
 
 - name: Tag Harbor images for offline registry
   ansible.builtin.shell: |
-    set -e
+    set -euo pipefail
     for img in $(podman images --format '{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}' | grep '^localhost/goharbor/'); do
       new_name=$(echo "$img" | sed 's|^localhost/goharbor/|{{ harbor_hostname }}/library/goharbor/|')
       podman tag "$img" "$new_name"
@@ -276,6 +276,7 @@
 
 - name: Trust Harbor network in firewall
   ansible.builtin.shell: |
+    set -euo pipefail
     SUBNET="{{ harbor_network_subnet.stdout }}"
     if nft list chain inet firewalld filter_INPUT_POLICIES 2>/dev/null | grep -q "$SUBNET"; then
       echo "already trusted"

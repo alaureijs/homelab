@@ -14,6 +14,7 @@
   ansible.builtin.template:
     src: "{{ logstash_config_template }}"
     dest: /tmp/logstash.yml
+    mode: "0644"
   notify: Restart Logstash
 
 - name: Read Logstash settings
@@ -25,6 +26,7 @@
   ansible.builtin.template:
     src: "{{ logstash_pipeline_template }}"
     dest: /tmp/logstash-pipeline.conf
+    mode: "0644"
   notify: Restart Logstash
 
 - name: Read Logstash pipeline configuration

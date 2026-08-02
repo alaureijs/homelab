@@ -26,7 +26,8 @@
       register: node_exporter_installed
 
     - name: Get installed node_exporter version
-      ansible.builtin.shell: "{{ node_exporter_bin }} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+'"
+      ansible.builtin.shell:
+        cmd: "set -o pipefail; {{ node_exporter_bin }} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+'"
       register: node_exporter_current_version
       changed_when: false
       failed_when: false
@@ -38,7 +39,10 @@
 
     - name: Download node_exporter tarball from GitHub
       ansible.builtin.get_url:
-        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version_stripped }}/node_exporter-{{ node_exporter_version_stripped }}.linux-amd64.tar.gz"
+        url: >-
+          {{ 'https://github.com/prometheus/node_exporter/releases/download/v' +
+          node_exporter_version_stripped + '/node_exporter-' +
+          node_exporter_version_stripped + '.linux-amd64.tar.gz' }}
         dest: "/tmp/node_exporter-{{ node_exporter_version_stripped }}.tar.gz"
         mode: "0644"
         timeout: 120
@@ -118,7 +122,10 @@
 
     - name: Set TLS changed fact
       ansible.builtin.set_fact:
-        node_exporter_tls_changed: "{{ node_exporter_tls_stat.results | default([]) | selectattr('stat.exists', 'equalto', true) | map(attribute='stat.mtime') | map('int') | max | default(0) > (ansible_date_time.epoch | int - 300) }}"
+        node_exporter_tls_changed: >-
+          {{ node_exporter_tls_stat.results | default([]) |
+          selectattr('stat.exists', 'equalto', true) | map(attribute='stat.mtime') |
+          map('int') | max | default(0) > (ansible_date_time.epoch | int - 300) }}
 
     - name: Template node-exporter web config (TLS)
       ansible.builtin.template:

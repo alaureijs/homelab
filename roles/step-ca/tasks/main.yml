@@ -87,7 +87,7 @@
   notify: Restart step-ca
 
 - name: Get step-ca fingerprint
-  ansible.builtin.shell: "step certificate fingerprint {{ step_ca_config_dir }}/certs/root_ca.crt"
+  ansible.builtin.command: step certificate fingerprint {{ step_ca_config_dir }}/certs/root_ca.crt
   environment:
     STEPPATH: "{{ step_ca_config_dir }}"
   register: _step_ca_fingerprint
@@ -138,6 +138,7 @@
 
     - name: Vault-encrypt backup files on controller
       ansible.builtin.shell: |
+        set -euo pipefail
         for f in root_ca_key password.txt; do
           p="{{ step_ca_backup_dir }}/$f"
           [ -f "$p" ] || continue

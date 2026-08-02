@@ -15,6 +15,7 @@
   ansible.builtin.template:
     src: "{{ elasticsearch_config_template }}"
     dest: /tmp/elasticsearch.yml
+    mode: "0644"
   notify: Restart Elasticsearch
 
 - name: Read Elasticsearch configuration

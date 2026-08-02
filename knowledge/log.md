@@ -1,6 +1,11 @@
 # Directory Update Log
 
 ## 2026-08-01
+* **Update**: Fixed knowledge/doc inconsistencies — `packages.md` source
+  no longer cites deprecated `docs/prometheus_exporters.md` (removed
+  exporters-doc source + footnote); `ansible01.md` spec table gained vCPU
+  row; `docs/vm.md` ansible01 RAM corrected 2 GB → 4 GB (matches
+  `inventory/host_vars/ansible01/main.yml`).
 * **Update**: Registered external references as OKF Reference concepts —
   Knowledge Catalog, Ansible Style Guide, Caveman, AutoResearch, Karpathy
   System Prompt Gist, Multica Karpathy Skills. Added to root index and

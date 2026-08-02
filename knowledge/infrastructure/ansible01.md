@@ -29,6 +29,7 @@ verified:
 | Hostname | `ansible01` |
 | IP | 192.168.100.10 |
 | MAC | 52:54:00:aa:00:10 |
+| vCPU | 2 |
 | Memory | 4 GB |
 | Disk | 60 GB (qcow2, backing-image) |
 | OS | Rocky Linux 10.2 |

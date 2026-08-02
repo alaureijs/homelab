@@ -50,3 +50,9 @@ Knowledge wiki for the homelab infrastructure, authored in
 
 * [OKF Spec](/references/okf-spec.md) - Open Knowledge Format v0.2 specification
 * [Actor Conventions](/references/actor-conventions.md) - Identity conventions for generated/verified
+* [Knowledge Catalog](/references/knowledge-catalog.md) - OKF reference implementation
+* [Ansible Style Guide](/references/ansible-style-guide.md) - Ansible content style guide
+* [Caveman](/references/caveman.md) - Concise prompt style behind AGENTS.md
+* [AutoResearch](/references/autoresearch.md) - Karpathy research agent concept
+* [Karpathy System Prompt Gist](/references/karpathy-gist.md) - Agent instruction references
+* [Multica Karpathy Skills](/references/multica-karpathy-skills.md) - Skill design references

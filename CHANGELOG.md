@@ -32,6 +32,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `knowledge/references/` — 6 new OKF Reference concepts: Knowledge
+  Catalog, Ansible Style Guide, Caveman, AutoResearch, Karpathy System
+  Prompt Gist, Multica Karpathy Skills; regenerated `references/index.md`
+  and root `knowledge/index.md` from concept frontmatter.
+- `opencode.json` LSP config for ansible-language-server (`.yml`/`.yaml`)
+  and pyright (`*.py`).
 - Molecule coverage for 5 roles — `common`, `podman`, `firewall`, `nginx`,
   `packages` — each with `default`/`minimum`/`full` scenarios
   (`roles/*/molecule/`) run in isolated Podman containers; all 15 green

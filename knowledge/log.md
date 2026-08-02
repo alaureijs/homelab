@@ -1,6 +1,10 @@
 # Directory Update Log
 
 ## 2026-08-01
+* **Update**: Registered external references as OKF Reference concepts —
+  Knowledge Catalog, Ansible Style Guide, Caveman, AutoResearch, Karpathy
+  System Prompt Gist, Multica Karpathy Skills. Added to root index and
+  regenerated `references/index.md` (bare URL list replaced).
 * **Update**: Added molecule coverage for 5 roles — `common`, `podman`,
   `firewall`, `nginx`, `packages` — each with `default`/`minimum`/`full`
   scenarios run in isolated Podman containers (all 15 green). Fixed

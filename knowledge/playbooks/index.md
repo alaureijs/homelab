@@ -3,6 +3,7 @@
 * [harbor-certs](harbor-certs.md) - Regenerate Harbor TLS certificates (force with certificates_force_renewal=true).
 * [harbor-users](harbor-users.md) - Manage Harbor users, projects, and registries via the harbor_config role.
 * [hardening](hardening.md) - Standalone STIG/CIS hardening playbook with host limit support.
+* [libvirt-teardown](libvirt-teardown.md) - Destroy/undefine all libvirt lab VMs, remove ansible-net and project01 networks, delete VM disks/VARS/ISOs and cached cloud image, and clear UFW bridge rules; idempotent.
 * [libvirt](libvirt.md) - Create/update libvirt VMs, ansible-net network, sdb storage pool; idempotent.
 * [provision-ansible01-app](provision-ansible01-app.md) - Harbor app roles only (no common): harbor, harbor_config, harbor_containers.
 * [provision-ansible01](provision-ansible01.md) - Full provisioning for the Harbor host (imports provision-common + provision-ansible01-app).

@@ -1,0 +1,138 @@
+---
+- name: Tear down libvirt lab VMs, networks, and storage
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  vars:
+    libvirt_uri: qemu:///system
+    libvirt_storage_path: /var/lib/libvirt/images
+    libvirt_network_bridge: virbr-ansible
+    libvirt_network_forward_interface: wlan0
+    libvirt_cloud_image_name: Rocky-10-GenericCloud-Base-latest.x86_64.qcow2
+    libvirt_networks:
+      - ansible-net
+      - project01
+
+  tasks:
+    - name: Refuse to run without explicit confirmation
+      ansible.builtin.fail:
+        msg: "Refusing to tear down the lab. Re-run with -e libvirt_teardown_confirm=true"
+      when: not libvirt_teardown_confirm | default(false) | bool
+
+    - name: List defined VMs
+      community.libvirt.virt:
+        command: list_vms
+        uri: "{{ libvirt_uri }}"
+      register: libvirt_vms
+      changed_when: false
+
+    - name: Destroy VMs
+      community.libvirt.virt:
+        command: destroy
+        name: "{{ hostvars[item].vm_name }}"
+        uri: "{{ libvirt_uri }}"
+      loop: "{{ groups['libvirt'] }}"
+      when:
+        - hostvars[item].vm_name is defined
+        - hostvars[item].vm_name in libvirt_vms.list_vms
+      failed_when: false
+
+    - name: Undefine VMs with all metadata
+      community.libvirt.virt:
+        command: undefine
+        name: "{{ hostvars[item].vm_name }}"
+        uri: "{{ libvirt_uri }}"
+        flags:
+          - managed_save
+          - snapshots_metadata
+          - nvram
+          - checkpoints_metadata
+      loop: "{{ groups['libvirt'] }}"
+      when:
+        - hostvars[item].vm_name is defined
+        - hostvars[item].vm_name in libvirt_vms.list_vms
+
+    - name: Remove VM disk images
+      ansible.builtin.file:
+        path: "{{ libvirt_storage_path }}/{{ hostvars[item].vm_name }}.qcow2"
+        state: absent
+      loop: "{{ groups['libvirt'] }}"
+      when: hostvars[item].vm_name is defined
+
+    - name: Remove OVMF VARS files
+      ansible.builtin.file:
+        path: "{{ libvirt_storage_path }}/{{ hostvars[item].vm_name }}_VARS.fd"
+        state: absent
+      loop: "{{ groups['libvirt'] }}"
+      when: hostvars[item].vm_name is defined
+
+    - name: Remove cloud-init ISOs
+      ansible.builtin.file:
+        path: "{{ libvirt_storage_path }}/{{ hostvars[item].vm_name }}-cloudinit.iso"
+        state: absent
+      loop: "{{ groups['libvirt'] }}"
+      when: hostvars[item].vm_name is defined
+
+    - name: Remove cached cloud image
+      ansible.builtin.file:
+        path: "{{ libvirt_storage_path }}/{{ libvirt_cloud_image_name }}"
+        state: absent
+
+    - name: Stop libvirt networks
+      community.libvirt.virt_net:
+        command: destroy
+        name: "{{ item }}"
+        uri: "{{ libvirt_uri }}"
+      loop: "{{ libvirt_networks }}"
+      failed_when: false
+
+    - name: Undefine libvirt networks
+      community.libvirt.virt_net:
+        command: undefine
+        name: "{{ item }}"
+        uri: "{{ libvirt_uri }}"
+      loop: "{{ libvirt_networks }}"
+      failed_when: false
+
+    - name: Delete DHCP rule on bridge
+      community.general.ufw:
+        rule: allow
+        interface: "{{ libvirt_network_bridge }}"
+        direction: in
+        proto: udp
+        to_port: "67"
+        delete: true
+
+    - name: Delete DNS rules on bridge
+      community.general.ufw:
+        rule: allow
+        interface: "{{ libvirt_network_bridge }}"
+        direction: in
+        proto: "{{ item }}"
+        to_port: "53"
+        delete: true
+      loop:
+        - udp
+        - tcp
+
+    - name: Delete guest cross-traffic route rule
+      ansible.builtin.command:
+        cmd: >-
+          ufw --force route delete allow in on {{ libvirt_network_bridge }}
+          out on {{ libvirt_network_bridge }}
+          comment "libvirt guest cross-traffic"
+      register: libvirt_ufw_cross_delete
+      changed_when: "'deleted' in libvirt_ufw_cross_delete.stdout"
+      failed_when: false
+
+    - name: Delete NAT route rule
+      ansible.builtin.command:
+        cmd: >-
+          ufw --force route delete allow in on {{ libvirt_network_bridge }}
+          out on {{ libvirt_network_forward_interface }}
+          comment "libvirt NAT out via {{ libvirt_network_forward_interface }}"
+      register: libvirt_ufw_nat_delete
+      changed_when: "'deleted' in libvirt_ufw_nat_delete.stdout"
+      failed_when: false

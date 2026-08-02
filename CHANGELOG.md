@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `playbooks/libvirt-teardown.yml` — destructive, idempotent lab teardown:
+  destroy/undefine all VMs in the `libvirt` group (UEFI NVRAM removed),
+  delete qcow2/VARS/ISO artifacts and cached cloud image, undefine
+  `ansible-net` + `project01` networks, and remove UFW DHCP/DNS/route rules
+  for `virbr-ansible`. Refuses to run without
+  `-e libvirt_teardown_confirm=true`. Documented in
+  `knowledge/playbooks/libvirt-teardown.md`.
+
 ### Removed
 
 - Nextcloud/Deck references from `AGENTS.md` — ansible04 is the step-ca,

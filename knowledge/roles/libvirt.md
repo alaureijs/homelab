@@ -20,3 +20,4 @@ Provision libvirt VMs, storage pool, ansible-net, cloud-init ISOs on the CachyOS
 * [ansible01](/infrastructure/ansible01.md)
 * [network](/infrastructure/network.md)
 * [cloud-init](/infrastructure/cloud-init.md)
+* [libvirt-teardown](/playbooks/libvirt-teardown.md)

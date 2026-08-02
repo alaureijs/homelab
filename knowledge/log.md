@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-08-02
+* **Creation**: Added playbook `libvirt-teardown` — destroys/undefines all lab VMs, removes `ansible-net` and `project01` networks, deletes qcow2/VARS/ISO/base cloud image, and clears UFW bridge + route rules (system daemon only; guard `libvirt_teardown_confirm=true`). Registered in `playbooks/index.md`; linked from `roles/libvirt.md`.
+* **Update**: Teardown executed — ansible01–04 destroyed/undefined (UEFI NVRAM removed), VM disks/ISOs and cached Rocky cloud image deleted, `ansible-net` + `project01` undefined, UFW rules for `virbr-ansible` (DHCP/DNS v4+v6 + route rules) removed. Lab host returned to bare state (`default` network and libvirtd untouched).
+
 ## 2026-08-01
 * **Update**: Fixed knowledge/doc inconsistencies — `packages.md` source
   no longer cites deprecated `docs/prometheus_exporters.md` (removed

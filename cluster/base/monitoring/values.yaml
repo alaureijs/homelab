@@ -10,7 +10,7 @@ kubeEtcd:
 kubeProxy:
   enabled: false
 
-prometheus-node-exporter:
+nodeExporter:
   enabled: false
 
 prometheusOperator:

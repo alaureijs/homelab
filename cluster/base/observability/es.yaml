@@ -5,6 +5,10 @@ metadata:
   namespace: observability
 spec:
   version: 9.4.4
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
   nodeSets:
     - name: default
       count: 1

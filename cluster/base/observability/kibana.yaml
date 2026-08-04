@@ -6,6 +6,10 @@ metadata:
 spec:
   version: 9.4.4
   count: 1
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
   elasticsearchRef:
     name: observability
   config:

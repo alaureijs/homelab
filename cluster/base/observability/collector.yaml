@@ -13,16 +13,10 @@ spec:
           name: observability-es-elastic-user
           key: elastic
   volumeMounts:
-    - name: es-ca
-      mountPath: /etc/es-ca
-      readOnly: true
     - name: varlog
       mountPath: /var/log
       readOnly: true
   volumes:
-    - name: es-ca
-      secret:
-        secretName: observability-es-http-ca-internal
     - name: varlog
       hostPath:
         path: /var/log
@@ -45,13 +39,11 @@ spec:
         timeout: 5s
     exporters:
       elasticsearch:
-        endpoint: https://observability-es-http:9200
+        endpoint: http://observability-es-http:9200
         user: elastic
         password: ${env:ELASTIC_PASSWORD}
         mapping:
           mode: otel
-        tls:
-          ca_file: /etc/es-ca/tls.crt
     service:
       pipelines:
         logs:

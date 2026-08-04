@@ -1,0 +1,15 @@
+defaultSettings:
+  defaultDataPath: /var/lib/longhorn
+  defaultReplicaCount: 2
+  defaultClass: true
+persistence:
+  defaultClassReplicaCount: 2
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  host: longhorn.homelab.internal
+  tls: true
+  tlsSecret: longhorn-ui-tls
+  annotations:
+    cert-manager.io/cluster-issuer: step-ca
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"

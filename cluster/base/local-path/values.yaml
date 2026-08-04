@@ -1,4 +1,0 @@
-storageClass:
-  create: true
-  defaultClass: true
-  name: local-path

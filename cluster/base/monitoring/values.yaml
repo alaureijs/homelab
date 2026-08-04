@@ -1,5 +1,5 @@
 global:
-  storageClass: local-path
+  storageClass: longhorn
 
 kubeControllerManager:
   enabled: false
@@ -30,7 +30,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: local-path
+          storageClassName: longhorn
           accessModes:
             - ReadWriteOnce
           resources:
@@ -61,7 +61,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: local-path
+          storageClassName: longhorn
           accessModes:
             - ReadWriteOnce
           resources:
@@ -95,7 +95,7 @@ grafana:
         secretName: monitoring-tls
   persistence:
     enabled: true
-    storageClassName: local-path
+    storageClassName: longhorn
     accessModes:
       - ReadWriteOnce
     size: 10Gi

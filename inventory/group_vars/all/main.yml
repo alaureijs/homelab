@@ -65,6 +65,7 @@ argocd_version: "v2.14.11"
 kube_prometheus_stack_version: "69.8.2"
 eck_version: "3.4.1"
 opentelemetry_operator_version: "0.120.0"
+longhorn_version: "1.12.0"
 
 # Base images
 alpine_version: "3.24"
@@ -162,3 +163,4 @@ dns_records:
   ansible07.homelab.internal: 192.168.100.17
   ansible08.homelab.internal: 192.168.100.18
   argocd.homelab.internal: 192.168.100.42
+  longhorn.homelab.internal: 192.168.100.42

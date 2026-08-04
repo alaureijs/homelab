@@ -5,6 +5,7 @@ configs:
     argocdServerAdminPassword: "$2b$10$v/32X8zPmOzFUgQlpE1j9ubodUoEoegA4Yhu4n3VnMn.4AD63HEIa"
   cm:
     "kustomize.buildOptions": "--enable-alpha-plugins --enable-exec"
+    "application.namespaces": "argocd,monitoring,observability"
 controller:
   replicas: 1
 server:

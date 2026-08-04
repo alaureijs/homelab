@@ -19,12 +19,6 @@ spec:
     - name: varlog
       mountPath: /var/log
       readOnly: true
-    - name: journal
-      mountPath: /var/log/journal
-      readOnly: true
-    - name: run-log-journal
-      mountPath: /run/log/journal
-      readOnly: true
   volumes:
     - name: es-ca
       secret:
@@ -32,16 +26,8 @@ spec:
     - name: varlog
       hostPath:
         path: /var/log
-    - name: journal
-      hostPath:
-        path: /var/log/journal
-    - name: run-log-journal
-      hostPath:
-        path: /run/log/journal
   config:
     receivers:
-      journald:
-        directory: /run/log/journal
       filelog:
         include:
           - /var/log/pods/*/*/*.log

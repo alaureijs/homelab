@@ -42,8 +42,6 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: step-ca
     hosts:
       - monitoring.homelab.internal
     paths:
@@ -69,8 +67,6 @@ alertmanager:
   ingress:
     enabled: true
     ingressClassName: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: step-ca
     hosts:
       - monitoring.homelab.internal
     paths:
@@ -87,8 +83,6 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: step-ca
     hosts:
       - monitoring.homelab.internal
     path: /grafana

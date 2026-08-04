@@ -13,10 +13,9 @@ spec:
       targetRevision: 69.8.2
       helm:
         valueFiles:
-          - $values/values.yaml
+          - $values/cluster/base/monitoring/values.yaml
     - repoURL: git@github.com:alaureijs/homelab.git
       targetRevision: HEAD
-      path: cluster/base/monitoring
       ref: values
   destination:
     server: https://kubernetes.default.svc

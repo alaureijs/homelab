@@ -8,6 +8,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- k8s P8: ArgoCD namespaced apps `monitoring`/`monitoring-secrets`/`observability`
+  synced and healthy; controller namespace-watch via
+  `configs.params.application.namespaces` in `cluster/base/argocd/values.yaml`.
+- k8s storage: Longhorn now default StorageClass; Prometheus/Alertmanager/
+  Grafana/Elasticsearch PVCs migrated off local-path. DaemonSets keep local
+  storage by policy (OTel collector DS uses hostPath `/var/log`).
+- k8s observability: OTel collector DaemonSet ships logs to ECK Elasticsearch
+  (v9.4.4) via ES exporter with mTLS; `logs-generic.otel-default` stream
+  confirmed. Single-node ES green via `index.number_of_replicas: 0` +
+  `otel-single-node` index template.
 - `playbooks/libvirt-teardown.yml` — destructive, idempotent lab teardown:
   destroy/undefine all VMs in the `libvirt` group (UEFI NVRAM removed),
   delete qcow2/VARS/ISO artifacts and cached cloud image, undefine
@@ -21,6 +31,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- `local-path-provisioner` (Helm v0.0.36) and `local-path-storage` namespace
+  from the k8s cluster — 0 local-path PVCs/PVs verified before removal;
+  `local-path` StorageClass gone.
 - Nextcloud/Deck references from `AGENTS.md` — ansible04 is the step-ca,
   Unbound DNS, and nginx portal/packages/docs host (no Nextcloud role was
   ever implemented).

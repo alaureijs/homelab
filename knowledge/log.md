@@ -1,5 +1,11 @@
 # Directory Update Log
 
+## 2026-08-04
+* **Update**: k8s cluster storage migrated to Longhorn (default StorageClass); `local-path-provisioner` (Helm v0.0.36) uninstalled and `local-path-storage` namespace deleted — verified 0 local-path PVCs/PVs and no workload references beforehand. Stateful workloads now on longhorn: monitoring Prometheus (30Gi)/Alertmanager (10Gi)/Grafana (8Gi) and observability Elasticsearch (50Gi). DaemonSets keep local storage by policy (OTel collector DS uses hostPath `/var/log`).
+* **Update**: ArgoCD now runs namespaced apps (`monitoring`, `monitoring-secrets`, `observability`) — controller namespace-watch configured via `configs.params.application.namespaces` in `cluster/base/argocd/values.yaml`. All apps Synced/Healthy.
+* **Update**: OTel collector DaemonSet ships logs to in-cluster Elasticsearch (ECK v9.4.4) via ES exporter with mTLS (CA secret `observability-es-http-ca-internal`, key `tls.crt`). Journald receiver dropped (contrib image lacks `journalctl`); filelog receiver reads hostPath `/var/log`. Data stream `logs-generic.otel-default` confirmed (75k+ docs). Single-node ES made green via `index.number_of_replicas: 0` + `otel-single-node` index template.
+* **Update**: `Plans/Plan_k8s.md` P8 checklist completed — monitoring stack healthy on longhorn, observability healthy, local-path removed. (Full k8s knowledge concepts remain P10 scope.)
+
 ## 2026-08-02
 * **Update**: DNS records cleaned — `harbor.homelab.internal` and `ansible01/02/03.homelab.internal` removed (old Podman stack VMs torn down); `monitoring.homelab.internal` → 192.168.100.40 and `observability.homelab.internal` → 192.168.100.41 (k8s MetalLB VIPs); added `ansible05/06/07.homelab.internal` → .15/.16/.17 and `argocd.homelab.internal` → 192.168.100.42. Controller `/etc/hosts` updated to match `dns_records`. New `group_vars/k8s/main.yml` (pod/service CIDR, `metallb_pool`, VIP constants, kubeadm ports).
 * **Update**: `libvirt-teardown` now also destroys/undefines the `sdb` storage pool and deletes `/var/lib/libvirt/sdb` — the pool was dir-backed and held orphaned VM artifacts (old ansible01-03 qcow2, `vm-rhel-10-stream.qcow2`, VARS, ISOs, console logs) from a prior generation. Executed: pool gone from system daemon, directory removed; `boot`/`default` pools untouched.

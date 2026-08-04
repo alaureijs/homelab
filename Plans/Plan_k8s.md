@@ -106,16 +106,24 @@ Note: k8s hosts are `ansible05-08`, all provisioned (common + hardening + firewa
 
 ## P8 — Applications (ArgoCD, Helm)
 
-- [ ] `cluster/apps/bootstrap.yaml` (app-of-apps root)
-- [ ] `cluster/apps/monitoring.yaml` → kube-prometheus-stack
-  - [ ] `cluster/base/monitoring/values.yaml`: Grafana admin (SOPS), ingress `monitoring.homelab.internal`, node-exporter DaemonSet, kube-state-metrics
-  - [ ] Sync; verify Grafana login, Prometheus targets up
-- [ ] `cluster/apps/observability.yaml` → ECK + OTel operator
-  - [ ] ES CR single-node, heap 4g, 50 Gi PVC (local-path)
-  - [ ] Kibana CR + Logstash CR
-  - [ ] opentelemetry-operator + Collector DaemonSet (journald + filelog → ES)
-  - [ ] ingress `observability.homelab.internal` (`/kibana/`, `/elasticsearch/`)
-  - [ ] Sync; verify ES health, Kibana UI, `logs-generic.otel-default` stream
+- [x] `cluster/apps/bootstrap.yaml` (app-of-apps root) — Synced/Healthy; installs cert-manager, ingress-nginx, longhorn, monitoring/observability namespaces
+- [x] `cluster/apps/monitoring.yaml` → kube-prometheus-stack (via ArgoCD helm chart, namespaced app)
+  - [x] `cluster/base/monitoring/values.yaml`: Grafana admin (SOPS), ingress `monitoring.homelab.internal`, Prometheus/Alertmanager/Grafana PVCs on **longhorn** (30Gi/10Gi/8Gi), node-exporter DaemonSet disabled (node-exporter stays on VMs, scraped from Prometheus via mTLS)
+  - [x] `cluster/apps/monitoring-secrets.yaml` — admin/credentials via SOPS (separate namespaced app)
+  - [x] Sync; verify Grafana login, Prometheus targets up
+  - [x] Grafana PVC migrated local-path → longhorn. Old dual-owned PVC (old + new app race) stuck Terminating on `pvc-protection`; force-removed finalizer after operator restart recreated STSs
+  - [x] Operator fix: `kubectl rollout restart deploy/monitoring-kube-prometheus-operator` — operator started 11h before the CRDs existed, informers never registered the Prometheus/Alertmanager CRs
+  - [x] Stale node-exporter orphan (DS/SA/SVC/Servicemonitor + 2 rules) from pre-ArgoCD install deleted
+- [x] `cluster/apps/observability.yaml` → ECK + OTel operator (namespaced app)
+  - [x] ES CR single-node v9.4.4, heap 4g, 50 Gi PVC (**longhorn**; local-path fully removed)
+  - [x] Kibana CR + Logstash CR (VM-side; cluster ES backs observability)
+  - [x] opentelemetry-operator + Collector DaemonSet (filelog only, hostPath `/var/log` **local storage per DaemonSet policy** → ES via mTLS; journald receiver dropped — contrib image lacks `journalctl`)
+  - [x] ES CA ref fix: secret `observability-es-http-ca-internal` (keys `tls.crt`/`tls.key`), not `-ca-public`/`ca.crt`
+  - [x] ingress `observability.homelab.internal` (`/kibana/`, `/elasticsearch/`)
+  - [x] Sync; ES green (single-node: `index.number_of_replicas: 0` on existing + `otel-single-node` template), Kibana UI, `logs-generic.otel-default` stream (75k+ docs)
+- [x] ArgoCD namespace-watch: `configs.params.application.namespaces` in `cluster/base/argocd/values.yaml` (controller env) — namespaced apps synced
+- [x] Git ServerSideApply=true (large CRD manifests overflow last-applied annotation): `cluster/apps/{monitoring,observability}.yaml`
+- [x] local-path-provisioner uninstalled (Helm release v0.0.36) + `local-path-storage` ns deleted — verified 0 local-path PVCs/PVs, no workload refs; SC `local-path` gone
 
 ## P9 — DNS + TLS verify
 

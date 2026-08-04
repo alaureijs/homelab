@@ -1,0 +1,5 @@
+---
+# k8s control-plane group variables (ansible05)
+# kubeadm control-plane ports + VXLAN + node_exporter
+
+firewall_ports: "{{ kubeadm_control_plane_ports + ['8472/udp', '4244/tcp', '4245/tcp', '9100/tcp'] }}"

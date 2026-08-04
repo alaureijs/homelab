@@ -1,0 +1,5 @@
+---
+# Full provisioning for ansible07 (k8s worker): common roles.
+# P5 adds the kubernetes role (kubeadm join).
+- name: Common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml

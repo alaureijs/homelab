@@ -1,6 +1,0 @@
----
-packages_files:
-  - name: harbor-offline-installer
-    version: "{{ harbor_version }}"
-    url: "https://github.com/goharbor/harbor/releases/download/{{ harbor_version }}/harbor-offline-installer-{{ harbor_version }}.tgz"
-    dest: harbor

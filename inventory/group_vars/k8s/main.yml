@@ -1,0 +1,26 @@
+---
+# Kubernetes cluster group variables (ansible05 control-plane, ansible06/07 workers)
+
+pod_network_cidr: 10.244.0.0/16
+service_network_cidr: 10.96.0.0/12
+
+metallb_pool: 192.168.100.40-192.168.100.49
+
+# LoadBalancer VIP assignment (shared ingress-nginx VIP; all hostnames route by SNI)
+ingress_vip: 192.168.100.42
+
+# Control-plane API / ingress-nginx TLS hostnames
+k8s_apiserver_host: k8s.homelab.internal
+
+# kubeadm port groups (firewall)
+kubeadm_control_plane_ports:
+  - 6443/tcp
+  - 2379/tcp
+  - 2380/tcp
+  - 10250/tcp
+  - 10257/tcp
+  - 10259/tcp
+kubeadm_worker_ports:
+  - 10250/tcp
+  - 8472/udp
+  - 30000-32767/tcp

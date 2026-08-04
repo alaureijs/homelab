@@ -1,0 +1,113 @@
+global:
+  storageClass: local-path
+
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 150Mi
+    limits:
+      memory: 300Mi
+
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: 20GiB
+    routePrefix: /prometheus
+    externalUrl: https://monitoring.homelab.internal/prometheus
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 500Mi
+      limits:
+        memory: 2Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: step-ca
+    hosts:
+      - monitoring.homelab.internal
+    paths:
+      - /prometheus
+    tls:
+      - hosts:
+          - monitoring.homelab.internal
+        secretName: monitoring-tls
+
+alertmanager:
+  alertmanagerSpec:
+    routePrefix: /alertmanager
+    externalUrl: https://monitoring.homelab.internal/alertmanager
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: step-ca
+    hosts:
+      - monitoring.homelab.internal
+    paths:
+      - /alertmanager
+    tls:
+      - hosts:
+          - monitoring.homelab.internal
+        secretName: monitoring-tls
+
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: step-ca
+    hosts:
+      - monitoring.homelab.internal
+    path: /grafana
+    tls:
+      - hosts:
+          - monitoring.homelab.internal
+        secretName: monitoring-tls
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+  "grafana.ini":
+    server:
+      root_url: https://monitoring.homelab.internal/grafana/
+      serve_from_sub_path: true
+  sidecar:
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true

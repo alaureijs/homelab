@@ -4,8 +4,10 @@
 certificates_dir: /etc/pki/tls/certs
 certificates_key_dir: /etc/pki/tls/private
 
-# Renew certificates when they expire within this many days
-certificates_renew_threshold_days: 30
+# Renew certificates when they expire within this many days.
+# Must stay below the step-ca default lifetime (30d / 720h), otherwise a
+# freshly issued cert already expires within the threshold and renews every run.
+certificates_renew_threshold_days: 7
 
 # step-ca configuration
 certificates_step_ca_url: "https://{{ step_ca_hostname | default('ca.homelab.internal') }}:{{ step_ca_port | default(9000) }}"

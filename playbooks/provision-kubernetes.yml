@@ -1,0 +1,10 @@
+---
+# Bootstrap the Kubernetes cluster: containerd, kubeadm init/join, Cilium CNI.
+# Control-plane = ansible05, workers = ansible06/07/08.
+- name: Bootstrap Kubernetes cluster
+  hosts: k8s
+  become: true
+  gather_facts: true
+
+  roles:
+    - kubernetes

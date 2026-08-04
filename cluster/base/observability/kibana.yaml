@@ -1,0 +1,23 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: observability
+  namespace: observability
+spec:
+  version: 9.4.4
+  count: 1
+  elasticsearchRef:
+    name: observability
+  config:
+    server.basePath: /kibana
+    server.rewriteBasePath: true
+  podTemplate:
+    spec:
+      containers:
+        - name: kibana
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              memory: 2Gi

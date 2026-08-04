@@ -1,0 +1,9 @@
+---
+all:
+  children:
+    libvirt:
+      hosts:
+        ansible05:
+        ansible06:
+        ansible07:
+        ansible08:

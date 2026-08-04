@@ -1,7 +1,6 @@
 ---
-# Update libvirt network with DNS entries
-# Uses the same network.xml.j2 template as the libvirt role
-# Destroys and recreates network to apply DNS changes
+# Keep libvirt network DNS/DHCP in sync with inventory
+# Surgical virsh net-update - no full network bounce (avoid dropping VM taps)
 
 - name: Set libvirt network variables for template
   ansible.builtin.set_fact:
@@ -12,31 +11,179 @@
     libvirt_network_gateway: "{{ dns_libvirt_network_gateway }}"
     libvirt_network_dhcp_enabled: "{{ dns_libvirt_network_dhcp_enabled }}"
 
-- name: Render DNS network XML
+- name: Render desired libvirt network XML
   ansible.builtin.set_fact:
     _dns_network_xml: "{{ lookup('template', playbook_dir ~ '/../roles/libvirt/templates/network.xml.j2') }}"
 
-- name: Destroy libvirt network
+- name: Get current libvirt network XML
   community.libvirt.virt_net:
-    command: destroy
+    command: get_xml
     name: "{{ dns_libvirt_network_name }}"
     uri: "{{ dns_libvirt_uri }}"
+  register: _dns_current_xml
+  changed_when: false
+  failed_when: false
 
-- name: Define libvirt network with DNS entries
-  community.libvirt.virt_net:
-    command: define
-    name: "{{ dns_libvirt_network_name }}"
-    xml: "{{ _dns_network_xml }}"
-    uri: "{{ dns_libvirt_uri }}"
+- name: Normalize XML quotes and whitespace
+  ansible.builtin.set_fact:
+    _dns_desired_raw: "{{ _dns_network_xml | regex_replace('\\'', '\"') | regex_replace('>\\s+<', '><') }}"
+    _dns_current_raw: "{{ _dns_current_xml.get_xml | default('') | regex_replace('\\'', '\"') | regex_replace('>\\s+<', '><') }}"
 
-- name: Start libvirt network
-  community.libvirt.virt_net:
-    state: active
-    name: "{{ dns_libvirt_network_name }}"
-    uri: "{{ dns_libvirt_uri }}"
+- name: Extract DHCP host entries
+  vars:
+    _dns_host_re: '<host mac="([^"]+)" name="([^"]+)" ip="([^"]+)"/>'
+  ansible.builtin.set_fact:
+    _dns_desired_dhcp: "{{ _dns_desired_raw | regex_findall(_dns_host_re) }}"
+    _dns_current_dhcp: "{{ _dns_current_raw | regex_findall(_dns_host_re) }}"
 
-- name: Enable libvirt network autostart
-  community.libvirt.virt_net:
-    autostart: true
-    name: "{{ dns_libvirt_network_name }}"
-    uri: "{{ dns_libvirt_uri }}"
+- name: Extract DNS host records
+  vars:
+    _dns_hosts_re: '<host ip="([^"]+)">(.*?)</host>'
+  ansible.builtin.set_fact:
+    _dns_desired_records: "{{ _dns_desired_raw | regex_findall(_dns_hosts_re) }}"
+    _dns_current_records: "{{ _dns_current_raw | regex_findall(_dns_hosts_re) }}"
+
+- name: Extract DNS forwarders
+  vars:
+    _dns_fwd_re: '<forwarder addr="([^"]+)"/>'
+  ansible.builtin.set_fact:
+    _dns_desired_fwd: "{{ _dns_desired_raw | regex_findall(_dns_fwd_re) }}"
+    _dns_current_fwd: "{{ _dns_current_raw | regex_findall(_dns_fwd_re) }}"
+
+- name: Compute DHCP host diffs
+  ansible.builtin.set_fact:
+    _dns_add_dhcp: "{{ _dns_desired_dhcp | difference(_dns_current_dhcp) }}"
+    _dns_del_dhcp: "{{ _dns_current_dhcp | difference(_dns_desired_dhcp) }}"
+
+- name: Group desired DNS hostnames by IP
+  vars:
+    _dns_hosts: "{{ _dns_desired_by_ip | default({}) }}"
+    _dns_names: "{{ item[1] | regex_findall('<hostname>([^<]+)</hostname>') }}"
+  ansible.builtin.set_fact:
+    _dns_desired_by_ip: "{{ _dns_hosts | combine({item[0]: _dns_hosts.get(item[0], []) + _dns_names}) }}"
+  loop: "{{ _dns_desired_records }}"
+
+- name: Group current DNS hostnames by IP
+  vars:
+    _dns_hosts: "{{ _dns_current_by_ip | default({}) }}"
+    _dns_names: "{{ item[1] | regex_findall('<hostname>([^<]+)</hostname>') }}"
+  ansible.builtin.set_fact:
+    _dns_current_by_ip: "{{ _dns_hosts | combine({item[0]: _dns_hosts.get(item[0], []) + _dns_names}) }}"
+  loop: "{{ _dns_current_records }}"
+
+- name: Compute DNS records needing update
+  ansible.builtin.set_fact:
+    _dns_update_ips: >-
+      {{ _dns_update_ips | default([]) + [item.key]
+         if (item.value | sort) != (_dns_current_by_ip.get(item.key, []) | sort)
+         else _dns_update_ips | default([]) }}
+  loop: "{{ _dns_desired_by_ip | dict2items }}"
+
+- name: Include removed DNS IPs
+  ansible.builtin.set_fact:
+    _dns_update_ips: "{{ _dns_update_ips | union(_dns_current_by_ip.keys() | list | difference(_dns_desired_by_ip.keys() | list)) }}"
+
+- name: Compute forwarder diffs
+  ansible.builtin.set_fact:
+    _dns_add_fwd: "{{ _dns_desired_fwd | difference(_dns_current_fwd) }}"
+    _dns_del_fwd: "{{ _dns_current_fwd | difference(_dns_desired_fwd) }}"
+
+- name: Add missing DHCP host entries
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - add-last
+      - ip-dhcp-host
+      - "<host mac='{{ item[0] }}' name='{{ item[1] }}' ip='{{ item[2] }}'/>"
+      - --live
+      - --config
+  changed_when: true
+  loop: "{{ _dns_add_dhcp }}"
+
+- name: Remove stale DHCP host entries
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - delete
+      - ip-dhcp-host
+      - "<host mac='{{ item[0] }}' name='{{ item[1] }}' ip='{{ item[2] }}'/>"
+      - --live
+      - --config
+  changed_when: true
+  loop: "{{ _dns_del_dhcp }}"
+
+- name: Remove existing DNS records for changed IPs
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - delete
+      - dns-host
+      - "<host ip='{{ item[0] }}'>{{ item[1] }}</host>"
+      - --live
+      - --config
+  changed_when: true
+  failed_when: false
+  loop: "{{ _dns_current_records }}"
+  when: item[0] in _dns_update_ips
+
+- name: Add desired DNS records for changed IPs
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - add-last
+      - dns-host
+      - >-
+        <host ip='{{ item.key }}'>{% for h in item.value %}<hostname>{{ h }}</hostname>{% endfor %}</host>
+      - --live
+      - --config
+  changed_when: true
+  loop: "{{ _dns_desired_by_ip | dict2items }}"
+  when: item.key in _dns_update_ips
+
+- name: Add missing DNS forwarders
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - add-last
+      - dns-forwarder
+      - "<forwarder addr='{{ item }}'/>"
+      - --live
+      - --config
+  changed_when: true
+  loop: "{{ _dns_add_fwd }}"
+
+- name: Remove stale DNS forwarders
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - -c
+      - qemu:///system
+      - net-update
+      - "{{ dns_libvirt_network_name }}"
+      - delete
+      - dns-forwarder
+      - "<forwarder addr='{{ item }}'/>"
+      - --live
+      - --config
+  changed_when: true
+  loop: "{{ _dns_del_fwd }}"

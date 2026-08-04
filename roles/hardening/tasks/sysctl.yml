@@ -7,6 +7,27 @@
     group: root
     mode: "0755"
 
+- name: Install kernel-modules-extra for br_netfilter
+  ansible.builtin.dnf:
+    name: "kernel-modules-extra-{{ ansible_kernel }}"
+    state: present
+  when: hardening_br_netfilter | bool
+
+- name: Load br_netfilter module for Kubernetes
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+  when: hardening_br_netfilter | bool
+
+- name: Persist br_netfilter module load
+  ansible.builtin.copy:
+    content: "br_netfilter\n"
+    dest: /etc/modules-load.d/br_netfilter.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: hardening_br_netfilter | bool
+
 - name: Configure kernel and network hardening (STIG/CIS)
   ansible.posix.sysctl:
     name: "{{ item.key }}"

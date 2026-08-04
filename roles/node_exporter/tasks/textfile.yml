@@ -26,14 +26,13 @@
          | selectattr('groups', 'subset', group_names)
          | list }}
 
-- name: Download textfile collector scripts from internal repo
-  ansible.builtin.get_url:
-    url: "https://packages.homelab.internal/node-exporter/textfile_scripts/{{ item.name }}"
+- name: Copy textfile collector scripts from controller
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../files/node-exporter/textfile_scripts/{{ item.name }}"
     dest: "{{ node_exporter_textfile_scripts_dir }}/{{ item.name }}"
     owner: root
     group: nobody
     mode: "0750"
-    timeout: 30
   loop: "{{ _active_textfile_scripts }}"
   loop_control:
     label: "{{ item.name }}"

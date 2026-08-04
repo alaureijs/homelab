@@ -1,0 +1,31 @@
+---
+# kubernetes role defaults
+
+kubernetes_repo_version: "{{ k8s_version.split('.')[:2] | join('.') }}"
+kubernetes_repo_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_repo_version }}/rpm/"
+kubernetes_repo_gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_repo_version }}/rpm/repodata/repomd.xml.key"
+
+kubernetes_packages:
+  - kubelet-{{ k8s_version }}
+  - kubeadm-{{ k8s_version }}
+  - kubectl-{{ k8s_version }}
+  - cri-tools
+
+kubernetes_containerd_version: "{{ containerd_version }}"
+kubernetes_sandbox_image: registry.k8s.io/pause:3.10
+
+kubernetes_control_plane_host: "{{ k8s_apiserver_host }}"
+kubernetes_control_plane_port: 6443
+
+kubernetes_join_token_ttl: 2h
+
+kubernetes_cilium_namespace: kube-system
+kubernetes_cilium_chart_version: "{{ cilium_version }}"
+kubernetes_cilium_values:
+  kubeProxyReplacement: true
+  k8sServiceHost: "{{ k8s_apiserver_host }}"
+  k8sServicePort: "{{ kubernetes_control_plane_port }}"
+  routingMode: tunnel
+  tunnelProtocol: vxlan
+  operator:
+    replicas: 1

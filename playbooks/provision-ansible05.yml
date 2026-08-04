@@ -1,0 +1,5 @@
+---
+# Full provisioning for ansible05 (k8s control-plane): common roles.
+# P5 adds the kubernetes role (kubeadm bootstrap).
+- name: Common roles on all hosts
+  ansible.builtin.import_playbook: provision-common.yml

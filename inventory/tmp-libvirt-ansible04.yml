@@ -1,0 +1,14 @@
+---
+# Temp inventory — provision only ansible04 (P2 prerequisite)
+# host_vars/ansible04 and group_vars resolve from same inventory dir.
+all:
+  children:
+    pki:
+      hosts:
+        ansible04:
+    portal:
+      hosts:
+        ansible04:
+    libvirt:
+      hosts:
+        ansible04:

@@ -1,0 +1,20 @@
+---
+# Temp bootstrap: initialize step-ca CA on fresh ansible04 before certificates role.
+- name: Bootstrap step-ca on fresh ansible04
+  hosts: ansible04
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ vm_hostname }}"
+
+  roles:
+    - role: common
+    - role: podman
+    - role: step-ca

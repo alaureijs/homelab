@@ -149,11 +149,19 @@
       become: false
       changed_when: false
 
+- name: Ensure portal web root exists
+  ansible.builtin.file:
+    path: "{{ portal_web_root | default('/var/www') }}/ca"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Copy root CA cert to portal web root
   ansible.builtin.copy:
     src: "{{ step_ca_config_dir }}/certs/root_ca.crt"
     dest: "{{ portal_web_root | default('/var/www') }}/ca/root_ca.crt"
     remote_src: true
-    owner: nginx
-    group: nginx
+    owner: root
+    group: root
     mode: "0644"

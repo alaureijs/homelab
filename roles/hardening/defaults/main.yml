@@ -70,6 +70,9 @@ hardening_reverse_path_filter: true
 
 # TCP SYN cookies (syncookies already covered above)
 
+# Kubernetes: enable bridge netfilter (needs br_netfilter module loaded)
+hardening_br_netfilter: false
+
 # Hardened network sysctl values
 hardening_tcp_rfc1337: true
 hardening_tcp_timestamps: false
@@ -94,6 +97,8 @@ hardening_sysctl_params:
   net.ipv4.tcp_syncookies: "{{ '1' if hardening_syncookies else '0' }}"
   net.ipv4.tcp_rfc1337: "{{ '1' if hardening_tcp_rfc1337 else '0' }}"
   net.ipv4.tcp_timestamps: "{{ '1' if hardening_tcp_timestamps else '0' }}"
+  net.bridge.bridge-nf-call-iptables: "{{ '1' if hardening_br_netfilter else '0' }}"
+  net.bridge.bridge-nf-call-ip6tables: "{{ '1' if hardening_br_netfilter else '0' }}"
   net.ipv6.conf.all.accept_redirects: "{{ '0' if hardening_ipv6_disable else '1' }}"
   net.ipv6.conf.default.accept_redirects: "{{ '0' if hardening_ipv6_disable else '1' }}"
   net.ipv6.conf.all.accept_source_route: "{{ '0' if hardening_ipv6_disable else '1' }}"

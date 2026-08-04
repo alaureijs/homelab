@@ -5,10 +5,6 @@ nginx_directories:
   - path: "{{ nginx_web_root }}/ca-portal"
   - path: "{{ nginx_web_root }}/acme"
   - path: "{{ nginx_web_root }}/ca"
-  - path: "{{ nginx_web_root }}/packages"
-    owner: "{{ nginx_content_owner }}"
-    group: "{{ nginx_content_group }}"
-    mode: "{{ nginx_content_dir_mode }}"
   - path: "{{ nginx_web_root }}/documents"
   - path: "{{ nginx_web_root }}/documents/sync-reports"
     owner: "{{ nginx_content_owner }}"
@@ -28,16 +24,6 @@ nginx_vhosts:
     acme_proxy: true
     landing_page: index.html.j2
 
-  - name: packages
-    server_name: packages.homelab.internal
-    web_root: "{{ nginx_web_root }}/packages"
-    ssl_cert: /etc/pki/tls/certs/packages.crt
-    ssl_key: /etc/pki/tls/private/packages.key
-    conf: /etc/nginx/conf.d/packages.conf
-    template: vhost.conf.j2
-    autoindex: true
-    landing_page: false
-
   - name: documents
     server_name: documents.homelab.internal
     web_root: "{{ nginx_web_root }}/documents"
@@ -53,10 +39,6 @@ certificates_extra:
     type: stepca
     extra_sans:
       - "DNS:pki.homelab.internal"
-  - name: packages
-    type: stepca
-    extra_sans:
-      - "DNS:packages.homelab.internal"
   - name: documents
     type: stepca
     extra_sans:

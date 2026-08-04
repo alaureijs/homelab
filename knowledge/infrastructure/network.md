@@ -31,17 +31,18 @@ verified:
 | Forward | NAT via `wlan0` (configurable: `libvirt_network_forward_interface`) |
 | Subnet | 192.168.100.0/24, gateway 192.168.100.1 |
 | DHCP range | 192.168.100.200–254 |
-| Static leases | VM MAC → IP mappings for ansible01–04 |
+| Static leases | VM MAC → IP mappings for ansible04–07 |
 | DNS | `homelab.internal` hostname entries from `dns_records` |
 
 ## DNS entries
 
 | FQDN | IP | Service |
 |------|----|---------|
-| `harbor.homelab.internal` | 192.168.100.10 | Harbor |
-| `monitoring.homelab.internal` | 192.168.100.11 | Monitoring |
-| `observability.homelab.internal` | 192.168.100.12 | ELK |
+| `monitoring.homelab.internal` | 192.168.100.40 | k8s MetalLB VIP — monitoring |
+| `observability.homelab.internal` | 192.168.100.41 | k8s MetalLB VIP — observability |
+| `argocd.homelab.internal` | 192.168.100.42 | k8s MetalLB VIP — ArgoCD |
 | `ca.homelab.internal` / `pki.homelab.internal` | 192.168.100.13 | step-ca / portal |
+| `ansible05/06/07.homelab.internal` | 192.168.100.15/16/17 | k8s nodes |
 
 ## Firewall
 

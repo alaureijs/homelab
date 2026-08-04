@@ -1,0 +1,11 @@
+version = 2
+
+root = "/var/lib/containerd"
+state = "/run/containerd"
+
+[plugins."io.containerd.grpc.v1.cri"]
+  sandbox_image = "{{ kubernetes_sandbox_image }}"
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+    runtime_type = "io.containerd.runc.v2"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+      SystemdCgroup = true

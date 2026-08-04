@@ -1,0 +1,17 @@
+---
+# Connection
+ansible_host: 192.168.100.15
+
+# VM host-specific
+vm_name: ansible05
+vm_mac: "52:54:00:aa:00:15"
+vm_ip: 192.168.100.15
+
+vm_hostname: ansible05
+vm_vcpus: 2
+vm_memory: 4096
+vm_disk: 80
+
+# Hardening — k8s networking requires IP forwarding
+hardening_ip_forwarding: true
+hardening_br_netfilter: true

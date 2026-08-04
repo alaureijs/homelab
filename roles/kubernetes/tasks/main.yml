@@ -1,0 +1,203 @@
+---
+- name: Add Kubernetes yum repository
+  ansible.builtin.yum_repository:
+    name: kubernetes-{{ kubernetes_repo_version }}
+    description: Kubernetes {{ kubernetes_repo_version }} repository
+    baseurl: "{{ kubernetes_repo_baseurl }}"
+    gpgcheck: true
+    gpgkey: "{{ kubernetes_repo_gpgkey }}"
+    enabled: true
+
+- name: Install EPEL for containerd
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Install containerd
+  ansible.builtin.dnf:
+    name: "containerd-{{ kubernetes_containerd_version }}"
+    state: present
+
+- name: Install runc
+  ansible.builtin.dnf:
+    name: runc
+    state: present
+
+- name: Configure containerd (SystemdCgroup)
+  ansible.builtin.template:
+    src: containerd-config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+  notify: Restart containerd
+
+- name: Enable and start containerd
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started
+
+- name: Install kubelet, kubeadm, kubectl, cri-tools
+  ansible.builtin.dnf:
+    name: "{{ kubernetes_packages }}"
+    state: present
+
+- name: Enable kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
+
+- name: Check if control plane already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/super-admin.conf
+  register: kubernetes_admin_conf
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Initialize Kubernetes control plane
+  ansible.builtin.command:
+    cmd: >-
+      kubeadm init
+      --control-plane-endpoint {{ kubernetes_control_plane_host }}:{{ kubernetes_control_plane_port }}
+      --pod-network-cidr {{ pod_network_cidr }}
+      --service-cidr {{ service_network_cidr }}
+      --skip-phases addon/kube-proxy
+    creates: /etc/kubernetes/super-admin.conf
+  register: kubernetes_init
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Ensure controller kubeconfig directory
+  ansible.builtin.file:
+    path: "{{ lookup('env', 'HOME') }}/.kube"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Copy super-admin.conf to controller kubeconfig
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/super-admin.conf
+    dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+    flat: true
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Set controller kubeconfig permissions
+  ansible.builtin.file:
+    path: "{{ lookup('env', 'HOME') }}/.kube/config"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Generate kubeadm join command
+  ansible.builtin.command:
+    cmd: kubeadm token create --ttl {{ kubernetes_join_token_ttl }} --print-join-command
+  register: kubernetes_join_cmd
+  run_once: true
+  delegate_to: "{{ groups['k8s_cp'] | first }}"
+  changed_when: false
+
+- name: Check if worker already joined
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubernetes_kubelet_conf
+  when: inventory_hostname in groups['k8s_workers']
+
+- name: Join worker nodes to the cluster
+  ansible.builtin.command:
+    cmd: "{{ kubernetes_join_cmd.stdout }}"
+    creates: /etc/kubernetes/kubelet.conf
+  when: inventory_hostname in groups['k8s_workers']
+
+- name: Install Helm on control plane
+  ansible.builtin.dnf:
+    name: helm
+    state: present
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Add Cilium Helm repository
+  ansible.builtin.command:
+    cmd: helm repo add cilium https://helm.cilium.io
+  register: kubernetes_helm_repo_add
+  changed_when: "kubernetes_helm_repo_add.rc == 0"
+  failed_when: "kubernetes_helm_repo_add.rc not in [0, 1]"
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Update Cilium Helm repository
+  ansible.builtin.command:
+    cmd: helm repo update cilium
+  changed_when: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Check if Cilium already installed
+  ansible.builtin.command:
+    cmd: helm get values cilium -n {{ kubernetes_cilium_namespace }} -o yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_cilium_installed_values
+  changed_when: false
+  failed_when: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Check if Cilium values drift
+  ansible.builtin.set_fact:
+    kubernetes_cilium_needs_upgrade: >-
+      {{ kubernetes_cilium_installed_values.rc != 0 or
+         (kubernetes_cilium_installed_values.stdout | from_yaml) !=
+         kubernetes_cilium_values }}
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Install or upgrade Cilium CNI
+  ansible.builtin.command:
+    cmd: >-
+      helm upgrade --install cilium cilium/cilium
+      --namespace {{ kubernetes_cilium_namespace }}
+      --create-namespace
+      --version {{ kubernetes_cilium_chart_version }}
+      --set kubeProxyReplacement={{ kubernetes_cilium_values.kubeProxyReplacement }}
+      --set k8sServiceHost={{ kubernetes_cilium_values.k8sServiceHost }}
+      --set k8sServicePort={{ kubernetes_cilium_values.k8sServicePort }}
+      --set routingMode={{ kubernetes_cilium_values.routingMode }}
+      --set tunnelProtocol={{ kubernetes_cilium_values.tunnelProtocol }}
+      --set operator.replicas={{ kubernetes_cilium_values.operator.replicas }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  changed_when: true
+  when:
+    - inventory_hostname in groups['k8s_cp']
+    - kubernetes_cilium_needs_upgrade | default(false)
+
+- name: Wait for Cilium daemonset rollout
+  ansible.builtin.command:
+    cmd: kubectl -n {{ kubernetes_cilium_namespace }} rollout status daemonset/cilium --timeout=240s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_cilium_ds
+  changed_when: false
+  retries: 6
+  delay: 10
+  until: kubernetes_cilium_ds.rc == 0
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Wait for Cilium operator deployment
+  ansible.builtin.command:
+    cmd: kubectl -n {{ kubernetes_cilium_namespace }} rollout status deployment/cilium-operator --timeout=240s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_cilium_operator
+  changed_when: false
+  retries: 6
+  delay: 10
+  until: kubernetes_cilium_operator.rc == 0
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Wait for all nodes Ready
+  ansible.builtin.command:
+    cmd: kubectl wait --for=condition=Ready node --all --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_ready
+  changed_when: false
+  retries: 10
+  delay: 15
+  until: kubernetes_ready.rc == 0
+  when: inventory_hostname in groups['k8s_cp']

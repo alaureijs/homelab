@@ -27,7 +27,7 @@
 
     - name: Get installed node_exporter version
       ansible.builtin.shell:
-        cmd: "set -o pipefail; {{ node_exporter_bin }} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+'"
+        cmd: "set -o pipefail; {{ node_exporter_bin }} --version 2>&1 | grep -oP 'version \\K[0-9]+\\.[0-9]+\\.[0-9]+' | head -1"
       register: node_exporter_current_version
       changed_when: false
       failed_when: false

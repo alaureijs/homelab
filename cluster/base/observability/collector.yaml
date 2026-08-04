@@ -28,7 +28,7 @@ spec:
   volumes:
     - name: es-ca
       secret:
-        secretName: observability-es-http-ca-public
+        secretName: observability-es-http-ca-internal
     - name: varlog
       hostPath:
         path: /var/log
@@ -65,7 +65,7 @@ spec:
         mapping:
           mode: otel
         tls:
-          ca_file: /etc/es-ca/ca.crt
+          ca_file: /etc/es-ca/tls.crt
     service:
       pipelines:
         logs:

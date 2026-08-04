@@ -56,7 +56,6 @@ spec:
       pipelines:
         logs:
           receivers:
-            - journald
             - filelog
           processors:
             - resourcedetection

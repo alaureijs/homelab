@@ -38,5 +38,54 @@
   loop: "{{ firewall_podman_interfaces | default([]) }}"
   notify: Reload firewalld
 
+- name: Trust additional interfaces
+  ansible.posix.firewalld:
+    interface: "{{ item }}"
+    zone: trusted
+    permanent: true
+    state: enabled
+    immediate: false
+  loop: "{{ firewall_trusted_interfaces | default([]) }}"
+  notify: Reload firewalld
+
+- name: Trust additional sources
+  ansible.posix.firewalld:
+    source: "{{ item }}"
+    zone: trusted
+    permanent: true
+    state: enabled
+    immediate: false
+  loop: "{{ firewall_trusted_sources | default([]) }}"
+  notify: Reload firewalld
+
+- name: Configure firewalld forward policy
+  ansible.builtin.shell: |
+    set -e
+    changed=0
+    if firewall-cmd --permanent --new-policy "{{ item.name }}" >/dev/null 2>&1; then
+      changed=1
+    fi
+    if ! firewall-cmd --permanent --policy "{{ item.name }}" --query-ingress-zone "{{ item.ingress_zone }}" >/dev/null 2>&1; then
+      firewall-cmd --permanent --policy "{{ item.name }}" --add-ingress-zone "{{ item.ingress_zone }}" >/dev/null
+      changed=1
+    fi
+    if ! firewall-cmd --permanent --policy "{{ item.name }}" --query-egress-zone "{{ item.egress_zone }}" >/dev/null 2>&1; then
+      firewall-cmd --permanent --policy "{{ item.name }}" --add-egress-zone "{{ item.egress_zone }}" >/dev/null
+      changed=1
+    fi
+    if [ "$(firewall-cmd --permanent --policy "{{ item.name }}" --get-target 2>/dev/null)" != "{{ item.target }}" ]; then
+      firewall-cmd --permanent --policy "{{ item.name }}" --set-target "{{ item.target }}" >/dev/null
+      changed=1
+    fi
+    if [ "$(firewall-cmd --permanent --policy "{{ item.name }}" --get-priority 2>/dev/null)" != "{{ item.priority }}" ]; then
+      firewall-cmd --permanent --policy "{{ item.name }}" --set-priority "{{ item.priority }}" >/dev/null
+      changed=1
+    fi
+    echo "changed=$changed"
+  loop: "{{ firewall_forward_policies | default([]) }}"
+  register: firewall_fwd_policy_result
+  changed_when: "'changed=1' in firewall_fwd_policy_result.stdout"
+  notify: Reload firewalld
+
 - name: Flush firewalld reload handlers
   ansible.builtin.meta: flush_handlers

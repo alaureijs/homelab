@@ -127,10 +127,13 @@ Note: k8s hosts are `ansible05-08`, all provisioned (common + hardening + firewa
 
 ## P9 — DNS + TLS verify
 
-- [ ] Re-run dns role after final `dns_records` update
-- [ ] `dig @192.168.100.13` monitoring/observability/argocd → VIPs
-- [ ] `curl -vk` each URL; cert-manager certs valid, SAN correct
-- [ ] step-ca root CA trusted on all nodes
+- [x] Re-run dns role after final `dns_records` update
+- [x] `dig` monitoring/observability/argocd/longhorn → VIP `192.168.100.42`
+      (resolved via libvirt dnsmasq `192.168.100.1`; unbound not deployed on
+      ansible04 — pre-existing doc drift, k8s VMs use dnsmasq path)
+- [x] `curl -vk` each URL; cert-manager certs valid, SAN correct
+      (`argocd.homelab.internal` SAN confirmed, 30-day step-ca cert)
+- [x] step-ca root CA trusted on all nodes
 
 ## P10 — Docs / knowledge / commit
 

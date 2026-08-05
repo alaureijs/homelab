@@ -157,7 +157,8 @@
       --set k8sServiceHost={{ kubernetes_cilium_values.k8sServiceHost }}
       --set k8sServicePort={{ kubernetes_cilium_values.k8sServicePort }}
       --set routingMode={{ kubernetes_cilium_values.routingMode }}
-      --set tunnelProtocol={{ kubernetes_cilium_values.tunnelProtocol }}
+      --set autoDirectNodeRoutes={{ kubernetes_cilium_values.autoDirectNodeRoutes }}
+      --set ipv4NativeRoutingCIDR={{ kubernetes_cilium_values.ipv4NativeRoutingCIDR }}
       --set operator.replicas={{ kubernetes_cilium_values.operator.replicas }}
   environment:
     KUBECONFIG: /etc/kubernetes/super-admin.conf

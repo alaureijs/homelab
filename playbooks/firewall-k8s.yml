@@ -1,0 +1,6 @@
+---
+- name: Apply firewall rules to k8s nodes
+  hosts: k8s
+  become: true
+  roles:
+    - firewall

@@ -24,6 +24,16 @@ firewall_ports:
 firewall_services:
   - ssh
 
+# Sources (CIDRs) to assign to the trusted zone
+firewall_trusted_sources: []
+
+# Additional interfaces to assign to the trusted zone (e.g. cilium_host)
+firewall_trusted_interfaces: []
+
+# firewalld policy objects for the forward path
+# each item: {name, ingress_zone, egress_zone, target, priority}
+firewall_forward_policies: []
+
 # Service-to-port mapping for nftables/iptables backends
 firewall_service_port_map:
   ssh: "22"

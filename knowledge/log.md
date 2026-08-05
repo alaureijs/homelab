@@ -1,5 +1,28 @@
 # Directory Update Log
 
+## 2026-08-05
+* **Update**: MetalLB VIP `192.168.100.42` intermittent drops root-caused
+  to upstream cilium/cilium#44630 (LB traffic silently dropped in VXLAN
+  tunnel mode when ingress node = LB L2 owner = backend node). Cilium
+  migrated to native routing (`routingMode: native`,
+  `autoDirectNodeRoutes: true`, `ipv4NativeRoutingCIDR: 10.0.0.0/8`) in
+  `roles/kubernetes` (defaults + helm upgrade args). All nodes L2-connected,
+  no BGP. Applied live (helm rev 6); verified nodes Ready, cilium healthy,
+  VIP `.42:443/.42:80` 30/30, argocd/longhorn 200, `--check` no drift.
+* **Update**: `firewall` role gained firewalld policy-object support —
+  `firewall_trusted_sources`, `firewall_trusted_interfaces`,
+  `firewall_forward_policies` defaults + idempotent `--permanent` policy
+  shell task. `group_vars/k8s/main.yml` sets `pod_network_cidr: 10.0.0.0/8`
+  (native routing) and `allow-pod-fwd` policy (public→trusted, ACCEPT,
+  priority 50) with trusted source `10.0.0.0/8` + `cilium_host` interface.
+  Applied to ansible05–08; second run idempotent (`changed=0`); cross-node
+  pod traffic and VIP/NodePort stable.
+* **Update**: `Plans/Plan_k8s.md` P9 checked off — DNS verified via libvirt
+  dnsmasq (`192.168.100.1`; unbound not deployed on ansible04 — pre-existing
+  doc drift), ingress hostnames → VIP `.42`, cert-manager SANs correct
+  (`argocd.homelab.internal`, 30-day step-ca cert). `Plans/
+  Plan_CiliumNativeRouting.md` tasks complete.
+
 ## 2026-08-04
 * **Update**: k8s cluster storage migrated to Longhorn (default StorageClass); `local-path-provisioner` (Helm v0.0.36) uninstalled and `local-path-storage` namespace deleted — verified 0 local-path PVCs/PVs and no workload references beforehand. Stateful workloads now on longhorn: monitoring Prometheus (30Gi)/Alertmanager (10Gi)/Grafana (8Gi) and observability Elasticsearch (50Gi). DaemonSets keep local storage by policy (OTel collector DS uses hostPath `/var/log`).
 * **Update**: ArgoCD now runs namespaced apps (`monitoring`, `monitoring-secrets`, `observability`) — controller namespace-watch configured via `configs.params.application.namespaces` in `cluster/base/argocd/values.yaml`. All apps Synced/Healthy.

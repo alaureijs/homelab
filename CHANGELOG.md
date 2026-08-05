@@ -60,6 +60,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   template tasks, `set -o pipefail` on shell pipes, `changed_when` on
   libvirt resize/cloud-init tasks, folded long YAML scalars, and
   `systemd`/`command` module idioms in step-ca handlers/tasks.
+- MetalLB VIP `192.168.100.42` intermittent drops (30–65% failure on
+  external → LB → local-backend traffic): root-caused to upstream
+  cilium/cilium#44630 (silent drop of LB traffic in VXLAN tunnel mode when
+  the ingress node is also the LB L2 owner). Fixed by migrating Cilium to
+  native routing (`routingMode: native`, `autoDirectNodeRoutes: true`,
+  `ipv4NativeRoutingCIDR: 10.0.0.0/8`) — all 4 nodes share L2
+  `192.168.100.0/24`, so direct node routes suffice (no BGP). Cilium
+  remains helm-managed; `helm get values` matches
+  `kubernetes_cilium_values` (no drift, `--check` clean).
+- `firewall` role: firewalld policy objects are the only native way to
+  allow pod-CIDR forwarding (rich/direct rules cannot override the
+  `filter_FORWARD_POLICIES` reject). Added `firewall_trusted_sources`,
+  `firewall_trusted_interfaces`, and `firewall_forward_policies` defaults +
+  idempotent `--permanent` policy shell task (`allow-pod-fwd`: ingress
+  `public` → egress `trusted`, ACCEPT, priority 50). Applied to all 4 k8s
+  nodes (pod CIDR `10.0.0.0/8` + `cilium_host` in trusted zone). Verified
+  idempotent on second run (`changed=0`) and lint-clean.
 
 ### Added
 

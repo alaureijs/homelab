@@ -25,7 +25,8 @@ kubernetes_cilium_values:
   kubeProxyReplacement: true
   k8sServiceHost: "{{ k8s_apiserver_host }}"
   k8sServicePort: "{{ kubernetes_control_plane_port }}"
-  routingMode: tunnel
-  tunnelProtocol: vxlan
+  routingMode: native
+  autoDirectNodeRoutes: true
+  ipv4NativeRoutingCIDR: "10.0.0.0/8"
   operator:
     replicas: 1

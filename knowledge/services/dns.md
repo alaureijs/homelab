@@ -46,9 +46,10 @@ dig @192.168.100.13 github.com +dnssec   # expect AD flag
 ```
 
 Records for the retired Podman stack (harbor/ansible01-03 → .10/.11/.12)
-were removed when the lab was torn down; `monitoring.homelab.internal` and
-`observability.homelab.internal` now point at the k8s MetalLB VIPs
-(.40/.41), with `argocd.homelab.internal` → .42 and the k8s nodes
-ansible05/06/07 → .15/.16/.17.
+were removed when the lab was torn down; `monitoring.homelab.internal`,
+`observability.homelab.internal`, `argocd.homelab.internal` and
+`longhorn.homelab.internal` all point at the single k8s Cilium ingress
+VIP (.42, SNI-based routing, replaces the MetalLB .40/.41 VIPs and
+ingress-nginx), with the k8s nodes ansible05/06/07 → .15/.16/.17.
 
 [^pki-doc]: step-ca documentation — DNS architecture, forwarding behavior, DNSSEC

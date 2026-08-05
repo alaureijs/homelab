@@ -1,6 +1,20 @@
 # Directory Update Log
 
 ## 2026-08-05
+* **Update**: Ingress cutover complete — ingress-nginx (release `.42`) and
+  MetalLB uninstalled from cluster; all ingress traffic now terminates on
+  the Cilium ingress controller via the single shared VIP `.42`
+  (`cilium.io/ingress` IngressClass, SNI-based hostname routing). Cilium
+  ingress Service re-IP'd from temp `.43` back to `.42` via
+  `lbipam.cilium.io/ips` annotation; L2 announcement re-owned by ansible08
+  (leader election). Verified: argocd/longhorn/monitoring/observability all
+  200/302 from `.42` across ansible05–08; helm releases reduced to
+  argocd/cert-manager/cilium/longhorn; `cluster/base/metallb/` and
+  `cluster/base/ingress-nginx/` removed. Two follow-on root causes fixed:
+  (a) Cilium `bpf.tproxy` disabled — agents force-restarted, all booted
+  with `enable-bpf-tproxy='true'`; (b) Envoy NACK `reuse port cannot be
+  changed during an update` on shared listener — listener stuck after
+  in-place update, fixed via `cilium-envoy` pod restart.
 * **Update**: MetalLB VIP `192.168.100.42` intermittent drops root-caused
   to upstream cilium/cilium#44630 (LB traffic silently dropped in VXLAN
   tunnel mode when ingress node = LB L2 owner = backend node). Cilium

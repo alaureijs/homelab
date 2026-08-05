@@ -38,6 +38,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `Plans/Plan_CiliumLB_Ingress.md` — migration plan with cutover and
   rollback checklist.
 
+### Removed
+
+- k8s ingress cutover complete: `ingress-nginx` and `metallb` Helm releases
+  uninstalled, `metallb-system` + `ingress-nginx` namespaces deleted,
+  `cluster/base/metallb/` and `cluster/base/ingress-nginx/` removed. All
+  traffic terminates on the Cilium ingress controller via shared VIP
+  192.168.100.42 (SNI hostname routing).
+
+### Fixed
+
+- k8s ingress: Envoy NACK `reuse port cannot be changed during an update`
+  on the shared `cilium-ingress` listener after an in-place Ingress update
+  left endpoints 404ing — recovered by restarting the `cilium-envoy` pod
+  (listener re-initialized cleanly). Documented in Plan; a restart may be
+  needed after Ingress config changes until Cilium resolves the NACK.
+
 ## [0.2.0] - 2026-08-05
 
 ### Added

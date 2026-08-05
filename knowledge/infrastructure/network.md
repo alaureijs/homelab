@@ -38,11 +38,16 @@ verified:
 
 | FQDN | IP | Service |
 |------|----|---------|
-| `monitoring.homelab.internal` | 192.168.100.40 | k8s MetalLB VIP — monitoring |
-| `observability.homelab.internal` | 192.168.100.41 | k8s MetalLB VIP — observability |
-| `argocd.homelab.internal` | 192.168.100.42 | k8s MetalLB VIP — ArgoCD |
+| `monitoring.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP (SNI) |
+| `observability.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP (SNI) |
+| `argocd.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP |
+| `longhorn.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP |
 | `ca.homelab.internal` / `pki.homelab.internal` | 192.168.100.13 | step-ca / portal |
 | `ansible05/06/07.homelab.internal` | 192.168.100.15/16/17 | k8s nodes |
+
+The `.40/.41` MetalLB VIPs and ingress-nginx were retired: all ingress
+traffic now terminates on the Cilium ingress controller (single shared VIP
+`.42`, hostname routing by SNI via `cilium.io/ingress` IngressClass).
 
 ## Firewall
 

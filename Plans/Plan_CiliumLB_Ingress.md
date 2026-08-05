@@ -68,36 +68,36 @@ routing) provides LoadBalancer VIPs via `CiliumLoadBalancerIPPool` +
 - [x] **Var cleanup**: `metallb_pool` → `cilium_lb_pool`
       (`group_vars/k8s/main.yml`); dropped `metallb_version` +
       `ingress_nginx_version` (`group_vars/all/main.yml`).
-- [ ] **Lint + plan check**: `ansible_lint` role/playbooks; review via
+- [x] **Lint + plan check**: `ansible_lint` role/playbooks; review via
       ArgoCD/kustomize dry-run.
-- [ ] **Apply cilium ingress on temp VIP `.43` first** (validation):
+- [x] **Apply cilium ingress on temp VIP `.43` first** (validation):
       `helm upgrade cilium` with `ingressController` enabled but Service on
       `.43` (annotation override); wait ds/operator rollout; confirm
       `cilium-envoy` DaemonSet up; `kubectl get ingressclass`, `kubectl get
       svc -n kube-system` for ingress Service EXTERNAL-IP `.43`.
-- [ ] **Validate all apps via `.43`** (host `--resolve`/`/etc/hosts`):
+- [x] **Validate all apps via `.43`** (host `--resolve`/`/etc/hosts`):
       argocd, longhorn, grafana `/grafana`, prometheus `/prometheus`,
       alertmanager `/alertmanager`, kibana `/kibana` (ES direct
       `observability-es-http:9200` still serves otel collector). Confirm
       cert-manager TLS still 200, SAN ok.
-- [ ] **Cutover to `.42`** (short blip): set cilium ingress Service to `.42`
+- [x] **Cutover to `.42`** (short blip): set cilium ingress Service to `.42`
       (release temp `.43`), verify `.42` serves all apps; confirm ARP/NDP
       announced by Cilium (no MetalLB conflict while nginx still owns `.42`
       — sequence below).
-- [ ] **Uninstall ingress-nginx**: `helm uninstall ingress-nginx -n
+- [x] **Uninstall ingress-nginx**: `helm uninstall ingress-nginx -n
       ingress-nginx`; delete ns. Remove `nginx` IngressClass. Requires
       holding `.42` → do AFTER cilium ingress claims `.42`; expect brief
       outage on `.42` between nginx release and cilium re-IP.
-- [ ] **Uninstall MetalLB**: `helm uninstall metallb -n metallb-system`;
+- [x] **Uninstall MetalLB**: `helm uninstall metallb -n metallb-system`;
       delete ns; remove `metallb`/`metallb-system` resources + Pool/L2 CRDs.
-- [ ] **Verify final state**: `.42:80/443` → all ingress hosts 200/expected;
+- [x] **Verify final state**: `.42:80/443` → all ingress hosts 200/expected;
       NodePort + cross-node pod paths still OK; cilium status healthy;
       `helm ls` no metallb/ingress-nginx; `kubectl get ingress -A` all
       IngressClass `cilium`.
-- [ ] **Cleanup repo**: remove `cluster/base/metallb/`,
+- [x] **Cleanup repo**: remove `cluster/base/metallb/`,
       `cluster/base/ingress-nginx/` (vars already dropped/renamed); update
       docs.
-- [ ] **Docs/knowledge/changelog**: `knowledge/log.md` entry, CHANGELOG
+- [x] **Docs/knowledge/changelog**: `knowledge/log.md` entry, CHANGELOG
       `### Changed` + `### Removed`, update Plan_k8s references; `okf.py
       check`; commit-release on request.
 

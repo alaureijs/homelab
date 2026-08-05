@@ -45,6 +45,7 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: cilium
+    pathType: Prefix
     hosts:
       - monitoring.homelab.internal
     paths:
@@ -70,6 +71,7 @@ alertmanager:
   ingress:
     enabled: true
     ingressClassName: cilium
+    pathType: Prefix
     hosts:
       - monitoring.homelab.internal
     paths:

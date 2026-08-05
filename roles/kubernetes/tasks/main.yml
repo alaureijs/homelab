@@ -159,6 +159,7 @@
       --set routingMode={{ kubernetes_cilium_values.routingMode }}
       --set autoDirectNodeRoutes={{ kubernetes_cilium_values.autoDirectNodeRoutes }}
       --set ipv4NativeRoutingCIDR={{ kubernetes_cilium_values.ipv4NativeRoutingCIDR }}
+      --set bpf.tproxy={{ kubernetes_cilium_values.bpf.tproxy }}
       --set operator.replicas={{ kubernetes_cilium_values.operator.replicas }}
       --set ingressController.enabled={{ kubernetes_cilium_values.ingressController.enabled }}
       --set ingressController.default={{ kubernetes_cilium_values.ingressController.default }}

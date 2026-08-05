@@ -25,6 +25,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   in-cluster).
 - k8s inventory: `metallb_pool` renamed to `cilium_lb_pool`; dropped
   `metallb_version` and `ingress_nginx_version` version variables.
+- k8s ingress: `bpf.tproxy: true` required for external L7 load-balancing —
+  with the default `false`, the from-netdev L7LB branch punts to the host
+  stack and external traffic to the `cilium-ingress` VIP/NodePort is
+  dropped inside the receiving node. `roles/kubernetes` now sets
+  `--set bpf.tproxy=true`; a DS restart is required for the value to take
+  effect (ConfigMap is only read at agent startup).
+- k8s apps: monitoring prometheus/alertmanager ingresses set
+  `pathType: Prefix` (chart default `ImplementationSpecific` is treated as
+  exact-match by Cilium Envoy, breaking `/prometheus/` and
+  `/alertmanager/`).
 - `Plans/Plan_CiliumLB_Ingress.md` — migration plan with cutover and
   rollback checklist.
 

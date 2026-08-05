@@ -1,41 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: observability-elasticsearch
-  namespace: observability
-  annotations:
-    cert-manager.io/cluster-issuer: step-ca
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - observability.homelab.internal
-      secretName: observability-tls
-  rules:
-    - host: observability.homelab.internal
-      http:
-        paths:
-          - path: /elasticsearch(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: observability-es-http
-                port:
-                  number: 9200
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: observability-kibana
   namespace: observability
   annotations:
     cert-manager.io/cluster-issuer: step-ca
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
-  ingressClassName: nginx
+  ingressClassName: cilium
   tls:
     - hosts:
         - observability.homelab.internal
@@ -44,8 +15,8 @@ spec:
     - host: observability.homelab.internal
       http:
         paths:
-          - path: /kibana(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /kibana
+            pathType: Prefix
             backend:
               service:
                 name: observability-kb-http

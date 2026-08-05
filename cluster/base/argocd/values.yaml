@@ -13,13 +13,12 @@ server:
   insecure: true
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: cilium
     hostname: argocd.homelab.internal
     tls: true
     tlsSecretName: argocd-server-tls
     annotations:
       cert-manager.io/cluster-issuer: step-ca
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
 repoServer:
   replicas: 1
   env:

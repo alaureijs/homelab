@@ -44,7 +44,7 @@ prometheus:
         memory: 2Gi
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: cilium
     hosts:
       - monitoring.homelab.internal
     paths:
@@ -69,7 +69,7 @@ alertmanager:
               storage: 10Gi
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: cilium
     hosts:
       - monitoring.homelab.internal
     paths:
@@ -85,7 +85,7 @@ grafana:
     existingSecret: grafana-admin
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: cilium
     hosts:
       - monitoring.homelab.internal
     path: /grafana

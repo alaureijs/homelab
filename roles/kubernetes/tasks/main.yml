@@ -160,6 +160,12 @@
       --set autoDirectNodeRoutes={{ kubernetes_cilium_values.autoDirectNodeRoutes }}
       --set ipv4NativeRoutingCIDR={{ kubernetes_cilium_values.ipv4NativeRoutingCIDR }}
       --set operator.replicas={{ kubernetes_cilium_values.operator.replicas }}
+      --set ingressController.enabled={{ kubernetes_cilium_values.ingressController.enabled }}
+      --set ingressController.default={{ kubernetes_cilium_values.ingressController.default }}
+      --set ingressController.loadbalancerMode={{ kubernetes_cilium_values.ingressController.loadbalancerMode }}
+      --set ingressController.service.type={{ kubernetes_cilium_values.ingressController.service.type }}
+      --set "ingressController.service.annotations.lbipam\.cilium\.io/ips={{ kubernetes_cilium_ingress_vip }}"
+      --set l2announcements.enabled={{ kubernetes_cilium_values.l2announcements.enabled }}
   environment:
     KUBECONFIG: /etc/kubernetes/super-admin.conf
   changed_when: true
@@ -189,6 +195,29 @@
   retries: 6
   delay: 10
   until: kubernetes_cilium_operator.rc == 0
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Ensure Cilium manifest directory
+  ansible.builtin.file:
+    path: "{{ kubernetes_cilium_manifest_dir }}"
+    state: directory
+    mode: "0755"
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Render Cilium LB IP pool and L2 announcement policy manifest
+  ansible.builtin.template:
+    src: cilium-lb.yaml.j2
+    dest: "{{ kubernetes_cilium_manifest_dir }}/cilium-lb.yaml"
+    mode: "0644"
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Deploy Cilium LB IP pool and L2 announcement policy
+  ansible.builtin.command:
+    cmd: kubectl apply -f {{ kubernetes_cilium_manifest_dir }}/cilium-lb.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_cilium_lb_apply
+  changed_when: "kubernetes_cilium_lb_apply.stdout | regex_search('configured|created') | bool"
   when: inventory_hostname in groups['k8s_cp']
 
 - name: Wait for all nodes Ready

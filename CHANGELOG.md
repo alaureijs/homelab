@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- k8s ingress: Cilium native ingress controller replaces MetalLB +
+  ingress-nginx. Cilium 1.18 configured with `ingressController` (shared
+  `cilium-ingress` LoadBalancer, `loadbalancerMode: shared`) and
+  `l2announcements.enabled: true`; fixed VIP via `lbipam.cilium.io/ips`
+  annotation (`kubernetes_cilium_ingress_vip`). `roles/kubernetes` renders
+  and applies `CiliumLoadBalancerIPPool` `homelab-pool`
+  (192.168.100.40-49) + `CiliumL2AnnouncementPolicy` `homelab`
+  (interface `enp1s0`, all LB services) to
+  `/etc/kubernetes/cilium/cilium-lb.yaml`.
+- k8s apps: all ingresses flipped to `ingressClassName: cilium` — argocd,
+  longhorn, monitoring (grafana `/grafana`, prometheus `/prometheus`,
+  alertmanager `/alertmanager`), observability (kibana `/kibana`). Dropped
+  `nginx.ingress.kubernetes.io/ssl-redirect` annotation; observability
+  ES `/elasticsearch` ingress removed (no consumers — OTel collector ships
+  in-cluster).
+- k8s inventory: `metallb_pool` renamed to `cilium_lb_pool`; dropped
+  `metallb_version` and `ingress_nginx_version` version variables.
+- `Plans/Plan_CiliumLB_Ingress.md` — migration plan with cutover and
+  rollback checklist.
+
 ## [0.2.0] - 2026-08-05
 
 ### Added

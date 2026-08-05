@@ -6,10 +6,9 @@ persistence:
   defaultClassReplicaCount: 2
 ingress:
   enabled: true
-  ingressClassName: nginx
+  ingressClassName: cilium
   host: longhorn.homelab.internal
   tls: true
   tlsSecret: longhorn-ui-tls
   annotations:
     cert-manager.io/cluster-issuer: step-ca
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"

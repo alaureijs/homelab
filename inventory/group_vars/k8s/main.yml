@@ -4,9 +4,9 @@
 pod_network_cidr: 10.0.0.0/8
 service_network_cidr: 10.96.0.0/12
 
-metallb_pool: 192.168.100.40-192.168.100.49
+cilium_lb_pool: 192.168.100.40-192.168.100.49
 
-# LoadBalancer VIP assignment (shared ingress-nginx VIP; all hostnames route by SNI)
+# LoadBalancer VIP assignment (shared Cilium ingress VIP; all hostnames route by SNI)
 ingress_vip: 192.168.100.42
 
 # Control-plane API / ingress-nginx TLS hostnames

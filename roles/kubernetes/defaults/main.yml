@@ -20,7 +20,11 @@ kubernetes_control_plane_port: 6443
 kubernetes_join_token_ttl: 2h
 
 kubernetes_cilium_namespace: kube-system
+kubernetes_cilium_manifest_dir: /etc/kubernetes/cilium
 kubernetes_cilium_chart_version: "{{ cilium_version }}"
+kubernetes_cilium_ingress_vip: "{{ ingress_vip | default('192.168.100.42') }}"
+kubernetes_cilium_lb_pool: "{{ cilium_lb_pool | default('192.168.100.40-192.168.100.49') }}"
+kubernetes_cilium_l2_interface: "{{ cilium_l2_interface | default('enp1s0') }}"
 kubernetes_cilium_values:
   kubeProxyReplacement: true
   k8sServiceHost: "{{ k8s_apiserver_host }}"
@@ -30,3 +34,13 @@ kubernetes_cilium_values:
   ipv4NativeRoutingCIDR: "10.0.0.0/8"
   operator:
     replicas: 1
+  ingressController:
+    enabled: true
+    default: true
+    loadbalancerMode: shared
+    service:
+      type: LoadBalancer
+      annotations:
+        "lbipam.cilium.io/ips": "{{ kubernetes_cilium_ingress_vip }}"
+  l2announcements:
+    enabled: true

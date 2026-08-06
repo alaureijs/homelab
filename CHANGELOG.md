@@ -50,6 +50,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `knowledge/guides/k8s-secrets.md` — OKF guide mirroring the secrets
   inventory (registered in `knowledge/guides/index.md`).
 
+### Fixed
+
+- k8s cert-manager: `cluster/base/cert-manager/issuer.yaml` ClusterIssuer
+  HTTP-01 solver `ingressClassName` changed `nginx` → `cilium` — the `nginx`
+  IngressClass was removed during the Cilium cutover, so 30-day cert
+  renewals would have failed. Applied live; verified solver Ingress gets
+  class `cilium` on VIP `.42`, challenge path returns 200, issuer Ready.
+
 ### Removed
 
 - k8s ingress cutover complete: `ingress-nginx` and `metallb` Helm releases

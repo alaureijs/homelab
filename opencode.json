@@ -54,7 +54,7 @@
       "command": ["npx", "-y", "kubernetes-mcp-server@latest"],
       "enabled": true,
       "environment": {
-        "KUBECONFIG": "CHANGEME-kubeconfig-path"
+        "KUBECONFIG": "/home/alaureijs/.kube/config"
       }
     },
     "elasticsearch": {
@@ -62,7 +62,10 @@
       "command": ["uvx", "elasticsearch-mcp-server"],
       "enabled": true,
       "environment": {
-        "ELASTICSEARCH_HOSTS": "http://192.168.100.12:9200"
+        "ELASTICSEARCH_HOSTS": "https://observability-es.homelab.internal",
+        "ELASTICSEARCH_USERNAME": "elastic",
+        "ELASTICSEARCH_PASSWORD": "{env:ELASTICSEARCH_PASSWORD}",
+        "ELASTICSEARCH_VERIFY_CERTS": "false"
       }
     },
     "obsidian": {

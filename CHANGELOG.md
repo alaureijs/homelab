@@ -8,6 +8,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- observability: new `observability-es` Cilium ingress +
+  `observability-es.homelab.internal` DNS record (192.168.100.42) exposing
+  the ECK Elasticsearch service (`observability-es-http:9200`) via HTTPS
+  with step-ca cert (`cert-manager.io/cluster-issuer`). Elasticsearch MCP
+  server re-pointed at `https://observability-es.homelab.internal` with
+  basic auth from env (`ELASTICSEARCH_VERIFY_CERTS=false`).
 - k8s ingress: Cilium native ingress controller replaces MetalLB +
   ingress-nginx. Cilium 1.18 configured with `ingressController` (shared
   `cilium-ingress` LoadBalancer, `loadbalancerMode: shared`) and

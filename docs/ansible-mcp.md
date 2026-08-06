@@ -88,7 +88,7 @@ start; some need secrets or runtime services before their tools work.
 |--------|---------|---------------|--------|
 | `grafana` | `uvx mcp-grafana` | `GRAFANA_URL` (set), `GRAFANA_SERVICE_ACCOUNT_TOKEN` | needs SA token |
 | `podman` | `npx -y podman-mcp-server@latest` | none | works |
-| `kubernetes` | `npx -y kubernetes-mcp-server@latest` | `KUBECONFIG` | inert — no cluster (podman kube play only) |
+| `kubernetes` | `npx -y kubernetes-mcp-server@latest` | `KUBECONFIG` (set to `~/.kube/config`) | works — k8s cluster with ArgoCD (`k8s.homelab.internal:6443`) |
 | `elasticsearch` | `uvx elasticsearch-mcp-server` | `ELASTICSEARCH_HOSTS` (set, no auth — security disabled) | works |
 | `obsidian` | `uvx mcp-obsidian` | `OBSIDIAN_API_KEY` | needs Obsidian + Local REST API plugin running |
 | `github` | `podman run ... ghcr.io/github/github-mcp-server` | `GITHUB_PERSONAL_ACCESS_TOKEN` | needs PAT |
@@ -107,9 +107,11 @@ variables in `inventory/group_vars/all/vault.yml` where applicable.
 
 ### Kubernetes caveat
 
-The homelab has no Kubernetes cluster — pods deploy via `podman kube play`.
-The k8s MCP server connects to a kubeconfig only; leave it for future
-cluster work or remove the block.
+The homelab now runs a Kubernetes cluster with ArgoCD (gitops manifests in
+`cluster/`, API at `k8s.homelab.internal:6443`). The k8s MCP server uses
+`KUBECONFIG=/home/alaureijs/.kube/config`. Note: `podman kube play` is still
+used for the VM-hosted services (Harbor, monitoring, ELK, step-ca); the
+cluster is separate.
 
 ### Grafana subpath
 

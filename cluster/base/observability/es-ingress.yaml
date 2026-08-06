@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: observability-es
+  namespace: observability
+  annotations:
+    cert-manager.io/cluster-issuer: step-ca
+spec:
+  ingressClassName: cilium
+  tls:
+    - hosts:
+        - observability-es.homelab.internal
+      secretName: observability-es-tls
+  rules:
+    - host: observability-es.homelab.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: observability-es-http
+                port:
+                  number: 9200

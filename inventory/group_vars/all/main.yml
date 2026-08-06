@@ -151,6 +151,7 @@ dns_upstream_forwarders:
 dns_records:
   monitoring.homelab.internal: 192.168.100.42
   observability.homelab.internal: 192.168.100.42
+  observability-es.homelab.internal: 192.168.100.42
   ca.homelab.internal: 192.168.100.13
   pki.homelab.internal: 192.168.100.13
   documents.homelab.internal: 192.168.100.13

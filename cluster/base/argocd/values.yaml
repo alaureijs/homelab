@@ -1,7 +1,7 @@
 configs:
   params:
     server.insecure: true
-    "application.namespaces": "argocd,monitoring,observability"
+    "application.namespaces": "argocd,monitoring,observability,metallb-system,traefik"
   secret:
     argocdServerAdminPassword: "$2b$10$v/32X8zPmOzFUgQlpE1j9ubodUoEoegA4Yhu4n3VnMn.4AD63HEIa"
   cm:
@@ -13,7 +13,7 @@ server:
   insecure: true
   ingress:
     enabled: true
-    ingressClassName: cilium
+    ingressClassName: traefik
     hostname: argocd.homelab.internal
     tls: true
     tlsSecretName: argocd-server-tls

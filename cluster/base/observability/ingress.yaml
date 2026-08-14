@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: step-ca
 spec:
-  ingressClassName: cilium
+  ingressClassName: traefik
   tls:
     - hosts:
         - observability.homelab.internal

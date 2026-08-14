@@ -6,7 +6,7 @@ persistence:
   defaultClassReplicaCount: 2
 ingress:
   enabled: true
-  ingressClassName: cilium
+  ingressClassName: traefik
   host: longhorn.homelab.internal
   tls: true
   tlsSecret: longhorn-ui-tls

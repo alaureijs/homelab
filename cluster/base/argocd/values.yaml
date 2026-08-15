@@ -1,7 +1,7 @@
 configs:
   params:
     server.insecure: true
-    "application.namespaces": "argocd,monitoring,metallb-system,traefik"
+    "application.namespaces": "argocd,monitoring,metallb-system,traefik,loki"
   secret:
     argocdServerAdminPassword: "$2b$10$v/32X8zPmOzFUgQlpE1j9ubodUoEoegA4Yhu4n3VnMn.4AD63HEIa"
   cm:

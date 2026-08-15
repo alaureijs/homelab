@@ -11,7 +11,7 @@ kubeProxy:
   enabled: false
 
 nodeExporter:
-  enabled: false
+  enabled: true
 
 prometheusOperator:
   resources:
@@ -110,3 +110,9 @@ grafana:
       enabled: true
     datasources:
       enabled: true
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki-gateway.loki.svc.cluster.local
+      isDefault: false

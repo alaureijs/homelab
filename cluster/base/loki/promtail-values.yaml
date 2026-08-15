@@ -1,0 +1,8 @@
+# Promtail DaemonSet ships node logs to the loki-gateway in the same namespace.
+# Defaults: clients -> http://loki-gateway/loki/api/v1/push, kubernetes_sd discovery.
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    memory: 256Mi

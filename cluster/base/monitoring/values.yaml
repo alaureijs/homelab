@@ -12,6 +12,7 @@ kubeProxy:
 
 nodeExporter:
   enabled: true
+  hostNetwork: false
 
 prometheusOperator:
   resources:

@@ -38,16 +38,18 @@ verified:
 
 | FQDN | IP | Service |
 |------|----|---------|
-| `monitoring.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP (SNI) |
-| `observability.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP (SNI) |
-| `argocd.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP |
-| `longhorn.homelab.internal` | 192.168.100.42 | k8s Cilium ingress VIP |
+| `monitoring.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP (SNI) |
+| `observability.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP (SNI) |
+| `argocd.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP |
+| `longhorn.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP |
 | `ca.homelab.internal` / `pki.homelab.internal` | 192.168.100.13 | step-ca / portal |
-| `ansible05/06/07.homelab.internal` | 192.168.100.15/16/17 | k8s nodes |
+| `ansible05/06/07/08.homelab.internal` | 192.168.100.15/16/17/18 | k8s nodes |
 
-The `.40/.41` MetalLB VIPs and ingress-nginx were retired: all ingress
-traffic now terminates on the Cilium ingress controller (single shared VIP
-`.42`, hostname routing by SNI via `cilium.io/ingress` IngressClass).
+Ingress traffic terminates on the Traefik ingress controller (MetalLB
+Layer2 pool 192.168.100.40–49, single shared VIP `.42`, hostname routing
+by SNI via the default `traefik` IngressClass). MetalLB + Traefik are
+ArgoCD-managed apps. The prior Cilium native ingress and ingress-nginx
+were retired 2026-08-14 (Cilium→Calico migration).
 
 ## Firewall
 

@@ -52,14 +52,16 @@
   register: kubernetes_admin_conf
   when: inventory_hostname in groups['k8s_cp']
 
+- name: Render kubeadm init configuration
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: "{{ kubernetes_kubeadm_config_path }}"
+    mode: "0644"
+  when: inventory_hostname in groups['k8s_cp']
+
 - name: Initialize Kubernetes control plane
   ansible.builtin.command:
-    cmd: >-
-      kubeadm init
-      --control-plane-endpoint {{ kubernetes_control_plane_host }}:{{ kubernetes_control_plane_port }}
-      --pod-network-cidr {{ pod_network_cidr }}
-      --service-cidr {{ service_network_cidr }}
-      --skip-phases addon/kube-proxy
+    cmd: kubeadm init --config {{ kubernetes_kubeadm_config_path }}
     creates: /etc/kubernetes/super-admin.conf
   register: kubernetes_init
   when: inventory_hostname in groups['k8s_cp']
@@ -108,117 +110,104 @@
     creates: /etc/kubernetes/kubelet.conf
   when: inventory_hostname in groups['k8s_workers']
 
+- name: Check if kube-proxy DaemonSet exists
+  ansible.builtin.command:
+    cmd: kubectl get daemonset kube-proxy -n kube-system --no-headers
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_kube_proxy_ds
+  changed_when: false
+  failed_when: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Provision kube-proxy addon (nftables)
+  ansible.builtin.command:
+    cmd: kubeadm init phase addon kube-proxy --config {{ kubernetes_kubeadm_config_path }}
+  changed_when: true
+  when:
+    - inventory_hostname in groups['k8s_cp']
+    - kubernetes_kube_proxy_ds.rc != 0
+
 - name: Install Helm on control plane
   ansible.builtin.dnf:
     name: helm
     state: present
   when: inventory_hostname in groups['k8s_cp']
 
-- name: Add Cilium Helm repository
-  ansible.builtin.command:
-    cmd: helm repo add cilium https://helm.cilium.io
-  register: kubernetes_helm_repo_add
-  changed_when: "kubernetes_helm_repo_add.rc == 0"
-  failed_when: "kubernetes_helm_repo_add.rc not in [0, 1]"
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Update Cilium Helm repository
-  ansible.builtin.command:
-    cmd: helm repo update cilium
-  changed_when: false
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Check if Cilium already installed
-  ansible.builtin.command:
-    cmd: helm get values cilium -n {{ kubernetes_cilium_namespace }} -o yaml
-  environment:
-    KUBECONFIG: /etc/kubernetes/super-admin.conf
-  register: kubernetes_cilium_installed_values
-  changed_when: false
-  failed_when: false
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Check if Cilium values drift
-  ansible.builtin.set_fact:
-    kubernetes_cilium_needs_upgrade: >-
-      {{ kubernetes_cilium_installed_values.rc != 0 or
-         (kubernetes_cilium_installed_values.stdout | from_yaml) !=
-         kubernetes_cilium_values }}
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Install or upgrade Cilium CNI
-  ansible.builtin.command:
-    cmd: >-
-      helm upgrade --install cilium cilium/cilium
-      --namespace {{ kubernetes_cilium_namespace }}
-      --create-namespace
-      --version {{ kubernetes_cilium_chart_version }}
-      --set kubeProxyReplacement={{ kubernetes_cilium_values.kubeProxyReplacement }}
-      --set k8sServiceHost={{ kubernetes_cilium_values.k8sServiceHost }}
-      --set k8sServicePort={{ kubernetes_cilium_values.k8sServicePort }}
-      --set routingMode={{ kubernetes_cilium_values.routingMode }}
-      --set autoDirectNodeRoutes={{ kubernetes_cilium_values.autoDirectNodeRoutes }}
-      --set ipv4NativeRoutingCIDR={{ kubernetes_cilium_values.ipv4NativeRoutingCIDR }}
-      --set bpf.tproxy={{ kubernetes_cilium_values.bpf.tproxy }}
-      --set operator.replicas={{ kubernetes_cilium_values.operator.replicas }}
-      --set ingressController.enabled={{ kubernetes_cilium_values.ingressController.enabled }}
-      --set ingressController.default={{ kubernetes_cilium_values.ingressController.default }}
-      --set ingressController.loadbalancerMode={{ kubernetes_cilium_values.ingressController.loadbalancerMode }}
-      --set ingressController.service.type={{ kubernetes_cilium_values.ingressController.service.type }}
-      --set "ingressController.service.annotations.lbipam\.cilium\.io/ips={{ kubernetes_cilium_ingress_vip }}"
-      --set l2announcements.enabled={{ kubernetes_cilium_values.l2announcements.enabled }}
-  environment:
-    KUBECONFIG: /etc/kubernetes/super-admin.conf
-  changed_when: true
-  when:
-    - inventory_hostname in groups['k8s_cp']
-    - kubernetes_cilium_needs_upgrade | default(false)
-
-- name: Wait for Cilium daemonset rollout
-  ansible.builtin.command:
-    cmd: kubectl -n {{ kubernetes_cilium_namespace }} rollout status daemonset/cilium --timeout=240s
-  environment:
-    KUBECONFIG: /etc/kubernetes/super-admin.conf
-  register: kubernetes_cilium_ds
-  changed_when: false
-  retries: 6
-  delay: 10
-  until: kubernetes_cilium_ds.rc == 0
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Wait for Cilium operator deployment
-  ansible.builtin.command:
-    cmd: kubectl -n {{ kubernetes_cilium_namespace }} rollout status deployment/cilium-operator --timeout=240s
-  environment:
-    KUBECONFIG: /etc/kubernetes/super-admin.conf
-  register: kubernetes_cilium_operator
-  changed_when: false
-  retries: 6
-  delay: 10
-  until: kubernetes_cilium_operator.rc == 0
-  when: inventory_hostname in groups['k8s_cp']
-
-- name: Ensure Cilium manifest directory
+- name: Ensure Calico manifest directory
   ansible.builtin.file:
-    path: "{{ kubernetes_cilium_manifest_dir }}"
+    path: "{{ kubernetes_calico_manifest_dir }}"
     state: directory
     mode: "0755"
   when: inventory_hostname in groups['k8s_cp']
 
-- name: Render Cilium LB IP pool and L2 announcement policy manifest
+- name: Download tigera-operator manifest
+  ansible.builtin.get_url:
+    url: "{{ kubernetes_calico_operator_url }}"
+    dest: "{{ kubernetes_calico_manifest_dir }}/tigera-operator.yaml"
+    mode: "0644"
+    force: false
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Apply tigera-operator
+  ansible.builtin.command:
+    cmd: kubectl apply -f {{ kubernetes_calico_manifest_dir }}/tigera-operator.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_calico_operator_apply
+  changed_when: "kubernetes_calico_operator_apply.stdout | regex_search('configured|created') | bool"
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Wait for tigera-operator deployment
+  ansible.builtin.command:
+    cmd: kubectl -n {{ kubernetes_calico_operator_namespace }} rollout status deployment/tigera-operator --timeout=240s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_calico_tigera
+  changed_when: false
+  retries: 6
+  delay: 10
+  until: kubernetes_calico_tigera.rc == 0
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Render Calico Installation manifest
   ansible.builtin.template:
-    src: cilium-lb.yaml.j2
-    dest: "{{ kubernetes_cilium_manifest_dir }}/cilium-lb.yaml"
+    src: calico-installation.yaml.j2
+    dest: "{{ kubernetes_calico_manifest_dir }}/installation.yaml"
     mode: "0644"
   when: inventory_hostname in groups['k8s_cp']
 
-- name: Deploy Cilium LB IP pool and L2 announcement policy
+- name: Apply Calico Installation
   ansible.builtin.command:
-    cmd: kubectl apply -f {{ kubernetes_cilium_manifest_dir }}/cilium-lb.yaml
+    cmd: kubectl apply -f {{ kubernetes_calico_manifest_dir }}/installation.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/super-admin.conf
-  register: kubernetes_cilium_lb_apply
-  changed_when: "kubernetes_cilium_lb_apply.stdout | regex_search('configured|created') | bool"
+  register: kubernetes_calico_install
+  changed_when: "kubernetes_calico_install.stdout | regex_search('configured|created') | bool"
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Wait for calico-node daemonset rollout
+  ansible.builtin.command:
+    cmd: kubectl -n {{ kubernetes_calico_system_namespace }} rollout status daemonset/calico-node --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_calico_node
+  changed_when: false
+  retries: 10
+  delay: 15
+  until: kubernetes_calico_node.rc == 0
+  when: inventory_hostname in groups['k8s_cp']
+
+- name: Wait for calico-kube-controllers deployment
+  ansible.builtin.command:
+    cmd: kubectl -n {{ kubernetes_calico_system_namespace }} rollout status deployment/calico-kube-controllers --timeout=240s
+  environment:
+    KUBECONFIG: /etc/kubernetes/super-admin.conf
+  register: kubernetes_calico_controllers
+  changed_when: false
+  retries: 6
+  delay: 10
+  until: kubernetes_calico_controllers.rc == 0
   when: inventory_hostname in groups['k8s_cp']
 
 - name: Wait for all nodes Ready

@@ -8,6 +8,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- k8s CNI: Cilium → Calico migration complete (`Plans/Plan_CalicoMigration.md`,
+  all phases done). Calico VXLAN (IPPool 10.244.0.0/16, MTU 1450,
+  `natOutgoing`) via Tigera operator replaces Cilium 1.18; `roles/kubernetes`
+  renders and applies the Calico operator + Installation manifests and
+  provisions kube-proxy (nftables mode) via the kubeadm addon
+  (`kubeadm init phase addon kube-proxy --config`). kubeadm init now uses a
+  config-file (`kubeadm-config.yaml.j2`, v1beta4) instead of inline flags.
+  Cilium fully removed: helm release, CRDs, pods, `cilium_host` interface,
+  BPF socket-LB pins (`/sys/fs/bpf/cilium`).
+- k8s ingress: MetalLB (Layer2, IPAddressPool 192.168.100.40–49, L2
+  Advertisement) + Traefik (default IngressClass, LB pinned `.42`)
+  ArgoCD apps replace the Cilium native ingress controller —
+  `cluster/apps/metallb.yaml` (sync-wave 0), `cluster/apps/traefik.yaml`
+  (sync-wave 1, SSA). All 7 Ingress objects (monitoring x3, observability x2,
+  longhorn, argocd) flipped `cilium` → `traefik`; cert-manager ClusterIssuer
+  HTTP-01 solver follows (commits b90b73b, d4c378a). All service hostnames
+  200/302 on the `.42` VIP; Certificates all Ready=True (no reissue).
+- `Plans/Plan_CalicoMigration.md` — Calico + MetalLB + Traefik migration
+  plan with Phase 0–4 checklists, rollback, and post-migration notes
+  (ArgoCD selfHeal panic workaround via CRD operation patch; Kibana
+  `.kibana_task_manager` recovery via scale 0→1; degraded Longhorn volume
+  `pvc-f7cd650a` pre-existing follow-up).
+- k8s firewall: `k8s_calico_ports` (`4789/udp`) in `group_vars/k8s/main.yml`;
+  `firewall_ports` per-group composed as
+  `kubeadm_*_ports + k8s_calico_ports + ['9100/tcp']`; trusted interface
+  `cilium_host` → `vxlan.calico`. Post-swap, Cilium ports (8472/udp,
+  4244/4245/tcp, 7946/tcp) removed from all nodes.
 - observability: new `observability-es` Cilium ingress +
   `observability-es.homelab.internal` DNS record (192.168.100.42) exposing
   the ECK Elasticsearch service (`observability-es-http:9200`) via HTTPS
@@ -66,11 +93,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- k8s CNI: Cilium 1.18 uninstalled (helm release + namespace, CRDs, agent/
+  envoy DaemonSets, `cilium_host` interface, BPF socket-LB pins under
+  `/sys/fs/bpf/cilium`) — verified no pods, no CRDs, no services remain;
+  only `traefik` IngressClass exists. Supersedes the Cilium ingress entries
+  below (historical).
 - k8s ingress cutover complete: `ingress-nginx` and `metallb` Helm releases
   uninstalled, `metallb-system` + `ingress-nginx` namespaces deleted,
   `cluster/base/metallb/` and `cluster/base/ingress-nginx/` removed. All
   traffic terminates on the Cilium ingress controller via shared VIP
-  192.168.100.42 (SNI hostname routing).
+  192.168.100.42 (SNI hostname routing). (Superseded 2026-08-14 by the
+  MetalLB + Traefik ingress — see Added.)
+- k8s firewall: `k8s_cilium_ports` and `k8s_cilium_enabled` removed from
+  `group_vars/k8s/main.yml`; `roles/kubernetes/templates/cilium-lb.yaml.j2`
+  deleted (stale).
 
 ### Fixed
 

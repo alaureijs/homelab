@@ -1,5 +1,5 @@
 ---
 # k8s worker group variables (ansible06, ansible07, ansible08)
-# kubelet + VXLAN + NodePort + node_exporter
+# kubelet + NodePort + Calico VXLAN + node_exporter
 
-firewall_ports: "{{ kubeadm_worker_ports + ['8472/udp', '4244/tcp', '4245/tcp', '9100/tcp'] }}"
+firewall_ports: "{{ kubeadm_worker_ports + k8s_calico_ports + ['9100/tcp'] }}"

@@ -1,5 +1,40 @@
 # Directory Update Log
 
+## 2026-08-14
+* **Update**: Cilium→Calico migration complete (`Plans/Plan_CalicoMigration.md`
+  Status: Phase 4 complete). CNI: Calico VXLAN (IPPool 10.244.0.0/16, MTU
+  1450) replaces Cilium 1.18 — `roles/kubernetes` now renders Calico
+  operator + Installation; kube-proxy (nftables) provisioned via kubeadm
+  addon. Ingress/LB: MetalLB Layer2 (pool .40–.49, Traefik pinned .42)
+  replaces Cilium native ingress — `cluster/apps/metallb.yaml` (wave 0) +
+  `cluster/apps/traefik.yaml` (wave 1), default IngressClass `traefik`, all
+  7 Ingress objects + cert-manager ClusterIssuer flipped to `traefik` (commits
+  b90b73b, d4c378a). Cilium fully removed: no pods, no helm release, 0 CRDs,
+  `cilium_host` iface gone. `knowledge/infrastructure/network.md`,
+  `knowledge/services/dns.md`, `knowledge/guides/k8s-secrets.md` (+ docs
+  mirrors) updated: ingress VIP .42 now Traefik/MetalLB, k8s nodes
+  ansible05–08 → .15–.18, Cilium runtime secrets removed.
+* **Update**: Firewall cleanup (Phase 4) — removed `k8s_cilium_ports`
+  (8472/udp, 4244/4245/tcp, 7946/tcp) + `k8s_cilium_enabled` from
+  `group_vars/k8s/main.yml`; `firewall_ports` simplified to
+  `kubeadm_*_ports + k8s_calico_ports + ['9100/tcp']` in k8s_cp/k8s_workers.
+  Discovered limitation: `roles/firewall` only enables firewalld rules, never
+  disables — removed ports needed manual ad-hoc cleanup on all 4 nodes.
+  Fixed 5 pre-existing var-naming lint violations in firewall molecule
+  verify files. `provision-kubernetes.yml` `--check` clean + ansible_lint
+  production profile green.
+* **Update**: Migration incidents — (a) Kibana stuck `WAIT_FOR_YELLOW_SOURCE`
+  on `.kibana_task_manager_9.4.4_001` (migration started before corrupt index
+  deleted while cert-manager webhook unreachable); fixed by scaling
+  `deploy/observability-kb` to 0→1, fresh boot recreates index. (b) ArgoCD
+  application-controller panics in `shouldSelfHeal` (automated sync broken);
+  reliable sync via CRD operation patch (web UI port-forward 8090). (c)
+  Longhorn volume `pvc-f7cd650a` (grafana PV, ansible06) degraded since
+  2026-08-04 (PRE-migration): ansible07 disk DiskPressure (96.6G >
+  88.98G limit), 1 replica, rebuild blocked — follow-up. (d) ES single-node
+  yellow with 2 unassigned replicas is expected (observability app shows
+  Progressing).
+
 ## 2026-08-06
 * **Update**: `cluster/base/cert-manager/issuer.yaml` ClusterIssuer HTTP-01
   solver `ingressClassName` `nginx` → `cilium` (nginx IngressClass removed

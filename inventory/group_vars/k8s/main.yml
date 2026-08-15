@@ -1,15 +1,15 @@
 ---
-# Kubernetes cluster group variables (ansible05 control-plane, ansible06/07 workers)
+# Kubernetes cluster group variables (ansible05 control-plane, ansible06/07/08 workers)
 
-pod_network_cidr: 10.0.0.0/8
+pod_network_cidr: 10.244.0.0/16
 service_network_cidr: 10.96.0.0/12
 
-cilium_lb_pool: 192.168.100.40-192.168.100.49
+metallb_pool: 192.168.100.40-192.168.100.49
 
-# LoadBalancer VIP assignment (shared Cilium ingress VIP; all hostnames route by SNI)
+# LoadBalancer VIP assignment (shared MetalLB VIP; all hostnames route by SNI)
 ingress_vip: 192.168.100.42
 
-# Control-plane API / ingress-nginx TLS hostnames
+# kubeadm API / ingress TLS hostnames
 k8s_apiserver_host: k8s.homelab.internal
 
 # kubeadm port groups (firewall)
@@ -20,20 +20,23 @@ kubeadm_control_plane_ports:
   - 10250/tcp
   - 10257/tcp
   - 10259/tcp
-  - 7946/tcp
 kubeadm_worker_ports:
   - 10250/tcp
-  - 8472/udp
   - 30000-32767/tcp
-  - 7946/tcp
 
-# Cilium native-routing firewall: trust pod CIDR + cilium_host, allow
-# forwarding from the public zone to trusted interfaces (cross-node pod
-# delivery + LB/NodePort backends). Required for routing-mode native.
+# Calico CNI firewall ports (VXLAN encapsulation)
+k8s_calico_ports:
+  - 179/tcp
+  - 5473/tcp
+  - 4789/udp
+
+# Calico VXLAN firewall: trust pod CIDR + vxlan.calico, allow forwarding
+# from the public zone to trusted interfaces (cross-node pod delivery +
+# LB/NodePort backends).
 firewall_trusted_sources:
   - "{{ pod_network_cidr }}"
 firewall_trusted_interfaces:
-  - cilium_host
+  - vxlan.calico
 firewall_forward_policies:
   - name: allow-pod-fwd
     ingress_zone: public

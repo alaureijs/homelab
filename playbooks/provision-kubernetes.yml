@@ -1,5 +1,5 @@
 ---
-# Bootstrap the Kubernetes cluster: containerd, kubeadm init/join, Cilium CNI.
+# Bootstrap the Kubernetes cluster: containerd, kubeadm init/join, Calico CNI.
 # Control-plane = ansible05, workers = ansible06/07/08.
 - name: Bootstrap Kubernetes cluster
   hosts: k8s

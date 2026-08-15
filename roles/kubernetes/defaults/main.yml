@@ -19,30 +19,18 @@ kubernetes_control_plane_port: 6443
 
 kubernetes_join_token_ttl: 2h
 
-kubernetes_cilium_namespace: kube-system
-kubernetes_cilium_manifest_dir: /etc/kubernetes/cilium
-kubernetes_cilium_chart_version: "{{ cilium_version }}"
-kubernetes_cilium_ingress_vip: "{{ ingress_vip | default('192.168.100.42') }}"
-kubernetes_cilium_lb_pool: "{{ cilium_lb_pool | default('192.168.100.40-192.168.100.49') }}"
-kubernetes_cilium_l2_interface: "{{ cilium_l2_interface | default('enp1s0') }}"
-kubernetes_cilium_values:
-  kubeProxyReplacement: true
-  k8sServiceHost: "{{ k8s_apiserver_host }}"
-  k8sServicePort: "{{ kubernetes_control_plane_port }}"
-  routingMode: native
-  autoDirectNodeRoutes: true
-  ipv4NativeRoutingCIDR: "10.0.0.0/8"
-  bpf:
-    tproxy: true
-  operator:
-    replicas: 1
-  ingressController:
-    enabled: true
-    default: true
-    loadbalancerMode: shared
-    service:
-      type: LoadBalancer
-      annotations:
-        "lbipam.cilium.io/ips": "{{ kubernetes_cilium_ingress_vip }}"
-  l2announcements:
-    enabled: true
+# kube-proxy: nftables backend, deployed by kubeadm addon phase
+kubernetes_kube_proxy_mode: nftables
+kubernetes_kubeadm_config_path: /etc/kubernetes/kubeadm-config.yaml
+
+# Calico CNI (operator-based, replaces Cilium)
+kubernetes_calico_version: "{{ calico_version }}"
+kubernetes_calico_manifest_dir: /etc/kubernetes/calico
+kubernetes_calico_operator_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ kubernetes_calico_version }}/manifests/tigera-operator.yaml"
+kubernetes_calico_operator_namespace: tigera-operator
+kubernetes_calico_system_namespace: calico-system
+kubernetes_calico_ip_pool: "{{ calico_ip_pool | default(pod_network_cidr) }}"
+kubernetes_calico_mtu: "{{ calico_mtu | default(1450) }}"
+kubernetes_calico_nat_outgoing: "{{ calico_nat_outgoing | default(true) }}"
+kubernetes_calico_node_interface: "{{ calico_node_interface | default('enp1s0') }}"
+kubernetes_calico_vxlan_port: 4789

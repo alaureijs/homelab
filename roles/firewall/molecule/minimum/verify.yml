@@ -18,12 +18,12 @@
     - name: List firewalld ports
       ansible.builtin.command: firewall-cmd --list-ports
       changed_when: false
-      register: ports
+      register: firewall_ports_result
 
     - name: Assert only minimum port open
       ansible.builtin.assert:
         that:
-          - "'22/tcp' in ports.stdout"
-          - "'80/tcp' not in ports.stdout"
-          - "'443/tcp' not in ports.stdout"
-        fail_msg: "Unexpected firewall ports. Got: {{ ports.stdout }}"
+          - "'22/tcp' in firewall_ports_result.stdout"
+          - "'80/tcp' not in firewall_ports_result.stdout"
+          - "'443/tcp' not in firewall_ports_result.stdout"
+        fail_msg: "Unexpected firewall ports. Got: {{ firewall_ports_result.stdout }}"

@@ -1,0 +1,15 @@
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  calicoNetwork:
+    mtu: {{ kubernetes_calico_mtu }}
+    nodeAddressAutodetectionV4:
+      interface: "{{ kubernetes_calico_node_interface }}"
+    ipPools:
+      - name: default-ipv4-ippool
+        blockSize: 26
+        cidr: "{{ kubernetes_calico_ip_pool }}"
+        encapsulation: VXLAN
+        natOutgoing: {{ 'Enabled' if kubernetes_calico_nat_outgoing | bool else 'Disabled' }}

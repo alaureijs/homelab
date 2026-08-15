@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: kubernetes
   author: alaureijs
-  description: Bootstrap a kubeadm Kubernetes cluster with containerd and Cilium CNI
+  description: Bootstrap a kubeadm Kubernetes cluster with containerd and Calico CNI
   license: GPL-3.0-or-later
   min_ansible_version: "2.17"
   platforms:
@@ -13,6 +13,6 @@ galaxy_info:
     - kubernetes
     - kubeadm
     - containerd
-    - cilium
+    - calico
 
 dependencies: []

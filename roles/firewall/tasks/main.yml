@@ -9,28 +9,28 @@
   block:
     - name: Check for firewalld
       ansible.builtin.command: command -v firewall-cmd
-      register: _fw_firewalld
+      register: firewall_fw_firewalld
       changed_when: false
       failed_when: false
 
     - name: Check for nftables
       ansible.builtin.command: command -v nft
-      register: _fw_nftables
+      register: firewall_fw_nftables
       changed_when: false
       failed_when: false
 
     - name: Check for iptables
       ansible.builtin.command: command -v iptables
-      register: _fw_iptables
+      register: firewall_fw_iptables
       changed_when: false
       failed_when: false
 
     - name: Set detected backend
       ansible.builtin.set_fact:
         firewall_detected_backend: >-
-          {{ 'firewalld' if _fw_firewalld.rc == 0
-             else 'nftables' if _fw_nftables.rc == 0
-             else 'iptables' if _fw_iptables.rc == 0
+          {{ 'firewalld' if firewall_fw_firewalld.rc == 0
+             else 'nftables' if firewall_fw_nftables.rc == 0
+             else 'iptables' if firewall_fw_iptables.rc == 0
              else 'none' }}
 
 - name: Set explicit backend

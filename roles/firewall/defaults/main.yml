@@ -13,9 +13,6 @@ firewall_valid_backends:
   - ufw
   - none
 
-# firewalld-specific
-firewalld_zone: public
-
 # Common
 firewall_ports:
   - 80/tcp
@@ -27,7 +24,7 @@ firewall_services:
 # Sources (CIDRs) to assign to the trusted zone
 firewall_trusted_sources: []
 
-# Additional interfaces to assign to the trusted zone (e.g. cilium_host)
+# Additional interfaces to assign to the trusted zone (e.g. vxlan.calico)
 firewall_trusted_interfaces: []
 
 # firewalld policy objects for the forward path

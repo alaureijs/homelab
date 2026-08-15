@@ -59,10 +59,11 @@ Runtime-only: `observability-es-elastic-user` (elastic superuser password,
 consumed by otel-collector), `observability-kibana-user`, ES internal CA /
 certs (`*-ca-internal`, `*-certs-*`), file realm, config secrets.
 
-## Helm/Cilium runtime secrets
+## Helm runtime secrets
 
-kube-prometheus-stack (web config, TLS assets in `monitoring`), Cilium
-(`cilium-ca`, `hubble-server-certs` in `kube-system`), Longhorn webhooks.
+kube-prometheus-stack (web config, TLS assets in `monitoring`), Longhorn
+webhooks. (Cilium runtime secrets — `cilium-ca`, `hubble-server-certs` —
+were removed with the Cilium→Calico migration 2026-08-14.)
 
 `sh.helm.release.v1.*` entries are Helm release records, not credentials.
 

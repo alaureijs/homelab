@@ -18,25 +18,25 @@
     - name: List firewalld ports
       ansible.builtin.command: firewall-cmd --list-ports
       changed_when: false
-      register: ports
+      register: firewall_ports_result
 
     - name: Assert all ports open
       ansible.builtin.assert:
         that:
-          - "'80/tcp' in ports.stdout"
-          - "'443/tcp' in ports.stdout"
-          - "'9090/tcp' in ports.stdout"
-          - "'9100/tcp' in ports.stdout"
-        fail_msg: "Expected ports not open. Got: {{ ports.stdout }}"
+          - "'80/tcp' in firewall_ports_result.stdout"
+          - "'443/tcp' in firewall_ports_result.stdout"
+          - "'9090/tcp' in firewall_ports_result.stdout"
+          - "'9100/tcp' in firewall_ports_result.stdout"
+        fail_msg: "Expected ports not open. Got: {{ firewall_ports_result.stdout }}"
 
     - name: List firewalld services
       ansible.builtin.command: firewall-cmd --list-services
       changed_when: false
-      register: services
+      register: firewall_services_result
 
     - name: Assert all services allowed
       ansible.builtin.assert:
         that:
-          - "'ssh' in services.stdout"
-          - "'https' in services.stdout"
-        fail_msg: "Expected services not allowed. Got: {{ services.stdout }}"
+          - "'ssh' in firewall_services_result.stdout"
+          - "'https' in firewall_services_result.stdout"
+        fail_msg: "Expected services not allowed. Got: {{ firewall_services_result.stdout }}"

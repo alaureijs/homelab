@@ -93,6 +93,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- k8s observability: in-cluster ECK stack (Elasticsearch 9.4.4, Kibana,
+  otel-collector DaemonSet) removed — `cluster/apps/observability.yaml` +
+  `cluster/base/observability/` deleted, observability dropped from
+  `cluster/apps/namespaces.yaml` and from
+  `cluster/base/argocd/values.yaml` `application.namespaces` (commit
+  92b6756). ArgoCD bootstrap hard-refresh applied the removal; the
+  `observability` namespace, its 50Gi Longhorn PVC (PV Released, reclaim
+  Delete), and the ECK-managed secrets are gone from the live cluster.
+  DNS records `observability.homelab.internal` +
+  `observability-es.homelab.internal` removed from `dns_records`; dead
+  `vault_elasticsearch_password` + `vault_kibana_password` pruned from
+  `inventory/group_vars/all/vault.yml`; elasticsearch MCP server removed
+  from `opencode.json` (endpoint gone). Supersedes the historical ECK/
+  observability entries below. Logging replacement (Loki + Promtail) lands
+  in a follow-up.
 - k8s CNI: Cilium 1.18 uninstalled (helm release + namespace, CRDs, agent/
   envoy DaemonSets, `cilium_host` interface, BPF socket-LB pins under
   `/sys/fs/bpf/cilium`) — verified no pods, no CRDs, no services remain;

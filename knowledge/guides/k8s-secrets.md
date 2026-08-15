@@ -1,8 +1,8 @@
 ---
 type: Guide
 title: Kubernetes secrets inventory
-description: Catalog of every Secret in the cluster — SOPS-committed files vs runtime-generated (ECK, Helm, cert-manager) — and how to read each one.
-tags: [secrets, kubernetes, sops, cert-manager, eck, argocd]
+description: Catalog of every Secret in the cluster — SOPS-committed files vs runtime-generated (Helm, cert-manager) — and how to read each one.
+tags: [secrets, kubernetes, sops, cert-manager, argocd]
 status: stable
 sources:
   - id: k8s-secrets-doc
@@ -21,7 +21,7 @@ verified:
 
 - **SOPS-committed** in `cluster/` — read with `sops --decrypt`; ArgoCD
   ksops plugin applies them at sync.
-- **Runtime-generated** (ECK, Helm, cert-manager) — exist only in the live
+- **Runtime-generated** (Helm, cert-manager) — exist only in the live
   cluster; read with `kubectl`, no repo copy.
 
 Cluster access: `ssh root@192.168.100.15` with
@@ -50,14 +50,7 @@ Issued by ClusterIssuer `step-ca` into runtime tls Secrets; Certificate CRs:
 |--------|-----------|
 | `argocd-server-tls` | argocd |
 | `monitoring-tls` | monitoring |
-| `observability-tls` | observability |
 | `longhorn-ui-tls` | longhorn-system |
-
-## ECK secrets (observability)
-
-Runtime-only: `observability-es-elastic-user` (elastic superuser password,
-consumed by otel-collector), `observability-kibana-user`, ES internal CA /
-certs (`*-ca-internal`, `*-certs-*`), file realm, config secrets.
 
 ## Helm runtime secrets
 
@@ -71,9 +64,6 @@ were removed with the Cilium→Calico migration 2026-08-14.)
 
 ```bash
 sops --decrypt cluster/base/monitoring/secrets/grafana-admin.sops.yaml
-
-kubectl get secret -n observability observability-es-elastic-user \
-  -o jsonpath='{.data.elastic}'
 
 kubectl get secret -n monitoring monitoring-tls \
   -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout \

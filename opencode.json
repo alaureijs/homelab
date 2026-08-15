@@ -57,17 +57,6 @@
         "KUBECONFIG": "/home/alaureijs/.kube/config"
       }
     },
-    "elasticsearch": {
-      "type": "local",
-      "command": ["uvx", "elasticsearch-mcp-server"],
-      "enabled": true,
-      "environment": {
-        "ELASTICSEARCH_HOSTS": "https://observability-es.homelab.internal",
-        "ELASTICSEARCH_USERNAME": "elastic",
-        "ELASTICSEARCH_PASSWORD": "{env:ELASTICSEARCH_PASSWORD}",
-        "ELASTICSEARCH_VERIFY_CERTS": "false"
-      }
-    },
     "obsidian": {
       "type": "local",
       "command": ["uvx", "mcp-obsidian"],

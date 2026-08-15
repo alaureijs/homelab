@@ -1,5 +1,26 @@
 # Directory Update Log
 
+## 2026-08-15
+* **Update**: In-cluster observability stack (ECK Elasticsearch 9.4.4 +
+  Kibana + otel-collector DaemonSet) removed — `cluster/apps/observability.yaml`
+  + `cluster/base/observability/` deleted (commit 92b6756); observability
+  entry dropped from `cluster/apps/namespaces.yaml` and from
+  `cluster/base/argocd/values.yaml` `application.namespaces`. ArgoCD
+  bootstrap hard-refreshed → Application deleted, ES pod force-deleted
+  (held PVC via `kubernetes.io/pvc-protection`), namespace + 50Gi Longhorn
+  PVC gone, PV Released (reclaim Delete). DNS records
+  `observability.homelab.internal` + `observability-es.homelab.internal`
+  removed from `dns_records`; dead `vault_elasticsearch_password` +
+  `vault_kibana_password` pruned from `inventory/group_vars/all/vault.yml`;
+  elasticsearch MCP server removed from `opencode.json`. Logging to be
+  replaced by Loki + Promtail (`Plans/Plan_k8s.md` P2+). Updated
+  `knowledge/guides/k8s-secrets.md` (ECK section + observability-tls row +
+  reading commands), `knowledge/infrastructure/network.md`,
+  `knowledge/services/dns.md`, `docs/k8s-secrets.md`, `docs/ansible-mcp.md`.
+  Legacy VM Podman-stack concepts (`services/{monitoring,elasticsearch,
+  logstash,kibana,otel}.md`) remain stale from 2026-08-14 teardown — out of
+  scope for this change.
+
 ## 2026-08-14
 * **Update**: Cilium→Calico migration complete (`Plans/Plan_CalicoMigration.md`
   Status: Phase 4 complete). CNI: Calico VXLAN (IPPool 10.244.0.0/16, MTU

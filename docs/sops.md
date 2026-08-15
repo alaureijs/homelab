@@ -66,7 +66,7 @@ kubectl get secret -n monitoring monitoring-tls \
 To check expiry or SANs across all cert-manager secrets:
 
 ```bash
-for ns in argocd longhorn-system monitoring observability; do
+for ns in argocd longhorn-system monitoring; do
   kubectl get secrets -n "$ns" -l cert-manager.io/... -o name 2>/dev/null | while read s; do
     echo "== $s =="
     kubectl get "$s" -n "$ns" -o jsonpath='{.data.tls\.crt}' | base64 -d \

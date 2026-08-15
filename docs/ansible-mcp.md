@@ -89,7 +89,6 @@ start; some need secrets or runtime services before their tools work.
 | `grafana` | `uvx mcp-grafana` | `GRAFANA_URL` (set), `GRAFANA_SERVICE_ACCOUNT_TOKEN` | needs SA token |
 | `podman` | `npx -y podman-mcp-server@latest` | none | works |
 | `kubernetes` | `npx -y kubernetes-mcp-server@latest` | `KUBECONFIG` (set to `~/.kube/config`) | works — k8s cluster with ArgoCD (`k8s.homelab.internal:6443`) |
-| `elasticsearch` | `uvx elasticsearch-mcp-server` | `ELASTICSEARCH_HOSTS` (set, no auth — security disabled) | works |
 | `obsidian` | `uvx mcp-obsidian` | `OBSIDIAN_API_KEY` | needs Obsidian + Local REST API plugin running |
 | `github` | `podman run ... ghcr.io/github/github-mcp-server` | `GITHUB_PERSONAL_ACCESS_TOKEN` | needs PAT |
 | `libvirt` | `uv --directory ~/.local/share/mcp-servers/libvirt-mcp run server.py` | none | works (local clone, pinned `libvirt-python==12.5.0`) |

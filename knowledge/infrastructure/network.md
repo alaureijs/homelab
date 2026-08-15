@@ -39,7 +39,6 @@ verified:
 | FQDN | IP | Service |
 |------|----|---------|
 | `monitoring.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP (SNI) |
-| `observability.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP (SNI) |
 | `argocd.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP |
 | `longhorn.homelab.internal` | 192.168.100.42 | k8s Traefik ingress VIP |
 | `ca.homelab.internal` / `pki.homelab.internal` | 192.168.100.13 | step-ca / portal |

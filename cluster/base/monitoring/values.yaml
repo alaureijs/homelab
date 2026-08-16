@@ -86,6 +86,7 @@ alertmanager:
 
 grafana:
   enabled: true
+  defaultDashboardsEnabled: false
   admin:
     existingSecret: grafana-admin
   ingress:

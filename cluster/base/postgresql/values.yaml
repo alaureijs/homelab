@@ -17,6 +17,8 @@ primary:
       memory: 256Mi
     limits:
       memory: 512Mi
+  extendedConfiguration: |
+    max_locks_per_transaction = 640
 
 metrics:
   enabled: false

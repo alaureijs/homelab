@@ -46,9 +46,12 @@ Status: P1 complete (commits 92b6756, 4a47175). P2 in progress.
       default; fixed `loki.auth_enabled: false`, commit `fe39410`), labels via
       `loki-gateway/loki/api/v1/labels` OK, query_range returns streams
 
-## P3 — Prune default dashboards
-- [ ] Set `grafana.defaultDashboardsEnabled: false`; verify 22
-      `monitoring-kube-prometheus-*` ConfigMaps pruned
+## P3 — Prune default dashboards [COMPLETE]
+- [x] Set `grafana.defaultDashboardsEnabled: false`; verify 22
+      `monitoring-kube-prometheus-*` ConfigMaps pruned (commit `7da9fb7`).
+      NOTE: first sync op=Failed on CRD "metadata.annotations Too long" (>256KB,
+      ArgoCD last-applied bloat on coreos CRDs) — transient; selfHeal re-sync
+      Succeeded, app Healthy/Synced, 0 CRD failures.
 
 ## P4 — GitLab
 - [ ] DNS: add `gitlab.homelab.internal` + `registry.gitlab.homelab.internal`

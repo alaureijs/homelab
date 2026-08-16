@@ -56,14 +56,32 @@ Status: P1 complete (commits 92b6756, 4a47175). P2 in progress.
 ## P4 — GitLab
 - [ ] DNS: add `gitlab.homelab.internal` + `registry.gitlab.homelab.internal`
       → .42 to `dns_records`
-- [ ] Create `cluster/base/gitlab/values.yaml` (registry/postgresql/redis/
-      MinIO/gitlab-runner on; nginx-ingress/certmanager/prometheus.install/kas
-      off; Longhorn SC + node affinity ansible08; hosts gitlab +
-      registry.gitlab.homelab.internal)
+- [ ] Create `cluster/base/gitlab/values.yaml` — chart 10.2.2
+      (gitlab/gitlab @ charts.gitlab.io, app v19.2.2). Bundled
+      postgres/redis/MinIO REMOVED in 10.x (issue 6271) → external:
+      `global.psql.host`/`global.redis.host` + `password.useSecret`; object
+      storage via MinIO: `global.appConfig.object_store.enabled: true` +
+      `connection` S3 secret (lfs=git-lfs, artifacts=gitlab-artifacts,
+      uploads=gitlab-uploads, packages=gitlab-packages) + registry
+      `storage: {secret: gitlab-registry-storage}` (S3). Ingress:
+      `global.ingress.enabled: true` + `gatewayApi.enabled: false` +
+      `installEnvoy: false` + `class: traefik` (classic Ingress renders; NO
+      nginx-ingress subchart) + pre-created step-ca `Certificate gitlab-tls`
+      via `global.ingress.tls.secretName`; `certmanager.installCertmanager:
+      false`; `prometheus.install: false`; `gitlab-runner.install: true`;
+      `gitlab-zoekt.install: false`; kas per values; Longhorn SC + node
+      affinity ansible08; hosts gitlab + registry.gitlab.homelab.internal
+- [ ] Create `cluster/base/gitlab/bitnami/` — bitnami/postgresql 18.8.9
+      (Longhorn SC, auth secret, ~1-2Gi) + bitnami/redis 28.0.5 (standalone,
+      auth) + bitnami/minio 17.0.21 (standalone mode, `persistence.size`
+      10Gi Longhorn, `auth.existingSecret`) as separate base apps
 - [ ] Create `cluster/base/gitlab/secrets/` (`gitlab-initial-root-password.sops.yaml`,
-      step-ca `Certificate gitlab-tls`, `ksops.yaml`, `kustomization.yaml`)
+      step-ca `Certificate gitlab-tls`, `gitlab-registry-storage` S3 secret,
+      `gitlab-object-store` connection secret, `ksops.yaml`, `kustomization.yaml`)
       mirroring `cluster/base/monitoring/secrets/`
-- [ ] Create `cluster/apps/gitlab.yaml` + `gitlab` in namespaces.yaml
+- [ ] Create `cluster/base/postgresql/`, `cluster/base/redis/`, `cluster/base/minio/`
+      (bitnami charts, Longhorn SC, auth `existingSecret`); create
+      `cluster/apps/{gitlab,postgresql,redis,minio}.yaml` + `gitlab` in namespaces.yaml
 - [ ] Commit+push; sync; headroom check (`kubectl top nodes` before/after);
       verify `gitlab.homelab.internal` sign_in 200 +
       `docker login registry.gitlab.homelab.internal`

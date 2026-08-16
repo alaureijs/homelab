@@ -164,3 +164,5 @@ dns_records:
   ansible08.homelab.internal: 192.168.100.18
   argocd.homelab.internal: 192.168.100.42
   longhorn.homelab.internal: 192.168.100.42
+  gitlab.homelab.internal: 192.168.100.42
+  registry.gitlab.homelab.internal: 192.168.100.42

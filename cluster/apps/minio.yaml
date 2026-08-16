@@ -7,16 +7,10 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  sources:
-    - chart: minio
-      repoURL: registry-1.docker.io/bitnamicharts
-      targetRevision: 17.0.21
-      helm:
-        valueFiles:
-          - $values/cluster/base/minio/values.yaml
-    - repoURL: git@github.com:alaureijs/homelab.git
-      targetRevision: HEAD
-      ref: values
+  source:
+    repoURL: git@github.com:alaureijs/homelab.git
+    targetRevision: HEAD
+    path: cluster/base/minio
   destination:
     server: https://kubernetes.default.svc
     namespace: gitlab

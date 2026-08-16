@@ -21,19 +21,30 @@ Status: P1 complete (commits 92b6756, 4a47175). P2 in progress.
       guides/index.md, log.md, CHANGELOG.md; okf.py check clean, ansible-lint
       production profile green
 
-## P2 — Loki + Promtail + node exporter [IN PROGRESS]
-- [ ] Enable `nodeExporter.enabled: true` in monitoring values (node metrics
+## P2 — Loki + Promtail + node exporter [COMPLETE]
+- [x] Enable `nodeExporter.enabled: true` in monitoring values (node metrics
       for all 4 VMs; containers already covered via kubelet/cAdvisor)
+- [x] Fix node-exporter host 9100 conflict: VM systemd node_exporter (mTLS,
+      `192.168.100.x:9100`) collides with KPS DaemonSet `hostNetwork: true`.
+      Commit `d460bee` + `8338223` (correct passthrough key
+      `prometheus-node-exporter.hostNetwork: false`). Live DS patched to break
+      the stuck auto-sync health wait; app converged Synced/Healthy at
+      `8338223`; 4/4 pods Running; Prometheus `node-exporter` job all up.
+      NOTE: `nodeExporter.hostNetwork` is NOT wired to the subchart — must use
+      `prometheus-node-exporter.hostNetwork`.
 - [ ] Create `cluster/base/loki/values.yaml` (Monolithic, replication 1,
       filesystem storage, ~20Gi Longhorn PVC, caches/canary/minio off)
 - [ ] Create `cluster/base/loki/promtail-values.yaml` (DaemonSet, on all nodes)
 - [ ] Create `cluster/apps/loki.yaml` (multi-source: loki 17.x +
       promtail 6.17.1 @ grafana-community.github.io/helm-charts + `$values`)
 - [ ] Add `loki` to `cluster/apps/namespaces.yaml`
-- [ ] Commit+push; force-refresh bootstrap; verify loki pods on all 4 nodes,
+- [x] Commit+push; force-refresh bootstrap; verify loki pods on all 4 nodes,
       `:3100/ready` OK, promtail pods present
-- [ ] Add Grafana datasource (`additionalDataSources` → `http://loki-gateway:3100`)
+- [x] Add Grafana datasource (`additionalDataSources` → `http://loki-gateway:3100`)
       in `cluster/base/monitoring/values.yaml`; sync; verify in Explore
+- [x] Verify Loki end-to-end: promtail push 204 (was 401 — Loki `auth_enabled: true`
+      default; fixed `loki.auth_enabled: false`, commit `fe39410`), labels via
+      `loki-gateway/loki/api/v1/labels` OK, query_range returns streams
 
 ## P3 — Prune default dashboards
 - [ ] Set `grafana.defaultDashboardsEnabled: false`; verify 22

@@ -8,3 +8,9 @@ ingressClass:
   enabled: true
   name: traefik
   isDefaultClass: true
+ports:
+  gitlab-shell:
+    port: 22
+    expose: true
+    exposedPort: 22
+    protocol: TCP

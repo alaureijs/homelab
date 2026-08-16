@@ -1,0 +1,23 @@
+global:
+  storageClass: longhorn
+
+architecture: standalone
+
+auth:
+  enabled: true
+  existingSecret: gitlab-redis
+  existingSecretPasswordKey: redis-password
+
+master:
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+commonConfiguration: |-
+  maxmemory 256mb
+  maxmemory-policy allkeys-lru
